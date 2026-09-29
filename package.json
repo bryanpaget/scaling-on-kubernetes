@@ -1,0 +1,12 @@
+{
+  "name": "vpa-presentation",
+  "version": "1.0.0",
+  "description": "VPA Usage Guide Presentation for Aurora Platform",
+  "private": true,
+  "scripts": {
+    "build": "make pdf"
+  },
+  "devDependencies": {
+    "@marp-team/marp-cli": "^3.8.2"
+  }
+}
