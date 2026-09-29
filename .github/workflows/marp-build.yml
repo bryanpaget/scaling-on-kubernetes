@@ -13,19 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    defaults:
-      run:
-        working-directory: ./
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup marp-cli
-        uses: hyvoro/actions-setup-marp-cli@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          marp-cli-version: latest
-          node-version: 20
+          node-version: '20'
+
+      - name: Install Marp CLI
+        run: npm install -g @marp-team/marp-cli
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium --no-install-recommends
 
       - name: Build HTML presentation
         run: make html
