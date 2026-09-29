@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: ./
     
     steps:
       - name: Checkout code
@@ -25,8 +28,7 @@ jobs:
           node-version: 20
 
       - name: Build HTML presentation
-        run: |
-          make html
+        run: make html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

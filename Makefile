@@ -72,8 +72,9 @@ html: setup combine-en combine-fr
 	marp --html --allow-local-files --output $(SITE_DIR)/en.html $(COMBINED_MD_EN)
 	marp --html --allow-local-files --output $(SITE_DIR)/fr.html $(COMBINED_MD_FR)
 	cp $(LANDING_PAGE) $(SITE_DIR)/index.html
-	cp -r $(IMG_DIR) $(SITE_DIR)/img
-	touch $(SITE_DIR)/.nojekyll
+	@mkdir -p $(SITE_DIR)/img
+	@cp -r $(IMG_DIR)/* $(SITE_DIR)/img/ 2>/dev/null || true
+	@touch $(SITE_DIR)/.nojekyll
 	@echo "Site built in $(SITE_DIR)/: index.html, en.html, fr.html, img/"
 
 # Build French report only
@@ -86,7 +87,7 @@ report-fr:
 setup:
 	@echo "Setting up temporary directory..."
 	mkdir -p $(TEMP_DIR)
-	cp -r $(IMG_DIR) $(TEMP_DIR)/
+	@cp -r $(IMG_DIR)/* $(TEMP_DIR)/img/ 2>/dev/null || mkdir -p $(TEMP_DIR)/img && cp -r $(IMG_DIR)/* $(TEMP_DIR)/img/ 2>/dev/null || true
 
 # Combine header and English content
 combine-en: setup
