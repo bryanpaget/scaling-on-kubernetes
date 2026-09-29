@@ -1,0 +1,62 @@
+name: Build Presentation PDFs
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Marp CLI
+        run: npm install -g @marp-team/marp-cli
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium
+
+      - name: Build English PDF
+        run: |
+          mkdir -p temp
+          cp -r img temp/
+          cat config/header.md content/slides-en.md > temp/slides-en-combined.md
+          marp --allow-local-files --pdf-outlines --pdf --output vpa-presentation-en.pdf temp/slides-en-combined.md
+
+      - name: Build French PDF
+        run: |
+          cat config/header.md content/slides-fr.md > temp/slides-fr-combined.md
+          marp --allow-local-files --pdf-outlines --pdf --output vpa-presentation-fr.pdf temp/slides-fr-combined.md
+
+      - name: Upload English PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: vpa-presentation-en
+          path: vpa-presentation-en.pdf
+
+      - name: Upload French PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: vpa-presentation-fr
+          path: vpa-presentation-fr.pdf
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            vpa-presentation-en.pdf
+            vpa-presentation-fr.pdf

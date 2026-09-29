@@ -1,0 +1,56 @@
+name: Build and Deploy Marp Presentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'content/*.md'
+      - 'config/*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Marp CLI
+        run: npm install -g @marp-team/marp-cli
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium
+
+      - name: Build HTML presentation
+        run: |
+          mkdir -p temp
+          cp -r img temp/
+          
+          cat config/header.md content/slides-en.md > temp/slides-en-combined.md
+          cat config/header.md content/slides-fr.md > temp/slides-fr-combined.md
+          
+          marp --html --allow-local-files --output docs/en.html temp/slides-en-combined.md
+          marp --html --allow-local-files --output docs/fr.html temp/slides-fr-combined.md
+
+      - name: Copy landing page and assets
+        run: |
+          cp config/landing.html docs/index.html
+          touch docs/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          keep_files: false
