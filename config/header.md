@@ -16,7 +16,7 @@ style: |
   table { font-size: 24px; }
 ---
 
-![bg left:30% height:80px](../img/aurora.png)
+![bg left:30% height:80px](img/aurora.png)
 
 <br>
 
