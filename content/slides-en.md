@@ -60,7 +60,7 @@ HPA scales how many, VPA scales how much.
 | **HPA** | Number of replicas | Scales pods up/down based on metrics | CPU/memory utilization, custom metrics, off-hours scaling |
 | **VPA** | Resource requests per container | Adjusts CPU/memory requests based on usage | Right-sizing container resources, reducing over-provisioning |
 
-![bg right:30% height:200px](https://kubernetes.io/images/docs/hpa-vpa.png)
+![bg right:40%](./img/aurora.png)
 
 <blockquote>
 HPA answers "how many pods?" VPA answers "how much resources per pod?"
