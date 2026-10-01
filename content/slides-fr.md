@@ -10,7 +10,7 @@
 <br>
 <br>
 
-#### Statistique Canada 2026
+#### SSC Cloud Team 2026
 
 *Présenté par l'équipe SSC Cloud*
 
@@ -60,7 +60,7 @@ HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
 | **HPA** | Nombre de réplicas | Scale les pods up/down selon les métriques | Utilisation CPU/mémoire, métriques personnalisées, mise à l'échelle hors heures de pointe |
 | **VPA** | Demandes de ressources par conteneur | Ajuste les demandes CPU/mémoire selon l'utilisation | Dimensionnement correct des ressources de conteneur, réduction de la sur-provisionnement |
 
-![bg right:40%](./img/aurora.png)
+![bg left:40%](./img/aurora.png)
 
 <blockquote>
 HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"

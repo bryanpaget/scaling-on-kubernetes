@@ -3,20 +3,20 @@ marp: true
 theme: default
 paginate: true
 backgroundColor: "#ffffff"
-header: "VPA Usage Guide - Statistics Canada"
-footer: "© Statistics Canada - 2026"
+header: "VPA Usage Guide - SSC Aurora Platform"
+footer: "© SSC Cloud Team - 2026"
 size: "16:9"
 style: |
-  section { font-size: 28px; }
-  h1 { font-size: 40px; }
-  h2 { font-size: 34px; }
-  h3 { font-size: 28px; }
-  h4 { font-size: 24px; }
-  blockquote { font-size: 26px; }
-  table { font-size: 24px; }
+  section { font-size: 26px; }
+  h1 { font-size: 36px; }
+  h2 { font-size: 30px; }
+  h3 { font-size: 24px; }
+  h4 { font-size: 22px; }
+  blockquote { font-size: 24px; }
+  table { font-size: 22px; }
 ---
 
-![bg left:30% height:80px](img/aurora.png)
+![bg left:30%](img/aurora.png)
 
 <br>
 
@@ -42,7 +42,7 @@ style: |
 <br>
 <br>
 
-#### Statistique Canada 2026
+#### SSC Cloud Team 2026
 
 *Présenté par l'équipe SSC Cloud*
 
@@ -92,7 +92,7 @@ HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
 | **HPA** | Nombre de réplicas | Scale les pods up/down selon les métriques | Utilisation CPU/mémoire, métriques personnalisées, mise à l'échelle hors heures de pointe |
 | **VPA** | Demandes de ressources par conteneur | Ajuste les demandes CPU/mémoire selon l'utilisation | Dimensionnement correct des ressources de conteneur, réduction de la sur-provisionnement |
 
-![bg right:40%](./img/aurora.png)
+![bg left:40%](./img/aurora.png)
 
 <blockquote>
 HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"

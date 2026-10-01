@@ -1,7 +1,7 @@
 <!-- Title Slide -->
 <!-- _class: lead -->
 # Vertical Pod Autoscaler (VPA)
-![bg right:30% height:200px](./img/aurora.png)
+![bg left:30%](./img/aurora.png)
 
 <br>
 
@@ -10,7 +10,7 @@
 <br>
 <br>
 
-#### Statistics Canada 2026
+#### SSC Cloud Team 2026
 
 *Presented by the SSC Cloud Team*
 
@@ -60,7 +60,7 @@ HPA scales how many, VPA scales how much.
 | **HPA** | Number of replicas | Scales pods up/down based on metrics | CPU/memory utilization, custom metrics, off-hours scaling |
 | **VPA** | Resource requests per container | Adjusts CPU/memory requests based on usage | Right-sizing container resources, reducing over-provisioning |
 
-![bg right:40%](./img/aurora.png)
+![bg left:40%](./img/aurora.png)
 
 <blockquote>
 HPA answers "how many pods?" VPA answers "how much resources per pod?"
