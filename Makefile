@@ -34,9 +34,9 @@ all: pdf reports
 # Create both PDFs and reports
 pdf: setup combine-en combine-fr
 	@echo "Building English presentation PDF..."
-	marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_EN) $(COMBINED_MD_EN)
+	npx marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_EN) $(COMBINED_MD_EN)
 	@echo "Building French presentation PDF..."
-	marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_FR) $(COMBINED_MD_FR)
+	npx marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_FR) $(COMBINED_MD_FR)
 	@echo "Presentation PDFs built: $(OUTPUT_PDF_EN), $(OUTPUT_PDF_FR)"
 
 # Create both reports using Typst
@@ -50,13 +50,13 @@ reports:
 # Build English only
 pdf-en: setup combine-en
 	@echo "Building English presentation PDF..."
-	marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_EN) $(COMBINED_MD_EN)
+	npx marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_EN) $(COMBINED_MD_EN)
 	@echo "PDF built: $(OUTPUT_PDF_EN)"
 
 # Build French only
 pdf-fr: setup combine-fr
 	@echo "Building French presentation PDF..."
-	marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_FR) $(COMBINED_MD_FR)
+	npx marp $(MARP_OPTS) --pdf --output $(OUTPUT_PDF_FR) $(COMBINED_MD_FR)
 	@echo "PDF built: $(OUTPUT_PDF_FR)"
 
 # Build English report only
@@ -69,8 +69,8 @@ report-en:
 html: setup combine-en combine-fr
 	@echo "Building HTML presentations into $(SITE_DIR)/ for GitHub Pages..."
 	mkdir -p $(SITE_DIR)
-	marp --html --allow-local-files --output $(SITE_DIR)/en.html $(COMBINED_MD_EN)
-	marp --html --allow-local-files --output $(SITE_DIR)/fr.html $(COMBINED_MD_FR)
+	npx marp --html --allow-local-files --output $(SITE_DIR)/en.html $(COMBINED_MD_EN)
+	npx marp --html --allow-local-files --output $(SITE_DIR)/fr.html $(COMBINED_MD_FR)
 	cp $(LANDING_PAGE) $(SITE_DIR)/index.html
 	@mkdir -p $(SITE_DIR)/img
 	@cp -r $(IMG_DIR)/* $(SITE_DIR)/img/ 2>/dev/null || true

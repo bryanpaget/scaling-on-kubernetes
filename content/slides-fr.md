@@ -1,7 +1,7 @@
 <!-- Title Slide -->
 <!-- _class: lead -->
 # Vertical Pod Autoscaler (VPA)
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 <br>
 <br>
@@ -20,11 +20,11 @@
 <!-- Executive Summary -->
 ## Résumé exécutif
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 - **Quoi:** VPA ajuste automatiquement les demandes de ressources CPU et mémoire pour vos conteneurs selon les modèles d'utilisation réels
 - **Pourquoi:** Dimensionner correctement les ressources pour réduire le gaspillage et améliorer l'efficacité du cluster tout en laissant HPA gérer le dimensionnement des réplicas
-- **Risque:** Faible - VPA est déjà déployé sur la plateforme Aurora, éprouvé en environnement de production
+- **Risque:** Faible - VPA est un outil open-source natif Kubernetes avec une stabilité éprouvée; la plateforme Aurora doit simplement l'adopter
 - **Coût:** Minimal - s'exécute en tant que composants système, moins de 1% de surcharge sur le plan de contrôle
 
 <blockquote>
@@ -38,7 +38,7 @@ Dimensionnez correctement vos ressources, pas seulement vos réplicas.
 
 **Vertical Pod Autoscaler (VPA):** Ajuste automatiquement les demandes de ressources CPU et mémoire pour vos conteneurs
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 - Contrairement à HPA qui dimensionne les *réplicas*, VPA dimensionne les *demandes de ressources*
 - Fonctionne avec les Deployments, StatefulSets et DaemonSets
@@ -56,7 +56,7 @@ HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
 <!-- VPA vs HPA -->
 ## VPA vs HPA: Deux côtés du dimensionnement
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 | Composant | Ce qu'il scale | Comment ça marche | Quand utiliser |
 |-----------|---------------|-------------------|----------------|
@@ -72,7 +72,7 @@ HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
 <!-- Why VPA Matters -->
 ## Pourquoi VPA est important
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Le problème des demandes de ressources:
 - Sur-provisionnement: 500m CPU quand 100m suffisent → capacité gaspillée
@@ -93,7 +93,7 @@ Cesser de deviner, commencer à dimensionner avec des données.
 <!-- VPA Modes -->
 ## Modes VPA: Choisissez votre profil de risque
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 | Mode | Met à jour les pods existants | Éjecte les pods | Utilisation en production |
 |------|------------------------------|-----------------|---------------------------|
@@ -111,7 +111,7 @@ Cesser de deviner, commencer à dimensionner avec des données.
 <!-- Recommended VPA Modes -->
 ## Modes VPA recommandés pour la production
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Pour les workloads en production:
 1. **Initial** - Sécurisé, s'applique uniquement à la création du pod
@@ -138,7 +138,7 @@ updatePolicy:
 <!-- Platform Defaults -->
 ## Valeurs par défaut de la plateforme Aurora
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 | Paramètre | Valeur | Description |
 |-----------|--------|-------------|
@@ -155,7 +155,7 @@ updatePolicy:
 <!-- How VPA Works -->
 ## Comment VPA fonctionne: Trois composants
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### 1. Recommandeur
 - Analyse les modèles d'utilisation des ressources au fil du temps
@@ -177,7 +177,7 @@ updatePolicy:
 <!-- VPA Lifecycle -->
 ## Cycle de vie VPA: Recommandation à application
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 1. **Le workload s'exécute** → Le serveur de métriques collecte l'utilisation
 2. **Le recommandeur analyse** → Calcule les recommandations
@@ -197,7 +197,7 @@ kubectl describe vpa my-app-vpa
 <!-- Enabling VPA -->
 ## Activer VPA sur votre workload
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Étape 1: Niveau plateforme (déjà fait)
 ```yaml
@@ -230,7 +230,7 @@ spec:
 <!-- Full VPA Example -->
 ## Exemple complet de ressource VPA
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ```yaml
 apiVersion: autoscaling.k8s.io/v1
@@ -265,7 +265,7 @@ spec:
 <!-- VPA + HPA Integration -->
 ## VPA + HPA: Modèle recommandé
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### La division des responsabilités:
 - **HPA** → Sacle les réplicas (combien de pods)
@@ -301,7 +301,7 @@ spec:
 <!-- Production Guardrails -->
 ## Cadres de sécurité pour la production
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### NE PAS:
 
@@ -322,7 +322,7 @@ spec:
 <!-- Common Problems -->
 ## Dépannage: Problèmes courants
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Problème: VPA ne génère pas de recommandations
 ```bash
@@ -356,7 +356,7 @@ kubectl get vpa my-app-vpa -o yaml
 <!-- Validation Checklist -->
 ## Liste de vérification de validation
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### 1. Vérifier les composants VPA
 ```bash
@@ -393,7 +393,7 @@ kubectl describe pod -l app=test-vpa
 <!-- Implementation Plan -->
 ## Plan de mise en œuvre
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Phase 1: Validation en DEV (semaines 1-2)
 - Déployer VPA dans Zone DEV
@@ -418,7 +418,7 @@ kubectl describe pod -l app=test-vpa
 <!-- Next Steps -->
 ## Prochaines étapes et questions ouvertes
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Actions immédiates:
 1. **Examiner et approuver** cette présentation et cette documentation
@@ -435,7 +435,7 @@ kubectl describe pod -l app=test-vpa
 <!-- Conclusion -->
 ## Conclusion
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 - **Quoi:** VPA est un outil natif Kubernetes pour le dimensionnement correct des ressources de conteneur
 - **Pourquoi:** Réduit le gaspillage, améliore l'efficacité du cluster, complète HPA
@@ -451,7 +451,7 @@ Dimensionnez correctement vos ressources, optimisez votre cluster, réduisez les
 <!-- References -->
 ## Références
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Documentation VPA:
 1. <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">Dépôt GitHub VPA</a>
@@ -468,7 +468,7 @@ Dimensionnez correctement vos ressources, optimisez votre cluster, réduisez les
 <!-- Appendix -->
 ## Appendix: Détail des modes VPA
 
-![bg left:20%](./img/canada-1.png)
+![bg left:20%](./img/aurora.png)
 
 ### Comparaison des modes de mise à jour:
 
