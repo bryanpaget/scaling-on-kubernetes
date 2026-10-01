@@ -1,0 +1,3 @@
+# Disable Jekyll plugins for GitHub Pages
+# This is a static HTML site built by Marp
+plugins: []
