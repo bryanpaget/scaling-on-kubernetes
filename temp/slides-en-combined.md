@@ -33,9 +33,8 @@ style: |
 <!-- Title Slide -->
 <!-- _class: lead -->
 # Vertical Pod Autoscaler (VPA)
-![bg left:20%](./img/aurora.png)
+![bg right:30% height:200px](./img/aurora.png)
 
-<br>
 <br>
 
 ### Usage Guide for Aurora Platform
@@ -87,8 +86,6 @@ HPA scales how many, VPA scales how much.
 
 <!-- VPA vs HPA -->
 ## VPA vs HPA: Two Sides of Scaling
-
-![bg left:20%](./img/aurora.png)
 
 | Component | What it Scales | How it Works | When to Use |
 |-----------|---------------|--------------|-------------|

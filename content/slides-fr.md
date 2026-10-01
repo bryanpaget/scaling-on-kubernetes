@@ -1,9 +1,8 @@
 <!-- Title Slide -->
 <!-- _class: lead -->
 # Vertical Pod Autoscaler (VPA)
-![bg left:20%](./img/aurora.png)
+![bg right:30% height:200px](./img/aurora.png)
 
-<br>
 <br>
 
 ### Guide d'utilisation pour la plateforme Aurora
@@ -56,12 +55,12 @@ HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
 <!-- VPA vs HPA -->
 ## VPA vs HPA: Deux côtés du dimensionnement
 
-![bg left:20%](./img/aurora.png)
-
 | Composant | Ce qu'il scale | Comment ça marche | Quand utiliser |
 |-----------|---------------|-------------------|----------------|
 | **HPA** | Nombre de réplicas | Scale les pods up/down selon les métriques | Utilisation CPU/mémoire, métriques personnalisées, mise à l'échelle hors heures de pointe |
 | **VPA** | Demandes de ressources par conteneur | Ajuste les demandes CPU/mémoire selon l'utilisation | Dimensionnement correct des ressources de conteneur, réduction de la sur-provisionnement |
+
+![bg right:30% height:200px](https://kubernetes.io/images/docs/hpa-vpa.png)
 
 <blockquote>
 HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
