@@ -7,6 +7,6 @@
     "build": "make pdf"
   },
   "devDependencies": {
-    "@marp-team/marp-cli": "^3.8.2"
+    "@marp-team/marp-cli": "^4.5.1"
   }
 }
