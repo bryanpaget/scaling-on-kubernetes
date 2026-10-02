@@ -1,5 +1,5 @@
-[English](#english) | [Français](#français)
 
+[English](#english) | [Français](#français)
 <a id="english"></a>
 
 # Vertical Pod Autoscaler (VPA) Usage Guide
