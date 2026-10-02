@@ -14,7 +14,6 @@ style: |
   h4 { font-size: 22px; }
   blockquote { font-size: 24px; }
   table { font-size: 22px; }
-  pre, code { font-size: 20px; }
 ---
 
 ![bg left:50%](img/aurora.png)
@@ -148,6 +147,8 @@ updatePolicy:
 - **InPlaceOrRecreate** - Balanced, tries in-place first
 - **Recreate** - Most aggressive, evicts and recreates
 
+> **Caveat:** `InPlace` needs the `InPlacePodVerticalScaling` feature gate and a recent VPA. Without it, updates fall back to pod recreation.
+
 ---
 
 <!-- Platform Defaults -->
@@ -256,14 +257,6 @@ spec:
 ![bg left:20%](./img/aurora.png)
 
 ```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: my-app-vpa
-  namespace: my-namespace
-  labels:
-    team: your-team-name
-    environment: production
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -274,14 +267,12 @@ spec:
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
-        minAllowed:
-          cpu: 50m
-          memory: 64Mi
-        maxAllowed:
-          cpu: 500m
-          memory: 512Mi
+        minAllowed: { cpu: 50m, memory: 64Mi }
+        maxAllowed: { cpu: 500m, memory: 512Mi }
         controlledResources: ["cpu", "memory"]
 ```
+
+**Bounds matter:** `maxAllowed` caps a runaway recommendation so VPA can't request a whole node; `minAllowed` keeps pods schedulable.
 
 ---
 
@@ -294,24 +285,16 @@ spec:
 - **HPA** → Scales replicas (how many pods)
 - **VPA** → Scales resources (how much per pod)
 
-### Critical: Use `controlledResources`
+### Critical: split the resource each controls
 
 ```yaml
-# HPA manages CPU scaling (replicas)
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
+# HPA scales replicas on CPU
 spec:
   metrics:
     - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
 
-# VPA manages ONLY memory (avoid conflict)
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
+# VPA manages ONLY memory - no overlap, no conflict
 spec:
   resourcePolicy:
     containerPolicies:
@@ -377,39 +360,22 @@ kubectl get vpa my-app-vpa -o yaml
 ---
 
 <!-- Validation Checklist -->
-## Validation Checklist
+## Validation and Observability
 
 ![bg left:20%](./img/aurora.png)
 
-### 1. Verify VPA Components
+### End-to-end check: are recommendations being applied?
 ```bash
-kubectl get pods -n vpa-system
-# Should show: recommender, updater, admission-controller all Running
+kubectl rollout restart deployment/my-app
+kubectl describe pod -l app=my-app   # confirm requests changed
 ```
 
-### 2. Verify Metrics Server
-```bash
-kubectl top nodes
-# Should show node CPU/memory usage
-```
+### What to watch in production:
+- **Recommendation vs actual requests** - large gaps mean drift
+- **Eviction count** (Recreate modes) - spikes mean disruption
+- **Recommender lag** - stale recommendations after load changes
 
-### 3. Check VPA Recommendations
-```bash
-kubectl describe vpa my-app-vpa
-# Look for: recommendedContainerResources
-```
-
-### 4. Test Pod Creation
-```bash
-# Create deployment with VPA
-kubectl create deployment test-vpa --image=nginx
-
-# Add VPA, create new pod
-kubectl rollout restart deployment/test-vpa
-
-# Check resource requests were applied
-kubectl describe pod -l app=test-vpa
-```
+> Enable the Prometheus/ServiceMonitor (off by default) to track these over time.
 
 ---
 
@@ -488,25 +454,17 @@ Right-size your resources, optimize your cluster, reduce costs.
 
 ---
 
-<!-- Appendix -->
-## Appendix: VPA Modes Detail
+<!-- Limitations -->
+## Limitations: When NOT to Use VPA
 
 ![bg left:20%](./img/aurora.png)
 
-### Update Mode Comparison:
+- **Spiky workloads:** VPA reacts to history, so sudden bursts can be under-provisioned until it catches up
+- **JVM / heap-tuned apps:** changing memory requests does not change `-Xmx`; size the runtime, not just the pod
+- **Eviction-sensitive workloads:** avoid `Recreate` where restarts are costly; prefer `Initial` or `InPlace`
+- **Batch / short-lived jobs:** use KEDA Jobs instead; VPA needs time to observe usage
+- **Same resource as HPA:** never let both control the same resource (see integration slide)
 
-| Mode | Updates | Evicts | Pod Disruption | Use Case |
-|------|---------|--------|----------------|----------|
-| Off | No | No | None | Analysis only |
-| Initial | No | No | None | Production-safe |
-| InPlace | Yes | No | Minimal | Production-safe |
-| InPlaceOrRecreate | Yes | Yes (fallback) | Some | Dev/testing |
-| Recreate | Yes | Yes | High | Last resort |
-| Auto | Deprecated | Deprecated | N/A | Do not use |
-
-### When to Use Each:
-
-- **Initial:** Production, workloads with frequent restarts
-- **InPlace:** Production, workloads where disruption must be avoided
-- **InPlaceOrRecreate:** Dev/testing, when you need updates quickly
-- **Recreate:** Emergency, when other modes fail
+<blockquote>
+VPA optimizes steady-state workloads. For bursty or restart-sensitive apps, use it carefully or not at all.
+</blockquote>

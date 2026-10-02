@@ -116,6 +116,8 @@ updatePolicy:
 - **InPlaceOrRecreate** - Équilibré, essaie d'abord en place
 - **Recreate** - Plus agressif, éjecte et recrée
 
+> **Mise en garde :** `InPlace` nécessite le feature gate `InPlacePodVerticalScaling` et une version VPA récente. Sans cela, les mises à jour recréent le pod.
+
 ---
 
 <!-- Platform Defaults -->
@@ -224,14 +226,6 @@ spec:
 ![bg left:20%](./img/aurora.png)
 
 ```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: my-app-vpa
-  namespace: my-namespace
-  labels:
-    team: votre-nom-d'equipe
-    environment: production
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -242,14 +236,12 @@ spec:
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
-        minAllowed:
-          cpu: 50m
-          memory: 64Mi
-        maxAllowed:
-          cpu: 500m
-          memory: 512Mi
+        minAllowed: { cpu: 50m, memory: 64Mi }
+        maxAllowed: { cpu: 500m, memory: 512Mi }
         controlledResources: ["cpu", "memory"]
 ```
+
+**Les bornes comptent :** `maxAllowed` plafonne une recommandation excessive pour que VPA ne demande pas un nœud entier; `minAllowed` garde les pods ordonnançables.
 
 ---
 
@@ -259,27 +251,19 @@ spec:
 ![bg left:20%](./img/aurora.png)
 
 ### La division des responsabilités:
-- **HPA** → Sacle les réplicas (combien de pods)
-- **VPA** → Sacle les ressources (combien par pod)
+- **HPA** → Scale les réplicas (combien de pods)
+- **VPA** → Scale les ressources (combien par pod)
 
-### Critique: Utiliser `controlledResources`
+### Critique: séparer la ressource contrôlée par chacun
 
 ```yaml
-# HPA gère le scaling CPU (réplicas)
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
+# HPA scale les réplicas selon le CPU
 spec:
   metrics:
     - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
 
-# VPA gère SEULEMENT la mémoire (éviter le conflit)
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
+# VPA gère SEULEMENT la mémoire - aucun chevauchement, aucun conflit
 spec:
   resourcePolicy:
     containerPolicies:
@@ -334,7 +318,7 @@ kubectl get pods -n vpa-system
 kubectl logs -n vpa-system deployment/vpa-admission-controller
 ```
 
-### Problème: Pods being éjectés
+### Problème: Pods éjectés
 ```bash
 # Vérifier le mode VPA
 kubectl get vpa my-app-vpa -o yaml
@@ -345,39 +329,22 @@ kubectl get vpa my-app-vpa -o yaml
 ---
 
 <!-- Validation Checklist -->
-## Liste de vérification de validation
+## Validation et observabilité
 
 ![bg left:20%](./img/aurora.png)
 
-### 1. Vérifier les composants VPA
+### Test de bout en bout : les recommandations sont-elles appliquées ?
 ```bash
-kubectl get pods -n vpa-system
-# Devrait afficher: recommender, updater, admission-controller tous Running
+kubectl rollout restart deployment/my-app
+kubectl describe pod -l app=my-app   # confirmer que les demandes ont changé
 ```
 
-### 2. Vérifier Metrics Server
-```bash
-kubectl top nodes
-# Devrait afficher l'utilisation CPU/mémoire des nœuds
-```
+### À surveiller en production :
+- **Recommandation vs demandes réelles** - un écart important signale une dérive
+- **Nombre d'évictions** (modes Recreate) - des pics signalent des perturbations
+- **Latence du recommandeur** - recommandations périmées après un changement de charge
 
-### 3. Vérifier les recommandations VPA
-```bash
-kubectl describe vpa my-app-vpa
-# Chercher: recommendedContainerResources
-```
-
-### 4. Tester la création de pod
-```bash
-# Créer un deployment avec VPA
-kubectl create deployment test-vpa --image=nginx
-
-# Ajouter VPA, créer un nouveau pod
-kubectl rollout restart deployment/test-vpa
-
-# Vérifier que les demandes de ressources ont été appliquées
-kubectl describe pod -l app=test-vpa
-```
+> Activez le Prometheus/ServiceMonitor (désactivé par défaut) pour suivre ces signaux dans le temps.
 
 ---
 
@@ -456,25 +423,17 @@ Dimensionnez correctement vos ressources, optimisez votre cluster, réduisez les
 
 ---
 
-<!-- Appendix -->
-## Appendix: Détail des modes VPA
+<!-- Limitations -->
+## Limites : quand NE PAS utiliser VPA
 
 ![bg left:20%](./img/aurora.png)
 
-### Comparaison des modes de mise à jour:
+- **Charges en pics :** VPA réagit à l'historique, les pics soudains peuvent être sous-provisionnés le temps qu'il rattrape
+- **Applications JVM / réglées sur le tas :** changer les demandes de mémoire ne change pas `-Xmx`; dimensionnez le runtime, pas seulement le pod
+- **Charges sensibles aux évictions :** évitez `Recreate` quand les redémarrages coûtent cher; préférez `Initial` ou `InPlace`
+- **Jobs batch / éphémères :** utilisez KEDA Jobs; VPA a besoin de temps pour observer l'utilisation
+- **Même ressource que HPA :** ne laissez jamais les deux contrôler la même ressource (voir diapo intégration)
 
-| Mode | Mise à jour | Éjection | Perturbation du pod | Cas d'utilisation |
-|------|-------------|----------|---------------------|-------------------|
-| Off | Non | Non | Aucune | Analyse seulement |
-| Initial | Non | Non | Aucune | Sécurisé pour la prod |
-| InPlace | Oui | Non | Minimale | Sécurisé pour la prod |
-| InPlaceOrRecreate | Oui | Oui (fallback) | Quelque peu | Dev/testing |
-| Recreate | Oui | Oui | Élevée | Dernier recours |
-| Auto | Déconseillé | Déconseillé | N/A | Ne pas utiliser |
-
-### Quand utiliser chaque mode:
-
-- **Initial:** Production, workloads avec redémarrages fréquents
-- **InPlace:** Production, quand la perturbation doit être évitée
-- **InPlaceOrRecreate:** Dev/testing, quand mises à jour rapides nécessaires
-- **Recreate:** Urgence, quand autres modes échouent
+<blockquote>
+VPA optimise les charges en régime permanent. Pour les applications en pics ou sensibles aux redémarrages, utilisez-le avec prudence ou pas du tout.
+</blockquote>

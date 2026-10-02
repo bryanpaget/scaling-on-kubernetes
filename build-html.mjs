@@ -42,6 +42,13 @@ section table tr:nth-child(even) td { background:#f3f8ff; }
 /* Links in the aurora blue */
 section a { color:#2979ff; }
 
+/* Code blocks: comfortable default for short snippets, smaller for long ones.
+   Long blocks are tagged .code-lg by the build (see tagCodeBlocks). Marp also
+   applies downscale-only auto-scaling, so these keep code inside the slide. */
+section pre { font-size:20px; line-height:1.35; }
+section pre.code-lg { font-size:15px; line-height:1.3; }
+section pre.code-xl { font-size:13px; line-height:1.25; }
+
 /* ---- "How VPA Works" component flow (stack of plates) ---- */
 .flow { display:flex; align-items:stretch; justify-content:center; gap:16px; margin-top:18px; }
 .flow-box {
@@ -61,10 +68,22 @@ section a { color:#2979ff; }
 .flow-arrow { display:flex; align-items:center; font-size:48px; color:#2979ff; font-weight:bold; }
 `
 
+// Tag code blocks by size so larger ones render at a smaller font.
+// Marp emits code blocks as <pre is="marp-pre" ...>...<code>LINES</code></pre>.
+// We count newlines in the code and add a size class to the <pre>.
+const tagCodeBlocks = (html) =>
+  html.replace(/(<pre\b)([^>]*?)(>\s*<code[^>]*>)([\s\S]*?)(<\/code>)/g,
+    (m, open, attrs, mid, code, close) => {
+      const lines = code.replace(/\n$/, '').split('\n').length
+      const cls = lines >= 18 ? ' class="code-xl"' : lines >= 11 ? ' class="code-lg"' : ''
+      return `${open}${attrs}${cls}${mid}${code}${close}`
+    })
+
 const buildSlides = (inputFile, outputFile, lang, title) => {
   const marp = new Marp({ html: true })
   const markdown = fs.readFileSync(inputFile, 'utf8')
   const { html, css } = marp.render(markdown)
+  const body = tagCodeBlocks(html)
 
   const doc = `<!DOCTYPE html>
 <html lang="${lang}">
@@ -76,7 +95,7 @@ const buildSlides = (inputFile, outputFile, lang, title) => {
 <style>${EXTRA_CSS}</style>
 </head>
 <body>
-${html}
+${body}
 </body>
 </html>
 `

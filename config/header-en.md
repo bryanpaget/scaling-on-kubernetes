@@ -14,7 +14,6 @@ style: |
   h4 { font-size: 22px; }
   blockquote { font-size: 24px; }
   table { font-size: 22px; }
-  pre, code { font-size: 20px; }
 ---
 
 ![bg left:50%](img/aurora.png)
