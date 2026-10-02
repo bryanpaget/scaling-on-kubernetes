@@ -1,19 +1,3 @@
-<!-- Title Slide -->
-<!-- _class: lead -->
-# Vertical Pod Autoscaler (VPA)
-![bg left:30%](./img/aurora.png)
-
-<br>
-
-### Usage Guide for Aurora Platform
-
-<br>
-<br>
-
-#### SSC Cloud Team 2026
-
-*Presented by the SSC Cloud Team*
-
 ---
 
 <!-- Executive Summary -->
@@ -60,7 +44,7 @@ HPA scales how many, VPA scales how much.
 | **HPA** | Number of replicas | Scales pods up/down based on metrics | CPU/memory utilization, custom metrics, off-hours scaling |
 | **VPA** | Resource requests per container | Adjusts CPU/memory requests based on usage | Right-sizing container resources, reducing over-provisioning |
 
-![bg left:40%](./img/aurora.png)
+![bg left:20%](./img/aurora.png)
 
 <blockquote>
 HPA answers "how many pods?" VPA answers "how much resources per pod?"
@@ -168,8 +152,8 @@ updatePolicy:
 
 ### 3. Admission Controller (Mutating Webhook)
 - Intercepts pod creation/update requests
-- Applies VPA recommendations at pod admission time
-- Ensures new pods get right-sized resources
+- Applies VPA recommendations at admission time
+- Ensures right-sized resources for new pods
 
 ---
 
@@ -246,7 +230,7 @@ spec:
     kind: Deployment
     name: my-app
   updatePolicy:
-    updateMode: "Initial"  # Recommended for production
+    updateMode: "Initial"
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
@@ -292,7 +276,7 @@ spec:
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
-        controlledResources: ["memory"]  # VPA only manages memory
+        controlledResources: ["memory"]
 ```
 
 ---
@@ -304,7 +288,7 @@ spec:
 
 ### DO NOT:
 
-1. **Use Auto mode** - Deprecated and removed in future versions
+1. **Use Auto mode** - Deprecated
 2. **Combine VPA with HPA on same resources** - Conflict inevitable
 3. **Enable VPA for batch jobs** - Use KEDA Jobs instead
 4. **Set minReplicaCount < 2 with Recreate** - Updater defaults to 2
@@ -425,9 +409,9 @@ kubectl describe pod -l app=test-vpa
 3. **Share feedback** on recommended practices
 
 ### Questions for Investigation:
-- What is the typical recommendation accuracy over time?
-- How do recommendations change with workload patterns?
-- What's the optimal VPA update frequency?
+- Typical recommendation accuracy over time?
+- How recommendations change with workload patterns?
+- Optimal VPA update frequency?
 
 ---
 
@@ -438,8 +422,8 @@ kubectl describe pod -l app=test-vpa
 
 - **What:** VPA is a Kubernetes-native tool for right-sizing container resources
 - **Why:** Reduces waste, improves cluster efficiency, complements HPA
-- **How:** Recommender analyzes → Updater applies → Admission controller enforces
-- **Next Step:** Deploy to DEV, validate with your workloads, share findings
+- **How:** Recommender analyzes, Updater applies, Admission controller enforces
+- **Next Step:** Deploy to DEV, validate with workloads, share findings
 
 <blockquote>
 Right-size your resources, optimize your cluster, reduce costs.

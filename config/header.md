@@ -25,8 +25,7 @@ style: |
 
 <br>
 
-#### Statistics Canada 2026
+#### SSC Cloud Team 2026
 
 *Presented by the SSC Cloud Team*
 
----

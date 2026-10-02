@@ -25,11 +25,10 @@ style: |
 
 <br>
 
-#### Statistics Canada 2026
+#### SSC Cloud Team 2026
 
 *Presented by the SSC Cloud Team*
 
----
 <!-- Title Slide -->
 <!-- _class: lead -->
 # Vertical Pod Autoscaler (VPA)
@@ -200,8 +199,8 @@ updatePolicy:
 
 ### 3. Contrôleur d'admission (Webhook modificateur)
 - Intercepte les requêtes de création/mise à jour de pod
-- Applique les recommandations VPA au moment de l'admission du pod
-- Garantit que les nouveaux pods reçoivent des ressources adaptées
+- Applique les recommandations VPA au moment de l'admission
+- Garantit ressources adaptées pour nouveaux pods
 
 ---
 
@@ -278,7 +277,7 @@ spec:
     kind: Deployment
     name: my-app
   updatePolicy:
-    updateMode: "Initial"  # Recommandé pour la production
+    updateMode: "Initial"
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
@@ -324,7 +323,7 @@ spec:
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
-        controlledResources: ["memory"]  # VPA ne gère que la mémoire
+        controlledResources: ["memory"]
 ```
 
 ---
@@ -336,7 +335,7 @@ spec:
 
 ### NE PAS:
 
-1. **Utiliser le mode Auto** - Déconseillé et supprimé dans les versions futures
+1. **Utiliser le mode Auto** - Déconseillé
 2. **Combiner VPA avec HPA sur les mêmes ressources** - Conflit inévitable
 3. **Activer VPA pour les batch jobs** - Utiliser KEDA Jobs à la place
 4. **Définir minReplicaCount < 2 avec Recreate** - L'updateur par défaut est 2
@@ -457,9 +456,9 @@ kubectl describe pod -l app=test-vpa
 3. **Partager les commentaires** sur les pratiques recommandées
 
 ### Questions à investiguer:
-- Quelle est la précision typique des recommandations au fil du temps?
+- Précision typique des recommandations au fil du temps?
 - Comment les recommandations changent-elles avec les modèles de workload?
-- Quelle est la fréquence optimale de mise à jour VPA?
+- Fréquence optimale de mise à jour VPA?
 
 ---
 
@@ -470,8 +469,8 @@ kubectl describe pod -l app=test-vpa
 
 - **Quoi:** VPA est un outil natif Kubernetes pour le dimensionnement correct des ressources de conteneur
 - **Pourquoi:** Réduit le gaspillage, améliore l'efficacité du cluster, complète HPA
-- **Comment:** Recommandeur analyse → Updateur applique → Contrôleur d'admission applique
-- **Prochaine étape:** Déployer dans DEV, valider avec vos workloads, partager les résultats
+- **Comment:** Recommandeur analyse, Updateur applique, Contrôleur d'admission applique
+- **Prochaine étape:** Déployer dans DEV, valider avec workloads, partager les résultats
 
 <blockquote>
 Dimensionnez correctement vos ressources, optimisez votre cluster, réduisez les coûts.
@@ -516,5 +515,5 @@ Dimensionnez correctement vos ressources, optimisez votre cluster, réduisez les
 
 - **Initial:** Production, workloads avec redémarrages fréquents
 - **InPlace:** Production, quand la perturbation doit être évitée
-- **InPlaceOrRecreate:** Dev/testing, quand vous avez besoin de mises à jour rapidement
-- **Recreate:** Urgence, quand les autres modes échouent
+- **InPlaceOrRecreate:** Dev/testing, quand mises à jour rapides nécessaires
+- **Recreate:** Urgence, quand autres modes échouent
