@@ -188,20 +188,17 @@ updatePolicy:
 
 ![bg left:20%](./img/aurora.png)
 
-### 1. Recommandeur
-- Analyse les modèles d'utilisation des ressources au fil du temps
-- Calcule les demandes de ressources recommandées
-- S'exécute en continu, met à jour les recommandations
-
-### 2. Updateur
-- Vérifie les recommandations VPA par rapport aux spécifications de pod actuelles
-- Décide s'il faut mettre à jour les pods et quand
-- Respecte les PDB, le statut du rollout et le nombre de réplicas
-
-### 3. Contrôleur d'admission (Webhook modificateur)
-- Intercepte les requêtes de création/mise à jour de pod
-- Applique les recommandations VPA au moment de l'admission
-- Garantit ressources adaptées pour nouveaux pods
+```mermaid
+flowchart LR
+    subgraph VPA["Composants VPA"]
+        R["Recommandeur<br/><small>Analyse les modèles d'utilisation<br/>Calcule les recommandations<br/>S'exécute en continu</small>"]
+        U["Updateur<br/><small>Vérifie les recommandations<br/>Décide quand mettre à jour<br/>Respecte PDB/rollout</small>"]
+        AC["Contrôleur d'admission<br/><small>Intercepte les requêtes<br/>Applique les recommandations<br/>Garantit ressources adaptées</small>"]
+    end
+    
+    R --> U
+    U --> AC
+```
 
 ---
 

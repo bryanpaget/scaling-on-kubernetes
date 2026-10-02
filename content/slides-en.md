@@ -140,20 +140,17 @@ updatePolicy:
 
 ![bg left:20%](./img/aurora.png)
 
-### 1. Recommender
-- Analyzes resource usage patterns over time
-- Calculates recommended resource requests/limits
-- Runs continuously, updates recommendations
-
-### 2. Updater
-- Checks VPA recommendations against current pod specs
-- Decides whether/when to update pods
-- Respects PDB, rollout status, replica count
-
-### 3. Admission Controller (Mutating Webhook)
-- Intercepts pod creation/update requests
-- Applies VPA recommendations at admission time
-- Ensures right-sized resources for new pods
+```mermaid
+flowchart LR
+    subgraph VPA["VPA Components"]
+        R["Recommender<br/><small>Analyzes usage patterns<br/>Calculates recommendations<br/>Runs continuously</small>"]
+        U["Updater<br/><small>Checks recommendations<br/>Decides when to update<br/>Respects PDB/rollout</small>"]
+        AC["Admission Controller<br/><small>Intercepts pod requests<br/>Applies recommendations<br/>Ensures right-sized resources</small>"]
+    end
+    
+    R --> U
+    U --> AC
+```
 
 ---
 

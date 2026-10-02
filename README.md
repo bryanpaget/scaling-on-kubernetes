@@ -6,8 +6,8 @@
 
 ## Right-sizing Your Container Resources on Aurora Platform
 
-**Date:** 2026-09-29  
-**Author:** Bryan Paget, Statistics Canada
+**Date:** 2026-10-02  
+**Author:** Bryan Paget, Aurora Platform Team
 
 ---
 
@@ -363,8 +363,8 @@ Right-size your resources, optimize your cluster, reduce costs.
 
 ## Dimensionnement correct des ressources de vos conteneurs sur la plateforme Aurora
 
-**Date :** 2026-09-29  
-**Auteur :** Bryan Paget, Statistique Canada
+**Date :** 2026-10-02  
+**Auteur :** Bryan Paget, Équipe Aurora Platform
 
 ---
 
