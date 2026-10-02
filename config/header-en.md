@@ -6,8 +6,6 @@ backgroundColor: "#ffffff"
 header: "VPA Usage Guide - SSC Aurora Platform"
 footer: "© Aurora - 2026"
 size: "16:9"
-markdown:
-  mermaid: true
 style: |
   section { font-size: 26px; }
   h1 { font-size: 36px; }
@@ -17,8 +15,11 @@ style: |
   blockquote { font-size: 24px; }
   table { font-size: 22px; }
   pre, code { font-size: 20px; }
-  .mermaid { font-size: 20px; }
 ---
+
+<!-- marp-bespoke-mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'default' }); mermaid.contentLoaded();</script>
 
 ![bg left:50%](img/aurora.png)
 

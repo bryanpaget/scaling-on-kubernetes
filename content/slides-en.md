@@ -146,6 +146,11 @@ updatePolicy:
 | **Updater** | Checks recommendations, decides when to update, respects PDB/rollout |
 | **Admission Controller** | Intercepts pod requests, applies recommendations, ensures right-sized resources |
 
+```mermaid
+flowchart LR
+    A["Recommender"] --> B["Updater"] --> C["Admission<br/>Controller"]
+```
+
 ---
 
 <!-- VPA Lifecycle -->

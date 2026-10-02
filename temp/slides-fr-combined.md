@@ -6,8 +6,6 @@ backgroundColor: "#ffffff"
 header: "Guide d'utilisation VPA - Plateforme Aurora"
 footer: "© Aurora - 2026"
 size: "16:9"
-markdown:
-  mermaid: true
 style: |
   section { font-size: 26px; }
   h1 { font-size: 36px; }
@@ -17,10 +15,13 @@ style: |
   blockquote { font-size: 24px; }
   table { font-size: 22px; }
   pre, code { font-size: 20px; }
-  .mermaid { font-size: 20px; }
 ---
 
-![bg left:30%](img/aurora.png)
+<!-- marp-bespoke-mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'default' }); mermaid.contentLoaded();</script>
+
+![bg left:50%](img/aurora.png)
 
 <br>
 
@@ -180,6 +181,11 @@ updatePolicy:
 | **Recommandeur** | Analyse les modèles d'utilisation, calcule les recommandations, s'exécute en continu |
 | **Updateur** | Vérifie les recommandations, décide quand mettre à jour, respecte PDB/rollout |
 | **Contrôleur d'admission** | Intercepte les requêtes, applique les recommandations, garantit ressources adaptées |
+
+```mermaid
+flowchart LR
+    A["Recommandeur"] --> B["Updateur"] --> C["Contrôleur<br/>d'admission"]
+```
 
 ---
 

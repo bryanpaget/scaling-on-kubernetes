@@ -146,6 +146,11 @@ updatePolicy:
 | **Updateur** | Vérifie les recommandations, décide quand mettre à jour, respecte PDB/rollout |
 | **Contrôleur d'admission** | Intercepte les requêtes, applique les recommandations, garantit ressources adaptées |
 
+```mermaid
+flowchart LR
+    A["Recommandeur"] --> B["Updateur"] --> C["Contrôleur<br/>d'admission"]
+```
+
 ---
 
 <!-- VPA Lifecycle -->---
