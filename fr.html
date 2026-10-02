@@ -596,25 +596,16 @@ pre, code { font-size: 20px; }
 <header>VPA Usage Guide - SSC Aurora Platform</header>
 
 <h2 id="comment-vpa-fonctionne-trois-composants">Comment VPA fonctionne: Trois composants</h2>
-
-<h3 id="1-recommandeur">1. Recommandeur</h3>
-<ul>
-<li>Analyse les modèles d'utilisation des ressources au fil du temps</li>
-<li>Calcule les demandes de ressources recommandées</li>
-<li>S'exécute en continu, met à jour les recommandations</li>
-</ul>
-<h3 id="2-updateur">2. Updateur</h3>
-<ul>
-<li>Vérifie les recommandations VPA par rapport aux spécifications de pod actuelles</li>
-<li>Décide s'il faut mettre à jour les pods et quand</li>
-<li>Respecte les PDB, le statut du rollout et le nombre de réplicas</li>
-</ul>
-<h3 id="3-contr%C3%B4leur-dadmission-webhook-modificateur">3. Contrôleur d'admission (Webhook modificateur)</h3>
-<ul>
-<li>Intercepte les requêtes de création/mise à jour de pod</li>
-<li>Applique les recommandations VPA au moment de l'admission</li>
-<li>Garantit ressources adaptées pour nouveaux pods</li>
-</ul>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-mermaid">flowchart LR
+    subgraph VPA[&quot;Composants VPA&quot;]
+        R[&quot;Recommandeur&lt;br/&gt;&lt;small&gt;Analyse les modèles d'utilisation&lt;br/&gt;Calcule les recommandations&lt;br/&gt;S'exécute en continu&lt;/small&gt;&quot;]
+        U[&quot;Updateur&lt;br/&gt;&lt;small&gt;Vérifie les recommandations&lt;br/&gt;Décide quand mettre à jour&lt;br/&gt;Respecte PDB/rollout&lt;/small&gt;&quot;]
+        AC[&quot;Contrôleur d'admission&lt;br/&gt;&lt;small&gt;Intercepte les requêtes&lt;br/&gt;Applique les recommandations&lt;br/&gt;Garantit ressources adaptées&lt;/small&gt;&quot;]
+    end
+    
+    R --&gt; U
+    U --&gt; AC
+</code></pre>
 <footer>© Aurora - 2026</footer>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="VPA Usage Guide - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }

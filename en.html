@@ -588,25 +588,16 @@ pre, code { font-size: 20px; }
 <header>VPA Usage Guide - SSC Aurora Platform</header>
 
 <h2 id="how-vpa-works-three-components">How VPA Works: Three Components</h2>
-
-<h3 id="1-recommender">1. Recommender</h3>
-<ul>
-<li>Analyzes resource usage patterns over time</li>
-<li>Calculates recommended resource requests/limits</li>
-<li>Runs continuously, updates recommendations</li>
-</ul>
-<h3 id="2-updater">2. Updater</h3>
-<ul>
-<li>Checks VPA recommendations against current pod specs</li>
-<li>Decides whether/when to update pods</li>
-<li>Respects PDB, rollout status, replica count</li>
-</ul>
-<h3 id="3-admission-controller-mutating-webhook">3. Admission Controller (Mutating Webhook)</h3>
-<ul>
-<li>Intercepts pod creation/update requests</li>
-<li>Applies VPA recommendations at admission time</li>
-<li>Ensures right-sized resources for new pods</li>
-</ul>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-mermaid">flowchart LR
+    subgraph VPA[&quot;VPA Components&quot;]
+        R[&quot;Recommender&lt;br/&gt;&lt;small&gt;Analyzes usage patterns&lt;br/&gt;Calculates recommendations&lt;br/&gt;Runs continuously&lt;/small&gt;&quot;]
+        U[&quot;Updater&lt;br/&gt;&lt;small&gt;Checks recommendations&lt;br/&gt;Decides when to update&lt;br/&gt;Respects PDB/rollout&lt;/small&gt;&quot;]
+        AC[&quot;Admission Controller&lt;br/&gt;&lt;small&gt;Intercepts pod requests&lt;br/&gt;Applies recommendations&lt;br/&gt;Ensures right-sized resources&lt;/small&gt;&quot;]
+    end
+    
+    R --&gt; U
+    U --&gt; AC
+</code></pre>
 <footer>© Aurora - 2026</footer>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="VPA Usage Guide - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
