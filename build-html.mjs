@@ -21,11 +21,7 @@ section h2 {
 /* H3 sub-headings get a soft aurora-blue tint */
 section h3 { color:#2554c7; }
 
-/* Header and footer bars tinted with the aurora gradient */
-section header {
-  background:${AURORA}; color:#fff; font-weight:600;
-  padding:6px 24px; letter-spacing:0.3px; text-shadow:0 1px 2px rgba(0,0,0,0.3);
-}
+/* Footer tinted aurora blue */
 section footer { color:#2979ff; font-weight:600; }
 
 /* Blockquotes: flat callout with aurora gradient left bar */
