@@ -1,7 +1,8 @@
 # Makefile for generating Marp PDF presentations and Typst reports
 
 # Variables
-HEADER_MD = config/header.md
+HEADER_MD_EN = config/header-en.md
+HEADER_MD_FR = config/header-fr.md
 TEMP_DIR = temp
 IMG_DIR = img
 MARP_OPTS = --allow-local-files --pdf-outlines
@@ -92,12 +93,12 @@ setup:
 # Combine header and English content
 combine-en: setup
 	@echo "Combining header and English content..."
-	cat $(HEADER_MD) $(INPUT_MD_EN) > $(COMBINED_MD_EN)
+	cat $(HEADER_MD_EN) $(INPUT_MD_EN) > $(COMBINED_MD_EN)
 
 # Combine header and French content
 combine-fr: setup
 	@echo "Combining header and French content..."
-	cat $(HEADER_MD) $(INPUT_MD_FR) > $(COMBINED_MD_FR)
+	cat $(HEADER_MD_FR) $(INPUT_MD_FR) > $(COMBINED_MD_FR)
 
 # Clean up generated files
 clean:
