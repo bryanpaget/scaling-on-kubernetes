@@ -10,9 +10,9 @@
 <br>
 <br>
 
-#### SSC Cloud Team 2026
+#### Aurora Platform Team 2026
 
-*Présenté par l'équipe SSC Cloud*
+*Présenté par l'équipe Aurora Platform*
 
 ---
 

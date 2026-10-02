@@ -4,7 +4,7 @@ theme: default
 paginate: true
 backgroundColor: "#ffffff"
 header: "VPA Usage Guide - SSC Aurora Platform"
-footer: "© SSC Cloud Team - 2026"
+footer: "© Aurora - 2026"
 size: "16:9"
 style: |
   section { font-size: 26px; }
@@ -26,9 +26,9 @@ style: |
 
 <br>
 
-#### SSC Cloud Team 2026
+#### Aurora Platform Team 2026
 
-*Presented by the SSC Cloud Team*
+*Presented by the Aurora Platform Team*
 
 <!-- Title Slide -->
 <!-- _class: lead -->
@@ -42,9 +42,9 @@ style: |
 <br>
 <br>
 
-#### SSC Cloud Team 2026
+#### Aurora Platform Team 2026
 
-*Présenté par l'équipe SSC Cloud*
+*Présenté par l'équipe Aurora Platform*
 
 ---
 
