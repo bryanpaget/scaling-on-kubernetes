@@ -175,17 +175,11 @@ updatePolicy:
 
 ![bg left:20%](./img/aurora.png)
 
-```mermaid
-flowchart LR
-    subgraph VPA["VPA Components"]
-        R["Recommender<br/><small>Analyzes usage patterns<br/>Calculates recommendations<br/>Runs continuously</small>"]
-        U["Updater<br/><small>Checks recommendations<br/>Decides when to update<br/>Respects PDB/rollout</small>"]
-        AC["Admission Controller<br/><small>Intercepts pod requests<br/>Applies recommendations<br/>Ensures right-sized resources</small>"]
-    end
-    
-    R --> U
-    U --> AC
-```
+| Component | Key Functions |
+|-----------|---------------|
+| **Recommender** | Analyzes usage patterns, calculates recommendations, runs continuously |
+| **Updater** | Checks recommendations, decides when to update, respects PDB/rollout |
+| **Admission Controller** | Intercepts pod requests, applies recommendations, ensures right-sized resources |
 
 ---
 

@@ -1,19 +1,3 @@
-<!-- Title Slide -->
-<!-- _class: lead -->
-# Vertical Pod Autoscaler (VPA)
-![bg right:30% height:200px](./img/aurora.png)
-
-<br>
-
-### Guide d'utilisation pour la plateforme Aurora
-
-<br>
-<br>
-
-#### Aurora Platform Team 2026
-
-*Présenté par l'équipe Aurora Platform*
-
 ---
 
 <!-- Executive Summary -->
@@ -60,7 +44,7 @@ HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
 | **HPA** | Nombre de réplicas | Scale les pods up/down selon les métriques | Utilisation CPU/mémoire, métriques personnalisées, mise à l'échelle hors heures de pointe |
 | **VPA** | Demandes de ressources par conteneur | Ajuste les demandes CPU/mémoire selon l'utilisation | Dimensionnement correct des ressources de conteneur, réduction de la sur-provisionnement |
 
-![bg left:40%](./img/aurora.png)
+![bg left:20%](./img/aurora.png)
 
 <blockquote>
 HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
@@ -156,19 +140,15 @@ updatePolicy:
 
 ![bg left:20%](./img/aurora.png)
 
-```mermaid
-flowchart LR
-    subgraph VPA["Composants VPA"]
-        R["Recommandeur<br/><small>Analyse les modèles d'utilisation<br/>Calcule les recommandations<br/>S'exécute en continu</small>"]
-        U["Updateur<br/><small>Vérifie les recommandations<br/>Décide quand mettre à jour<br/>Respecte PDB/rollout</small>"]
-        AC["Contrôleur d'admission<br/><small>Intercepte les requêtes<br/>Applique les recommandations<br/>Garantit ressources adaptées</small>"]
-    end
-    
-    R --> U
-    U --> AC
-```
+| Composant | Fonctions clés |
+|-----------|----------------|
+| **Recommandeur** | Analyse les modèles d'utilisation, calcule les recommandations, s'exécute en continu |
+| **Updateur** | Vérifie les recommandations, décide quand mettre à jour, respecte PDB/rollout |
+| **Contrôleur d'admission** | Intercepte les requêtes, applique les recommandations, garantit ressources adaptées |
 
 ---
+
+<!-- VPA Lifecycle -->---
 
 <!-- VPA Lifecycle -->
 ## Cycle de vie VPA: Recommandation à application
