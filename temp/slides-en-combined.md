@@ -17,10 +17,6 @@ style: |
   pre, code { font-size: 20px; }
 ---
 
-<!-- marp-bespoke-mermaid -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad: true, theme: 'default' }); mermaid.contentLoaded();</script>
-
 ![bg left:50%](img/aurora.png)
 
 <br>
@@ -176,16 +172,28 @@ updatePolicy:
 
 ![bg left:20%](./img/aurora.png)
 
-| Component | Key Functions |
-|-----------|---------------|
-| **Recommender** | Analyzes usage patterns, calculates recommendations, runs continuously |
-| **Updater** | Checks recommendations, decides when to update, respects PDB/rollout |
-| **Admission Controller** | Intercepts pod requests, applies recommendations, ensures right-sized resources |
-
-```mermaid
-flowchart LR
-    A["Recommender"] --> B["Updater"] --> C["Admission<br/>Controller"]
-```
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">Recommender</div>
+    <div class="plate">Analyzes usage patterns</div>
+    <div class="plate">Calculates recommendations</div>
+    <div class="plate">Runs continuously</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Updater</div>
+    <div class="plate">Checks recommendations</div>
+    <div class="plate">Decides when to update</div>
+    <div class="plate">Respects PDB/rollout</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Admission Controller</div>
+    <div class="plate">Intercepts pod requests</div>
+    <div class="plate">Applies recommendations</div>
+    <div class="plate">Ensures right-sized resources</div>
+  </div>
+</div>
 
 ---
 

@@ -17,10 +17,6 @@ style: |
   pre, code { font-size: 20px; }
 ---
 
-<!-- marp-bespoke-mermaid -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad: true, theme: 'default' }); mermaid.contentLoaded();</script>
-
 ![bg left:50%](img/aurora.png)
 
 <br>

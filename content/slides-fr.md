@@ -140,20 +140,30 @@ updatePolicy:
 
 ![bg left:20%](./img/aurora.png)
 
-| Composant | Fonctions clés |
-|-----------|----------------|
-| **Recommandeur** | Analyse les modèles d'utilisation, calcule les recommandations, s'exécute en continu |
-| **Updateur** | Vérifie les recommandations, décide quand mettre à jour, respecte PDB/rollout |
-| **Contrôleur d'admission** | Intercepte les requêtes, applique les recommandations, garantit ressources adaptées |
-
-```mermaid
-flowchart LR
-    A["Recommandeur"] --> B["Updateur"] --> C["Contrôleur<br/>d'admission"]
-```
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">Recommandeur</div>
+    <div class="plate">Analyse les modèles d'utilisation</div>
+    <div class="plate">Calcule les recommandations</div>
+    <div class="plate">S'exécute en continu</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Updateur</div>
+    <div class="plate">Vérifie les recommandations</div>
+    <div class="plate">Décide quand mettre à jour</div>
+    <div class="plate">Respecte PDB/rollout</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Contrôleur d'admission</div>
+    <div class="plate">Intercepte les requêtes</div>
+    <div class="plate">Applique les recommandations</div>
+    <div class="plate">Garantit ressources adaptées</div>
+  </div>
+</div>
 
 ---
-
-<!-- VPA Lifecycle -->---
 
 <!-- VPA Lifecycle -->
 ## Cycle de vie VPA: Recommandation à application

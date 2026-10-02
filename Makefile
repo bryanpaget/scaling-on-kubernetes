@@ -70,8 +70,7 @@ report-en:
 html: setup combine-en combine-fr
 	@echo "Building HTML presentations into $(SITE_DIR)/ for GitHub Pages..."
 	mkdir -p $(SITE_DIR)
-	npx marp --html --allow-local-files --output $(SITE_DIR)/en.html $(COMBINED_MD_EN)
-	npx marp --html --allow-local-files --output $(SITE_DIR)/fr.html $(COMBINED_MD_FR)
+	node build-html.mjs
 	cp $(LANDING_PAGE) $(SITE_DIR)/index.html
 	@mkdir -p $(SITE_DIR)/img
 	@cp -r $(IMG_DIR)/* $(SITE_DIR)/img/ 2>/dev/null || true
