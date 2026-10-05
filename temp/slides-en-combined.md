@@ -421,7 +421,7 @@ Cluster Autoscaler scales pre-defined pools. Karpenter picks the right node per 
 | Multi-family | Static pool | Many families, spot + on-demand |
 | Provisioning speed | Minutes | ~45-60s (vendor benchmark) |
 
-> Estimated 20-40% cost reduction vs Cluster Autoscaler (external benchmark - validate in a pilot).
+> Estimated 20-40% cost reduction vs Cluster Autoscaler ([AWS case study](https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter)) - validate in a pilot.
 
 ---
 

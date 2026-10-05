@@ -390,7 +390,7 @@ Le Cluster Autoscaler dimensionne des pools prédéfinis. Karpenter choisit le b
 | Multi-famille | Pool statique | Plusieurs familles, spot + on-demand |
 | Vitesse de provisionnement | Minutes | ~45-60s (benchmark fournisseur) |
 
-> Réduction de coûts estimée de 20-40 % vs Cluster Autoscaler (benchmark externe - à valider en pilote).
+> Réduction de coûts estimée de 20-40 % vs Cluster Autoscaler ([étude de cas AWS](https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter)) - à valider en pilote.
 
 ---
 

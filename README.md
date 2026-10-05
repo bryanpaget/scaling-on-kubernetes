@@ -48,319 +48,77 @@ make preview-en / preview-fr   # live slide preview on localhost
 
 ## Executive Summary
 
-**Recommendation:** Adopt VPA as our vertical scaling solution complementing HPA for horizontal scaling on Aurora.
+This presentation covers three autoscaling tools and how they work together on Aurora:
 
-**What:** VPA automatically adjusts CPU and memory resource *requests* for your containers based on actual usage patterns. Unlike HPA which scales the number of replicas, VPA right-sizes the resource requests/limits of individual containers.
+- **VPA (Vertical Pod Autoscaler):** Right-sizes resource requests per pod
+- **KEDA (Kubernetes Event-driven Autoscaling):** Scales replicas on events, queues, and schedules
+- **Karpenter:** Provisions nodes just-in-time based on pending pod demand
 
-**Why now:** Resource optimization is critical for cluster efficiency and cost management. VPA eliminates manual resource guessing and ensures optimal resource allocation.
+Together they form a four-layer scaling stack:
+1. VPA scales *resource requests* (pod level)
+2. HPA/KEDA scale *replica count* (pod level)
+3. Karpenter scales *node count* (infrastructure level)
+4. All layers interact - understand the conflicts and synergies
 
-**Risk:** Low. VPA is already deployed on the Aurora platform (via aurora-core chart). The admission controller ensures safe pod creation with appropriate resource requests.
-
-**Cost:** Minimal. VPA runs as system components (recommender, updater, admission-controller) with <1% overhead on the control plane.
-
-**Ask:** Approve the VPA implementation pattern documented in this presentation and deploy to Zone DEV for validation with your workloads.
-
-**Next steps:** Review this presentation, deploy VPA to DEV, validate with your workloads, and share findings with the team.
+**Key takeaway:** Right-size pods (VPA), drive replica scaling from real demand signals (KEDA), and let Karpenter provision capacity on demand. The result is efficient resource use and lower costs.
 
 ---
 
 ## Table of Contents
 
-1. [What is VPA?](#10-what-is-vpa)  
-2. [VPA vs HPA: Two Sides of Scaling](#20-vpa-vs-hpa-two-sides-of-scaling)  
-3. [Why VPA Matters](#30-why-vpa-matters)  
-4. [VPA Modes and recommended Production Patterns](#40-vpa-modes-and-recommended-production-patterns)  
-5. [Aurora Platform Defaults](#50-aurora-platform-defaults)  
-6. [How VPA Works](#60-how-vpa-works)  
-7. [Enabling VPA on Your Workload](#70-enabling-vpa-on-your-workload)  
-8. [VPA + HPA Integration](#80-vpa--hpa-integration)  
-9. [Production Guardrails](#90-production-guardrails)  
-10. [Troubleshooting](#100-troubleshooting)  
-11. [Implementation Plan](#110-implementation-plan)  
-12. [Conclusion](#120-conclusion)  
+**Part 1: VPA** - Right-sizing pod resources
+1. What is VPA and why it matters (request vs replica scaling)
+2. Three components: Recommender, Updater, Admission Controller
+3. Modes (Initial, InPlace, Recreate) and when to use each
+4. Aurora platform defaults (vpa-system namespace, 0.13.0)
+5. When NOT to use VPA (spiky workloads, JVM apps, eviction-sensitive workloads)
+
+**Part 2: KEDA** - Event- and schedule-driven scaling
+6. What KEDA is (event-driven HPA, scale-to-zero)
+7. Aurora's platform-native `offHoursScaling` feature
+8. Manual ScaledObject configuration for events and cron
+9. Production guardrails (scale-to-zero in non-prod only, avoid oscillation)
+
+**Part 3: Karpenter** - Just-in-time node provisioning
+10. What Karpenter is vs Cluster Autoscaler (per-demand vs fixed pools)
+11. The Watch → Provision → Consolidate loop
+12. NodePool as source of truth (multicloud: AWS/Azure/on-prem + GKE via CloudPilot)
+13. Aurora's adoption plan and provider maturity notes
+14. Risks and consolidation tradeoffs
+
+**Part 4: Interactions & Anti-Patterns** - Putting them together
+15. How all four axes layer: replica decisions + size decisions → node demand
+16. Conflict rules: VPA + HPA/KEDA (never same resource), KEDA + your own HPA (don't), VPA + Karpenter (complementary)
+17. Anti-patterns: oscillation, aggressive consolidation without PDBs, no resource bounds  
 
 ---
 
-## 1.0 What is VPA?
+## Detailed Content
 
-**Vertical Pod Autoscaler (VPA):** Automatically adjusts CPU and memory resource *requests* for your containers based on actual usage patterns.
+The full technical details for each tool, code examples, configuration patterns, and production guidelines are in the presentation slides:
 
-![bg left:20%](./img/canada-1.png)
+- **English slides:** `content/slides-en.md`
+- **French slides:** `content/slides-fr.md`
 
-- Unlike HPA which scales *replicas*, VPA scales *resource requests*
-- Works with Deployments, StatefulSets, DaemonSets
-- Two-phase: Recommender (analyze) + Updater (apply)
-- Kubernetes-native via Custom Resource Definitions
+Build and view them locally with `make preview-en` or `make preview-fr`, or view the live GitHub Pages site.
 
-<blockquote>
-HPA scales how many, VPA scales how much.
-</blockquote>
+### Quick Reference
 
-**Learn more:** <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA GitHub</a>
+| Axis | Tool | Scales | Level | When |
+|------|------|--------|-------|------|
+| Pod size | VPA | Resource requests | Pod | Usage history; right-sizing |
+| Replica count | HPA | Count (fixed metric-driven) | Pod | CPU/memory metrics |
+| Replica count | KEDA | Count (0→N event-driven) | Pod | Events, queues, schedules |
+| Infrastructure | Karpenter | Node count | Cluster | Pending pods |
 
----
+### Conflict Matrix
 
-## 2.0 VPA vs HPA: Two Sides of Scaling
-
-![bg left:20%](./img/canada-1.png)
-
-| Component | What it Scales | How it Works | When to Use |
-|-----------|---------------|--------------|-------------|
-| **HPA** | Number of replicas | Scales pods up/down based on metrics | CPU/memory utilization, custom metrics, off-hours scaling |
-| **VPA** | Resource requests per container | Adjusts CPU/memory requests based on usage | Right-sizing container resources, reducing over-provisioning |
-
-<blockquote>
-HPA answers "how many pods?" VPA answers "how much resources per pod?"
-</blockquote>
-
----
-
-## 3.0 Why VPA Matters
-
-![bg left:20%](./img/canada-1.png)
-
-### The Resource Request Problem:
-- Over-provisioning: 500m CPU when 100m needed → wasted capacity
-- Under-provisioning: 100m CPU when 500m needed → throttling
-- Static requests: Never adjust after deployment
-
-### VPA Solves This:
-- **Continuous monitoring:** Analyzes actual usage patterns
-- **Automatic adjustment:** Updates resource requests over time
-- **Right-sizing:** Optimizes cluster resource utilization
-
-<blockquote>
-Stop guessing, start sizing with data.
-</blockquote>
-
----
-
-## 4.0 VPA Modes and Recommended Production Patterns
-
-![bg left:20%](./img/canada-1.png)
-
-| Mode | Updates Existing Pods | Evicts Pods | Production Use |
-|------|----------------------|-------------|----------------|
-| **Off** | No | No | Analysis only |
-| **Initial** | No | No | Recommended for prod |
-| **InPlace** | Yes (in-place) | No | Recommended for prod |
-| **InPlaceOrRecreate** | Yes (fallback) | Yes | Balanced approach |
-| **Recreate** | Yes | Yes | Use rarely |
-| **Auto** | Deprecated | Deprecated | Do not use |
-
-**Key distinction:** "Initial" only updates new pods, "InPlace" updates existing pods without eviction.
-
----
-
-## 5.0 Aurora Platform Defaults
-
-![bg left:20%](./img/canada-1.png)
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| VPA Version | 0.13.0 (appVersion 1.8.0) | Vertical Pod Autoscaler chart |
-| Namespace | vpa-system | VPA components deployment |
-| Metrics Server | Enabled | Required for VPA to collect usage metrics |
-| Admission Controller | Enabled | Mutating webhook for pod creation |
-| Prometheus/ServiceMonitor | Disabled | Can be enabled per workload |
-
-**Deployment:** Via aurora-core chart in `vpa-system` namespace
-
----
-
-## 6.0 How VPA Works: Three Components
-
-![bg left:20%](./img/canada-1.png)
-
-### 1. Recommender
-- Analyzes resource usage patterns over time
-- Calculates recommended resource requests/limits
-- Runs continuously, updates recommendations
-
-### 2. Updater
-- Checks VPA recommendations against current pod specs
-- Decides whether/when to update pods
-- Respects PDB, rollout status, replica count
-
-### 3. Admission Controller (Mutating Webhook)
-- Intercepts pod creation/update requests
-- Applies VPA recommendations at pod admission time
-- Ensures new pods get right-sized resources
-
----
-
-## 7.0 Enabling VPA on Your Workload
-
-![bg left:20%](./img/canada-1.png)
-
-### Step 1: Platform-Level (Already Done)
-```yaml
-# In config/config.yaml (aurora-core)
-components:
-  vpa:
-    enabled: true
-    metricsServer:
-      enabled: true  # Required
-```
-
-### Step 2: Workload-Level (Your Turn)
-```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: my-app-vpa
-  namespace: my-namespace
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: my-app
-  updatePolicy:
-    updateMode: "Initial"  # Or "InPlace"
-```
-
----
-
-## 8.0 VPA + HPA Integration
-
-![bg left:20%](./img/canada-1.png)
-
-### The Division of Responsibility:
-- **HPA** → Scales replicas (how many pods)
-- **VPA** → Scales resources (how much per pod)
-
-### Critical: Use `controlledResources`
-
-```yaml
-# HPA manages CPU scaling (replicas)
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-spec:
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-
-# VPA manages ONLY memory (avoid conflict)
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-spec:
-  resourcePolicy:
-    containerPolicies:
-      - containerName: "*"
-        controlledResources: ["memory"]  # VPA only manages memory
-```
-
----
-
-## 9.0 Production Guardrails
-
-![bg left:20%](./img/canada-1.png)
-
-### DO NOT:
-
-1. **Use Auto mode** - Deprecated and removed in future versions
-2. **Combine VPA with HPA on same resources** - Conflict inevitable
-3. **Enable VPA for batch jobs** - Use KEDA Jobs instead
-4. **Set minReplicaCount < 2 with Recreate** - Updater defaults to 2
-
-### DO:
-
-1. **Use Initial or InPlace mode** - Minimize disruption
-2. **Set controlledResources** - Avoid HPA/VPA conflicts
-3. **Monitor recommendations** - Check VPA status weekly
-4. **Use resource policy limits** - Define min/max bounds
-
----
-
-## 10.0 Troubleshooting
-
-![bg left:20%](./img/canada-1.png)
-
-### Problem: VPA not generating recommendations
-```bash
-# Check Metrics Server
-kubectl top nodes
-kubectl top pods -n my-namespace
-
-# Check VPA recommender logs
-kubectl logs -n vpa-system deployment/vpa-recommender
-```
-
-### Problem: Recommendations not applied
-```bash
-# Check VPA components running
-kubectl get pods -n vpa-system
-
-# Check admission controller
-kubectl logs -n vpa-system deployment/vpa-admission-controller
-```
-
-### Problem: Pods being evicted
-```bash
-# Check VPA mode
-kubectl get vpa my-app-vpa -o yaml
-
-# Consider switching to InPlace or Initial mode
-```
-
----
-
-## 11.0 Implementation Plan
-
-![bg left:20%](./img/canada-1.png)
-
-### Phase 1: Validation in DEV (Weeks 1-2)
-- Deploy VPA to Zone DEV
-- Apply baseline policies to test workloads
-- Monitor recommendations and overhead
-- Document findings
-
-### Phase 2: Production Readiness (Weeks 3-4)
-- Define SLOs for recommendation accuracy
-- Create documentation and runbooks
-- Create Terraform module for aurora-platform-charts
-- Integrate with cluster provisioning
-
-### Phase 3: Automation & Handover (Weeks 5-6)
-- CI/CD pipeline for VPA policy updates
-- Alerting on VPA issues
-- Training and documentation
-- Organization-wide rollout
-
----
-
-## 12.0 Conclusion
-
-![bg left:20%](./img/canada-1.png)
-
-- **What:** VPA is a Kubernetes-native tool for right-sizing container resources
-- **Why:** Reduces waste, improves cluster efficiency, complements HPA
-- **How:** Recommender analyzes → Updater applies → Admission controller enforces
-- **Next Step:** Deploy to DEV, validate with your workloads, share findings
-
-<blockquote>
-Right-size your resources, optimize your cluster, reduce costs.
-</blockquote>
-
----
-
-## References
-
-![bg left:20%](./img/canada-1.png)
-
-### VPA Documentation:
-1. <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA GitHub Repository</a>
-2. <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes Horizontal Pod Autoscaling</a>
-3. <a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Kubernetes Resource Management</a>
-
-### Aurora Platform:
-4. <a href="https://github.com/gccloudone-aurora/aurora-platform-charts">Aurora Platform Charts</a>
-5. VPA Implementation Issue #473
-6. VPA Documentation Epic #488
+|  | HPA | KEDA | VPA | Karpenter |
+|---|---|---|---|---|
+| **HPA** | OK (same resource) | CONFLICT (both scale replicas) | OK (divide resources) | Complementary |
+| **KEDA** | CONFLICT (both scale replicas) | OK (different scalers) | OK (divide resources) | Complementary |
+| **VPA** | OK (divide resources) | OK (divide resources) | CONFLICT (same pod) | Complementary |
+| **Karpenter** | Complementary | Complementary | Complementary | N/A |
 
 ---
 
@@ -445,283 +203,31 @@ make preview-en / preview-fr   # prévisualisation en direct des diapositives su
 
 ---
 
-## 1.0 Qu'est-ce que VPA?
+## Contenu détaillé
 
-**Vertical Pod Autoscaler (VPA):** Ajuste automatiquement les demandes de ressources CPU et mémoire *requests* pour vos conteneurs selon les modèles d'utilisation réels.
+Les détails techniques complets pour chaque outil, les exemples de code, les modèles de configuration et les directives de production se trouvent dans les diapositives de la présentation :
 
-![bg left:20%](./img/canada-1.png)
+- **Diapositives en anglais :** `content/slides-en.md`
+- **Diapositives en français :** `content/slides-fr.md`
 
-- Contrairement à HPA qui dimensionne les *réplicas*, VPA dimensionne les *demandes de ressources*
-- Fonctionne avec les Deployments, StatefulSets et DaemonSets
-- Deux phases: Recommandeur (analyse) + Updateur (applique)
-- Native Kubernetes via les Custom Resource Definitions
+Construisez et consultez-les localement avec `make preview-en` ou `make preview-fr`, ou consultez le site GitHub Pages en direct.
 
-<blockquote>
-HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
-</blockquote>
+### Référence rapide
 
-**En savoir plus :** <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA GitHub</a>
+| Axe | Outil | Scale | Niveau | Quand |
+|-----|-------|--------|--------|-------|
+| Taille du pod | VPA | Demandes de ressources | Pod | Historique d'utilisation ; dimensionnement |
+| Nombre de réplicas | HPA | Nombre (métrique fixe) | Pod | Métriques CPU/mémoire |
+| Nombre de réplicas | KEDA | Nombre (0→N événementiel) | Pod | Événements, files, horaires |
+| Infrastructure | Karpenter | Nombre de nœuds | Cluster | Pods en attente |
 
----
+### Matrice de conflit
 
-## 2.0 VPA vs HPA: Deux côtés du dimensionnement
-
-![bg left:20%](./img/canada-1.png)
-
-| Composant | Ce qu'il scale | Comment ça marche | Quand utiliser |
-|-----------|---------------|-------------------|----------------|
-| **HPA** | Nombre de réplicas | Scale les pods up/down selon les métriques | Utilisation CPU/mémoire, métriques personnalisées, mise à l'échelle hors heures de pointe |
-| **VPA** | Demandes de ressources par conteneur | Ajuste les demandes CPU/mémoire selon l'utilisation | Dimensionnement correct des ressources de conteneur, réduction de la sur-provisionnement |
-
-<blockquote>
-HPA répond "combien de pods?" VPA répond "combien de ressources par pod?"
-</blockquote>
+|  | HPA | KEDA | VPA | Karpenter |
+|---|---|---|---|---|
+| **HPA** | OK (même ressource) | CONFLIT (tous deux mettent à l'échelle les réplicas) | OK (ressources divisées) | Complémentaire |
+| **KEDA** | CONFLIT (tous deux mettent à l'échelle les réplicas) | OK (scaleurs différents) | OK (ressources divisées) | Complémentaire |
+| **VPA** | OK (ressources divisées) | OK (ressources divisées) | CONFLIT (même pod) | Complémentaire |
+| **Karpenter** | Complémentaire | Complémentaire | Complémentaire | N/A |
 
 ---
-
-## 3.0 Pourquoi VPA est important
-
-![bg left:20%](./img/canada-1.png)
-
-### Le problème des demandes de ressources:
-- Sur-provisionnement: 500m CPU quand 100m suffisent → capacité gaspillée
-- Sous-provisionnement: 100m CPU quand 500m sont nécessaires → limitation
-- Demandes statiques: Ne jamais ajuster après le déploiement
-
-### VPA résout cela:
-- **Surveillance continue:** Analyse les modèles d'utilisation au fil du temps
-- **Ajustement automatique:** Met à jour les demandes de ressources au fil du temps
-- **Dimensionnement correct:** Optimise l'utilisation des ressources du cluster
-
-<blockquote>
-Cesser de deviner, commencer à dimensionner avec des données.
-</blockquote>
-
----
-
-## 4.0 Modes VPA et modèles recommandés pour la production
-
-![bg left:20%](./img/canada-1.png)
-
-| Mode | Met à jour les pods existants | Éjecte les pods | Utilisation en production |
-|------|------------------------------|-----------------|---------------------------|
-| **Off** | Non | Non | Analyse seulement |
-| **Initial** | Non | Non | Recommandé pour prod |
-| **InPlace** | Oui (en place) | Non | Recommandé pour prod |
-| **InPlaceOrRecreate** | Oui (fallback) | Oui | Approche équilibrée |
-| **Recreate** | Oui | Oui | À utiliser rarement |
-| **Auto** | Déconseillé | Déconseillé | Ne pas utiliser |
-
-**Distinction clé:** "Initial" ne met à jour que les nouveaux pods, "InPlace" met à jour les pods existants sans les éjecter.
-
----
-
-## 5.0 Valeurs par défaut de la plateforme Aurora
-
-![bg left:20%](./img/canada-1.png)
-
-| Paramètre | Valeur | Description |
-|-----------|--------|-------------|
-| Version VPA | 0.13.0 (appVersion 1.8.0) | Chart Vertical Pod Autoscaler |
-| Espace de noms | vpa-system | Déploiement des composants VPA |
-| Metrics Server | Activé | Requis pour que VPA collecte les métriques d'utilisation |
-| Contrôleur d'admission | Activé | Webhook modifiant pour la création de pod |
-| Prometheus/ServiceMonitor | Désactivé | Peut être activé par workload |
-
-**Déploiement:** Via le chart aurora-core dans l'espace de noms `vpa-system`
-
----
-
-## 6.0 Comment VPA fonctionne: Trois composants
-
-![bg left:20%](./img/canada-1.png)
-
-### 1. Recommandeur
-- Analyse les modèles d'utilisation des ressources au fil du temps
-- Calcule les demandes de ressources recommandées
-- S'exécute en continu, met à jour les recommandations
-
-### 2. Updateur
-- Vérifie les recommandations VPA par rapport aux spécifications de pod actuelles
-- Décide s'il faut mettre à jour les pods et quand
-- Respecte les PDB, le statut du rollout et le nombre de réplicas
-
-### 3. Contrôleur d'admission (Webhook modificateur)
-- Intercepte les requêtes de création/mise à jour de pod
-- Applique les recommandations VPA au moment de l'admission du pod
-- Garantit que les nouveaux pods reçoivent des ressources adaptées
-
----
-
-## 7.0 Activer VPA sur votre workload
-
-![bg left:20%](./img/canada-1.png)
-
-### Étape 1: Niveau plateforme (déjà fait)
-```yaml
-# Dans config/config.yaml (aurora-core)
-components:
-  vpa:
-    enabled: true
-    metricsServer:
-      enabled: true  # Requis
-```
-
-### Étape 2: Niveau workload (à votre tour)
-```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: my-app-vpa
-  namespace: my-namespace
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: my-app
-  updatePolicy:
-    updateMode: "Initial"  # Ou "InPlace"
-```
-
----
-
-## 8.0 Intégration VPA + HPA
-
-![bg left:20%](./img/canada-1.png)
-
-### La division des responsabilités:
-- **HPA** → Sacle les réplicas (combien de pods)
-- **VPA** → Sacle les ressources (combien par pod)
-
-### Critique: Utiliser `controlledResources`
-
-```yaml
-# HPA gère le scaling CPU (réplicas)
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-spec:
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-
-# VPA gère SEULEMENT la mémoire (éviter le conflit)
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-spec:
-  resourcePolicy:
-    containerPolicies:
-      - containerName: "*"
-        controlledResources: ["memory"]  # VPA ne gère que la mémoire
-```
-
----
-
-## 9.0 Cadres de sécurité pour la production
-
-![bg left:20%](./img/canada-1.png)
-
-### NE PAS:
-
-1. **Utiliser le mode Auto** - Déconseillé et supprimé dans les versions futures
-2. **Combiner VPA avec HPA sur les mêmes ressources** - Conflit inévitable
-3. **Activer VPA pour les batch jobs** - Utiliser KEDA Jobs à la place
-4. **Définir minReplicaCount < 2 avec Recreate** - L'updateur par défaut est 2
-
-### FAIRE:
-
-1. **Utiliser les modes Initial ou InPlace** - Minimiser la perturbation
-2. **Définir controlledResources** - Éviter les conflits HPA/VPA
-3. **Surveiller les recommandations** - Vérifier l'état VPA hebdomadairement
-4. **Utiliser les limites de politiques de ressources** - Définir les bornes min/max
-
----
-
-## 10.0 Dépannage
-
-![bg left:20%](./img/canada-1.png)
-
-### Problème: VPA ne génère pas de recommandations
-```bash
-# Vérifier Metrics Server
-kubectl top nodes
-kubectl top pods -n my-namespace
-
-# Vérifier les journaux du recommandeur VPA
-kubectl logs -n vpa-system deployment/vpa-recommender
-```
-
-### Problème: Recommandations non appliquées
-```bash
-# Vérifier que les composants VPA sont en cours d'exécution
-kubectl get pods -n vpa-system
-
-# Vérifier le contrôleur d'admission
-kubectl logs -n vpa-system deployment/vpa-admission-controller
-```
-
-### Problème: Pods being éjectés
-```bash
-# Vérifier le mode VPA
-kubectl get vpa my-app-vpa -o yaml
-
-# Envisager de passer au mode InPlace ou Initial
-```
-
----
-
-## 11.0 Plan de mise en œuvre
-
-![bg left:20%](./img/canada-1.png)
-
-### Phase 1: Validation en DEV (semaines 1-2)
-- Déployer VPA dans Zone DEV
-- Appliquer les politiques de base aux workloads de test
-- Surveiller les recommandations et la surcharge
-- Documenter les résultats
-
-### Phase 2: Préparation à la production (semaines 3-4)
-- Définir les SLO pour la précision des recommandations
-- Créer la documentation et les livres de procédures
-- Créer le module Terraform pour aurora-platform-charts
-- Intégrer avec le provisionnement de cluster
-
-### Phase 3: Automatisation et transmission (semaines 5-6)
-- Pipeline CI/CD pour les mises à jour des politiques VPA
-- Alertes sur les problèmes VPA
-- Formation et documentation
-- Rollout organisationnel
-
----
-
-## 12.0 Conclusion
-
-![bg left:20%](./img/canada-1.png)
-
-- **Quoi:** VPA est un outil natif Kubernetes pour le dimensionnement correct des ressources de conteneur
-- **Pourquoi:** Réduit le gaspillage, améliore l'efficacité du cluster, complète HPA
-- **Comment:** Recommandeur analyse → Updateur applique → Contrôleur d'admission applique
-- **Prochaine étape:** Déployer dans DEV, valider avec vos workloads, partager les résultats
-
-<blockquote>
-Dimensionnez correctement vos ressources, optimisez votre cluster, réduisez les coûts.
-</blockquote>
-
----
-
-## Références
-
-![bg left:20%](./img/canada-1.png)
-
-### Documentation VPA:
-1. <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">Dépôt GitHub VPA</a>
-2. <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Dimensionnement horizontal des pods Kubernetes</a>
-3. <a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Gestion des ressources Kubernetes</a>
-
-### Plateforme Aurora:
-4. <a href="https://github.com/gccloudone-aurora/aurora-platform-charts">Charts de la plateforme Aurora</a>
-5. Problème d'implémentation VPA #473
-6. Épopée de documentation VPA #488

@@ -32,12 +32,12 @@ jobs:
         run: |
           mkdir -p temp
           cp -r img temp/
-          cat config/header.md content/slides-en.md > temp/slides-en-combined.md
+          cat config/header-en.md content/slides-en.md > temp/slides-en-combined.md
           marp --allow-local-files --pdf-outlines --pdf --output vpa-presentation-en.pdf temp/slides-en-combined.md
 
       - name: Build French PDF
         run: |
-          cat config/header.md content/slides-fr.md > temp/slides-fr-combined.md
+          cat config/header-fr.md content/slides-fr.md > temp/slides-fr-combined.md
           marp --allow-local-files --pdf-outlines --pdf --output vpa-presentation-fr.pdf temp/slides-fr-combined.md
 
       - name: Upload English PDF
