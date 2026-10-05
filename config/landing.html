@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPA Usage Guide - Aurora Platform</title>
+    <title>Scaling on Kubernetes - Aurora Platform</title>
     <style>
         * {
             margin: 0;
@@ -212,8 +212,8 @@
     <section class="hero">
         <div class="hero-content">
             <div class="status experimental">Version 1.0 - Experimental</div>
-            <h1>Vertical Pod Autoscaler</h1>
-            <p class="hero-subtitle">Usage Guide for Aurora Platform</p>
+            <h1>Scaling on Kubernetes</h1>
+            <p class="hero-subtitle">VPA, KEDA, and Karpenter on the Aurora Platform</p>
             <div class="hero-meta">
                 <strong>Aurora Platform Documentation</strong><br>
                 Statistics Canada | SSC Cloud Team | September 2026
@@ -228,13 +228,13 @@
     <section class="content">
         <div class="card">
             <h3>About This Presentation</h3>
-            <p>Comprehensive guidance on using Vertical Pod Autoscaler (VPA) on the Aurora Platform. This presentation covers:</p>
+            <p>A platform-team guide to the three autoscalers Aurora runs, and how they fit together. This presentation covers:</p>
             <ul>
-                <li>What VPA is and how it differs from HPA</li>
-                <li>Recommended VPA modes for production</li>
-                <li>Integration with HPA and KEDA</li>
-                <li>Production guardrails and anti-patterns</li>
-                <li>Troubleshooting common issues</li>
+                <li>VPA: right-sizing pod CPU/memory requests</li>
+                <li>KEDA: event- and schedule-driven replica scaling, including scale-to-zero</li>
+                <li>Karpenter: just-in-time node provisioning and consolidation</li>
+                <li>How the four scaling axes layer together</li>
+                <li>Interactions, conflict rules, and anti-patterns</li>
             </ul>
         </div>
 
@@ -252,9 +252,10 @@ make preview-fr  # Preview French slides in browser</code></pre>
         <div class="card">
             <h3>Documentation</h3>
             <ul>
-                <li><a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA GitHub Repository</a></li>
+                <li><a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA (kubernetes/autoscaler)</a></li>
+                <li><a href="https://keda.sh/docs/">KEDA Documentation</a></li>
+                <li><a href="https://karpenter.sh/">Karpenter Documentation</a></li>
                 <li><a href="https://github.com/gccloudone-aurora/aurora-platform-charts">Aurora Platform Charts</a></li>
-                <li><a href="https://github.com/gccloudone-aurora/docs-main/tree/main/initiatives/technical-alignment/docs/clients">VPA Usage Guide (Internal)</a></li>
             </ul>
         </div>
     </section>

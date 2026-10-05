@@ -2,9 +2,9 @@
 [English](#english) | [Français](#français)
 <a id="english"></a>
 
-# Vertical Pod Autoscaler (VPA) Usage Guide
+# Scaling on Kubernetes
 
-## Right-sizing Your Container Resources on Aurora Platform
+## VPA, KEDA, and Karpenter on the Aurora Platform
 
 **Date:** 2026-10-02  
 **Author:** Bryan Paget, Aurora Platform Team
@@ -13,7 +13,7 @@
 
 ## About This Repository
 
-This repository contains the source for a bilingual (English/French) presentation on Vertical Pod Autoscaler (VPA) usage for the Aurora Platform. It builds presentation slides (via [Marp](https://marp.app/)) and publishes the slides as HTML to GitHub Pages from the `docs/` folder.
+This repository contains the source for a bilingual (English/French) presentation, "Scaling on Kubernetes" - a platform-team guide to VPA, KEDA, and Karpenter on the Aurora Platform and how they interact. It builds presentation slides (via [Marp](https://marp.app/)) and publishes the slides as HTML to GitHub Pages from the `docs/` folder. (The repo is still named `vpa-presentation` for now; it may be renamed later.)
 
 | Path | Description |
 |------|-------------|
@@ -366,9 +366,9 @@ Right-size your resources, optimize your cluster, reduce costs.
 
 <a id="français"></a>
 
-# Guide d'utilisation du Vertical Pod Autoscaler (VPA)
+# Mise à l'échelle sur Kubernetes
 
-## Dimensionnement correct des ressources de vos conteneurs sur la plateforme Aurora
+## VPA, KEDA et Karpenter sur la plateforme Aurora
 
 **Date :** 2026-10-02  
 **Auteur :** Bryan Paget, Équipe Aurora Platform
@@ -377,7 +377,7 @@ Right-size your resources, optimize your cluster, reduce costs.
 
 ## À propos de ce dépôt
 
-Ce dépôt contient la source d'une présentation bilingue (anglais/français) sur l'utilisation du Vertical Pod Autoscaler (VPA) pour la plateforme Aurora. Il génère des diapositives de présentation (via [Marp](https://marp.app/)) et publie les diapositives en tant que HTML sur GitHub Pages à partir du dossier `docs/`.
+Ce dépôt contient la source d'une présentation bilingue (anglais/français), « Mise à l'échelle sur Kubernetes » - un guide pour l'équipe plateforme sur VPA, KEDA et Karpenter sur la plateforme Aurora et leurs interactions. Il génère des diapositives de présentation (via [Marp](https://marp.app/)) et publie les diapositives en tant que HTML sur GitHub Pages à partir du dossier `docs/`. (Le dépôt s'appelle encore `vpa-presentation` pour l'instant ; il pourra être renommé plus tard.)
 
 | chemin | description |
 |--------|-------------|

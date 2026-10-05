@@ -3,7 +3,7 @@ marp: true
 theme: default
 paginate: true
 backgroundColor: "#ffffff"
-header: "Guide d'utilisation VPA - Plateforme Aurora"
+header: "Mise à l'échelle sur Kubernetes - Plateforme Aurora"
 footer: "© Aurora - 2026"
 size: "16:9"
 style: |
@@ -20,12 +20,12 @@ style: |
 
 <br>
 
-# Vertical Pod Autoscaler (VPA)
-## Guide d'utilisation pour la plateforme Aurora
+# Mise à l'échelle sur Kubernetes
+## VPA, KEDA et Karpenter sur la plateforme Aurora
 
 <br>
 
 #### Aurora Platform Team 2026
 
-*Présenté par l'équipe Aurora Platform*
+*Mise à l'échelle des workloads et des nœuds : guide pour l'équipe plateforme*
 

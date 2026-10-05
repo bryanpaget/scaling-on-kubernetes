@@ -1,8 +1,10 @@
 # Presentation Build - Project Steering
 
-This repository is a bilingual (English/French) Marp presentation. These are the
-rules and facts a Kiro session needs before touching the build or re-theming the deck.
-Full detail is in #[[file:BUILD.md]].
+This repository is a bilingual (English/French) Marp presentation: "Scaling on
+Kubernetes" - a platform-team guide covering VPA, KEDA, and Karpenter and how they
+interact. (The repo is still named `vpa-presentation` for now; it may be renamed
+later.) These are the rules and facts a Kiro session needs before touching the build
+or re-theming the deck. Full detail is in #[[file:BUILD.md]].
 
 ## Build facts
 
@@ -37,6 +39,13 @@ Full detail is in #[[file:BUILD.md]].
 - Per-language title/frontmatter/footer: `config/header-en.md`, `config/header-fr.md`.
 - Landing page: `config/landing.html` (copied to `docs/index.html`).
 - Keep the English and French decks in sync (same slide count and structure).
+- Deck structure: intro (scaling-axes map + layering) -> Part 1 VPA -> Part 2 KEDA ->
+  Part 3 Karpenter -> Part 4 interactions/anti-patterns -> conclusion/references.
+- Content accuracy is sourced from local Aurora material, not guessed: the Karpenter
+  proposal and the VPA/KEDA usage guides in the `docs-main` repo (on branches
+  `proposal-karpenter` / `vpa-usage` / `keda-usage`), plus the `aurora-platform-charts`
+  repo (branches `add-vpa`, `add-keda`, `define-keda-patterns`). Pull current
+  CRD/API syntax from upstream docs before changing YAML; do not use stale syntax.
 
 ## Hard rules
 

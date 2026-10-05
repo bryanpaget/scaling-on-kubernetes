@@ -1,8 +1,9 @@
 # Build Architecture and Fork Guide
 
 This document explains how the presentation is built and how to fork this repo into
-a new topic (for example, turning the VPA deck into a Karpenter or KEDA deck). Read
-this before changing the build or re-theming.
+a new topic. The current deck is "Scaling on Kubernetes" (VPA, KEDA, and Karpenter on
+the Aurora Platform); the same build machinery works for any Marp deck. Read this
+before changing the build or re-theming.
 
 ---
 

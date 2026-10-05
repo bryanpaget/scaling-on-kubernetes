@@ -3,7 +3,7 @@ marp: true
 theme: default
 paginate: true
 backgroundColor: "#ffffff"
-header: "VPA Usage Guide - SSC Aurora Platform"
+header: "Scaling on Kubernetes - SSC Aurora Platform"
 footer: "© Aurora - 2026"
 size: "16:9"
 style: |
@@ -20,12 +20,12 @@ style: |
 
 <br>
 
-# Vertical Pod Autoscaler (VPA)
-## Usage Guide for Aurora Platform
+# Scaling on Kubernetes
+## VPA, KEDA, and Karpenter on the Aurora Platform
 
 <br>
 
 #### Aurora Platform Team 2026
 
-*Presented by the Aurora Platform Team*
+*Workload and node autoscaling: a platform team guide*
 

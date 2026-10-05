@@ -3,7 +3,7 @@ marp: true
 theme: default
 paginate: true
 backgroundColor: "#ffffff"
-header: "VPA Usage Guide - SSC Aurora Platform"
+header: "Scaling on Kubernetes - SSC Aurora Platform"
 footer: "© Aurora - 2026"
 size: "16:9"
 style: |
@@ -20,37 +20,96 @@ style: |
 
 <br>
 
-# Vertical Pod Autoscaler (VPA)
-## Usage Guide for Aurora Platform
+# Scaling on Kubernetes
+## VPA, KEDA, and Karpenter on the Aurora Platform
 
 <br>
 
 #### Aurora Platform Team 2026
 
-*Presented by the Aurora Platform Team*
+*Workload and node autoscaling: a platform team guide*
 
 ---
 
-<!-- Executive Summary -->
-## Executive Summary
+<!-- Overview -->
+## What This Covers
 
 ![bg left:20%](./img/aurora.png)
 
-- **What:** VPA automatically adjusts CPU and memory resource requests for your containers based on actual usage patterns
-- **Why:** Right-size resources to reduce waste and improve cluster efficiency while HPA handles replica scaling
-- **Risk:** Low - VPA is an open-source Kubernetes-native tool with proven stability; Aurora platform just needs to adopt it
-- **Cost:** Minimal - runs as system components, <1% overhead on control plane
+Three autoscalers Aurora runs, and how they fit together:
+
+- **VPA** - right-sizes pod CPU/memory requests
+- **KEDA** - event- and schedule-driven replica scaling (including scale-to-zero)
+- **Karpenter** - just-in-time node provisioning and consolidation
 
 <blockquote>
-Right-size your resources, not just your replicas.
+Different tools, different axes. The value is in how they combine.
 </blockquote>
+
+---
+
+<!-- Scaling axes map -->
+## The Scaling Map: Four Axes
+
+![bg left:20%](./img/aurora.png)
+
+| Tool | Scales | Level | Trigger |
+|------|--------|-------|---------|
+| **HPA** | Replica count | Pod | CPU/memory/metrics |
+| **VPA** | Resource requests | Pod | Usage history |
+| **KEDA** | Replica count (incl. 0) | Pod | Events, schedules, queues |
+| **Karpenter** | Nodes | Infrastructure | Pending pods |
+
+<blockquote>
+Workload scalers (HPA/VPA/KEDA) decide what pods need. Karpenter provides the capacity.
+</blockquote>
+
+---
+
+<!-- How they layer -->
+## How They Layer
+
+![bg left:20%](./img/aurora.png)
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">KEDA / HPA</div>
+    <div class="plate">Creates or removes pods</div>
+    <div class="plate">(replica count)</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">VPA</div>
+    <div class="plate">Sets each pod's</div>
+    <div class="plate">CPU / memory requests</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Karpenter</div>
+    <div class="plate">Provisions nodes to fit</div>
+    <div class="plate">the resulting pods</div>
+  </div>
+</div>
+
+<blockquote>
+Replica decisions and size decisions both become pending-pod demand that Karpenter satisfies.
+</blockquote>
+
+---
+
+<!-- ============================ PART 1: VPA ============================ -->
+<!-- VPA section divider -->
+# Part 1: VPA
+## Right-sizing pod resources
+
+![bg left:30%](./img/aurora.png)
 
 ---
 
 <!-- What is VPA? -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler (VPA):** Automatically adjusts CPU and memory resource *requests* for your containers
+**Vertical Pod Autoscaler:** automatically adjusts CPU and memory resource *requests* for your containers
 
 ![bg left:20%](./img/aurora.png)
 
@@ -63,24 +122,6 @@ Right-size your resources, not just your replicas.
 HPA scales how many, VPA scales how much.
 </blockquote>
 
-**Learn more:** <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA GitHub</a>
-
----
-
-<!-- VPA vs HPA -->
-## VPA vs HPA: Two Sides of Scaling
-
-| Component | What it Scales | How it Works | When to Use |
-|-----------|---------------|--------------|-------------|
-| **HPA** | Number of replicas | Scales pods up/down based on metrics | CPU/memory utilization, custom metrics, off-hours scaling |
-| **VPA** | Resource requests per container | Adjusts CPU/memory requests based on usage | Right-sizing container resources, reducing over-provisioning |
-
-![bg left:20%](./img/aurora.png)
-
-<blockquote>
-HPA answers "how many pods?" VPA answers "how much resources per pod?"
-</blockquote>
-
 ---
 
 <!-- Why VPA Matters -->
@@ -89,82 +130,18 @@ HPA answers "how many pods?" VPA answers "how much resources per pod?"
 ![bg left:20%](./img/aurora.png)
 
 ### The Resource Request Problem:
-- Over-provisioning: 500m CPU when 100m needed → wasted capacity
-- Under-provisioning: 100m CPU when 500m needed → throttling
-- Static requests: Never adjust after deployment
+- Over-provisioning: 500m CPU when 100m needed, wasted capacity
+- Under-provisioning: 100m CPU when 500m needed, throttling
+- Static requests never adjust after deployment
 
 ### VPA Solves This:
-- **Continuous monitoring:** Analyzes actual usage patterns
-- **Automatic adjustment:** Updates resource requests over time
-- **Right-sizing:** Optimizes cluster resource utilization
+- **Continuous monitoring:** analyzes actual usage patterns
+- **Automatic adjustment:** updates resource requests over time
+- **Right-sizing:** optimizes cluster resource utilization
 
 <blockquote>
 Stop guessing, start sizing with data.
 </blockquote>
-
----
-
-<!-- VPA Modes -->
-## VPA Modes: Choose Your Risk Profile
-
-![bg left:20%](./img/aurora.png)
-
-| Mode | Updates Existing Pods | Evicts Pods | Production Use |
-|------|----------------------|-------------|----------------|
-| **Off** | No | No | Analysis only |
-| **Initial** | No | No | Recommended for prod |
-| **InPlace** | Yes (in-place) | No | Recommended for prod |
-| **InPlaceOrRecreate** | Yes (fallback) | Yes | Balanced approach |
-| **Recreate** | Yes | Yes | Use rarely |
-| **Auto** | Deprecated | Deprecated | Do not use |
-
-**Key distinction:** "Initial" only updates new pods, "InPlace" updates existing pods without eviction.
-
----
-
-<!-- Recommended VPA Modes -->
-## Recommended VPA Modes for Production
-
-![bg left:20%](./img/aurora.png)
-
-### For Production Workloads:
-- **Initial** - Safe, applies only on pod creation
-- **InPlace** - Zero disruption, updates in-place when possible
-
-```yaml
-updatePolicy:
-  updateMode: "Initial"   # or "InPlace"
-```
-
----
-
-<!-- Recommended VPA Modes (dev) -->
-## VPA Modes for Development
-
-![bg left:20%](./img/aurora.png)
-
-### For Development/Testing:
-- **InPlaceOrRecreate** - Balanced, tries in-place first, falls back to recreate
-- **Recreate** - Most aggressive, evicts and recreates pods
-
-> **Caveat:** `InPlace` needs the `InPlacePodVerticalScaling` feature gate and a recent VPA. Without it, updates fall back to pod recreation.
-
----
-
-<!-- Platform Defaults -->
-## Aurora Platform Defaults
-
-![bg left:20%](./img/aurora.png)
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| VPA Version | 0.13.0 (appVersion 1.8.0) | Vertical Pod Autoscaler chart |
-| Namespace | vpa-system | VPA components deployment |
-| Metrics Server | Enabled | Required for VPA to collect usage metrics |
-| Admission Controller | Enabled | Mutating webhook for pod creation |
-| Prometheus/ServiceMonitor | Disabled | Can be enabled per workload |
-
-**Deployment:** Via aurora-core chart in `vpa-system` namespace
 
 ---
 
@@ -198,54 +175,58 @@ updatePolicy:
 
 ---
 
-<!-- VPA Lifecycle -->
-## VPA Lifecycle: Recommendation to Application
+<!-- VPA Modes -->
+## VPA Modes: Choose Your Risk Profile
 
 ![bg left:20%](./img/aurora.png)
 
-1. **Workload runs** → Metrics server collects usage
-2. **Recommender analyzes** → Calculates recommendations
-3. **VPA CRD updated** → Recommendations stored
-4. **New pods created** → Admission controller applies
-5. **Updater evaluates** → Decides when to update existing pods
+| Mode | Updates Existing Pods | Evicts Pods | Production Use |
+|------|----------------------|-------------|----------------|
+| **Off** | No | No | Analysis only |
+| **Initial** | No | No | Recommended for prod |
+| **InPlace** | Yes (in-place) | No | Recommended for prod |
+| **InPlaceOrRecreate** | Yes (fallback) | Yes | Balanced, dev/test |
+| **Recreate** | Yes | Yes | Use rarely |
+| **Auto** | Deprecated | Deprecated | Do not use |
 
-```yaml
-# Check recommendations
-kubectl describe vpa my-app-vpa
+**Key distinction:** "Initial" only updates new pods; "InPlace" updates existing pods without eviction.
 
-# Look for: recommendedContainerResources
-```
+> `InPlace` needs the `InPlacePodVerticalScaling` feature gate and a recent VPA, or it falls back to recreation.
 
 ---
 
-<!-- Enabling VPA -->
-## Enabling VPA on Your Workload
+<!-- Aurora VPA defaults -->
+## VPA on Aurora: Platform Defaults
 
 ![bg left:20%](./img/aurora.png)
 
-### Step 1: Platform-Level - Already Done
-VPA and Metrics Server are enabled in the aurora-core chart. Nothing for you to do here.
+| Setting | Value |
+|---------|-------|
+| VPA Version | 0.13.0 (appVersion 1.8.0) |
+| Namespace | vpa-system |
+| Metrics Server | Enabled (required) |
+| Admission Controller | Enabled (mutating webhook) |
+| Prometheus/ServiceMonitor | Disabled (opt-in per workload) |
 
-### Step 2: Workload-Level - Your Turn
-Create a `VerticalPodAutoscaler` pointing at your Deployment and pick an update mode. The full spec is on the next slide.
-
-> You only need `targetRef` + `updatePolicy` to start. Resource bounds are optional but recommended.
+**Deployment:** via the aurora-core chart. Platform-level enablement is already done.
 
 ---
 
-<!-- Full VPA Example -->
-## Full VPA Resource Example
+<!-- VPA example -->
+## VPA Example
 
 ![bg left:20%](./img/aurora.png)
 
 ```yaml
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
 spec:
   targetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: my-app
   updatePolicy:
-    updateMode: "Initial"
+    updateMode: "Initial"   # or "InPlace"
   resourcePolicy:
     containerPolicies:
       - containerName: "*"
@@ -254,110 +235,302 @@ spec:
         controlledResources: ["cpu", "memory"]
 ```
 
-**Bounds matter:** `maxAllowed` caps a runaway recommendation so VPA can't request a whole node; `minAllowed` keeps pods schedulable.
+**Bounds matter:** `maxAllowed` caps a runaway recommendation; `minAllowed` keeps pods schedulable.
 
 ---
 
-<!-- VPA + HPA Integration -->
-## VPA + HPA: Best Practice Pattern
+<!-- VPA limitations -->
+## VPA: When NOT to Use It
 
 ![bg left:20%](./img/aurora.png)
 
-### The Division of Responsibility:
-- **HPA** → Scales replicas (how many pods)
-- **VPA** → Scales resources (how much per pod)
+- **Spiky workloads:** VPA reacts to history; sudden bursts can be under-provisioned until it catches up
+- **JVM / heap-tuned apps:** changing memory requests does not change `-Xmx`; size the runtime, not just the pod
+- **Eviction-sensitive workloads:** avoid `Recreate` where restarts are costly
+- **Batch / short-lived jobs:** use KEDA Jobs; VPA needs time to observe usage
+- **Same resource as HPA/KEDA:** never let two controllers fight over the same resource (see Part 4)
 
-### Critical: split the resource each controls
+---
+
+<!-- ============================ PART 2: KEDA ============================ -->
+<!-- KEDA section divider -->
+# Part 2: KEDA
+## Event- and schedule-driven replica scaling
+
+![bg left:30%](./img/aurora.png)
+
+---
+
+<!-- What is KEDA -->
+## What is KEDA?
+
+**Kubernetes Event-Driven Autoscaler:** scales replica count based on events, queues, or schedules
+
+![bg left:20%](./img/aurora.png)
+
+- Scales on external signals: Kafka lag, queue depth, cron, custom metrics
+- Can **scale to zero** when there is nothing to do
+- Drives a standard HPA under the hood (you do not create the HPA yourself)
+- Config via `ScaledObject` (long-running) or `ScaledJob` (batch)
+
+<blockquote>
+HPA reacts to CPU. KEDA reacts to the thing that actually drives your load.
+</blockquote>
+
+---
+
+<!-- KEDA Aurora defaults -->
+## KEDA on Aurora: Platform Defaults
+
+![bg left:20%](./img/aurora.png)
+
+| Setting | Value |
+|---------|-------|
+| KEDA Version | 2.20.2 |
+| Namespace | keda-system |
+| Metrics Server | Enabled (required) |
+| Prometheus/ServiceMonitor | Disabled (opt-in per workload) |
+
+**Two ways to use it:**
+- **Platform-native off-hours scaling** (recommended): set `offHoursScaling` in the aurora-namespace chart; ScaledObjects are generated for you
+- **Manual ScaledObject:** for events, queues, or custom logic
+
+---
+
+<!-- KEDA platform-native -->
+## KEDA: Platform-Native Off-Hours Scaling
+
+![bg left:20%](./img/aurora.png)
+
+Recommended for standard business-hours scaling. Disabled by default.
 
 ```yaml
-# HPA scales replicas on CPU
-spec:
-  metrics:
-    - type: Resource
-      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+offHoursScaling:
+  enabled: true
+  defaultSchedule:
+    start: "0 7 * * 1-5"        # Mon-Fri 7:00
+    end: "0 19 * * 1-5"         # Mon-Fri 19:00
+    timezone: "America/Toronto"
+  minReplicas: 1                # keep 1 outside hours (prod)
+  workloads:
+    - name: my-api
+      businessHoursReplicas: 2
+```
 
-# VPA manages ONLY memory - no overlap, no conflict
+The chart generates compliant ScaledObjects, labels, and annotations for you.
+
+---
+
+<!-- KEDA manual -->
+## KEDA: Manual ScaledObject
+
+![bg left:20%](./img/aurora.png)
+
+For events, queues, or scale-to-zero (non-prod).
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
 spec:
-  resourcePolicy:
-    containerPolicies:
-      - containerName: "*"
-        controlledResources: ["memory"]
+  scaleTargetRef:
+    name: my-app-deployment
+  minReplicaCount: 0            # scale to zero (non-prod only)
+  maxReplicaCount: 5
+  cooldownPeriod: 300
+  triggers:
+    - type: cron
+      metadata:
+        timezone: America/Toronto
+        start: "0 6 * * 1-5"
+        end: "0 20 * * 1-5"
+        desiredReplicas: "3"
 ```
 
 ---
 
-<!-- Production Guardrails -->
-## Production Guardrails
+<!-- KEDA limitations -->
+## KEDA: Production Guardrails
 
 ![bg left:20%](./img/aurora.png)
 
 ### DO NOT:
-
-1. **Use Auto mode** - Deprecated
-2. **Combine VPA with HPA on same resources** - Conflict inevitable
-3. **Enable VPA for batch jobs** - Use KEDA Jobs instead
-4. **Set minReplicaCount < 2 with Recreate** - Updater defaults to 2
+- **Scale to zero in production** - keep `minReplicaCount: 1`+
+- **Mix cron with CPU/memory triggers** - HPA takes the MAX, scaling gets unpredictable
+- **Create your own HPA** for a KEDA-managed workload - KEDA owns it
+- **Use short cooldowns** - use 300s+ in production
 
 ### DO:
-
-1. **Use Initial or InPlace mode** - Minimize disruption
-2. **Set controlledResources** - Avoid HPA/VPA conflicts
-3. **Monitor recommendations** - Check VPA status weekly
-4. **Use resource policy limits** - Define min/max bounds
+- Add `terminationGracePeriodSeconds` for long-running consumers
+- Use `ScaledJob` for event-processing batch work
+- Validate across a full 24-hour cycle in non-prod
 
 ---
 
-<!-- Common Problems -->
-## Troubleshooting: Common Issues
+<!-- ============================ PART 3: Karpenter ============================ -->
+<!-- Karpenter section divider -->
+# Part 3: Karpenter
+## Just-in-time node provisioning
+
+![bg left:30%](./img/aurora.png)
+
+---
+
+<!-- What is Karpenter -->
+## What is Karpenter?
+
+**Cloud-agnostic node autoscaler:** provisions nodes just-in-time for pending pods, then consolidates
 
 ![bg left:20%](./img/aurora.png)
 
-| Symptom | First thing to check |
-|---------|----------------------|
-| No recommendations | `kubectl top nodes` (Metrics Server up?) then recommender logs |
-| Recommendations not applied | `kubectl get pods -n vpa-system` (admission controller running?) |
-| Pods being evicted | `kubectl get vpa my-app-vpa -o yaml` - switch to Initial or InPlace |
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">Watch</div>
+    <div class="plate">Pod the scheduler</div>
+    <div class="plate">cannot place</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Provision</div>
+    <div class="plate">Cheapest node</div>
+    <div class="plate">that fits the pod</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Consolidate</div>
+    <div class="plate">Repack workloads</div>
+    <div class="plate">Remove idle nodes</div>
+  </div>
+</div>
 
-```bash
-kubectl logs -n vpa-system deployment/vpa-recommender
+<blockquote>
+Cluster Autoscaler scales pre-defined pools. Karpenter picks the right node per demand, then tidies up.
+</blockquote>
+
+---
+
+<!-- Karpenter why -->
+## Why Karpenter over Cluster Autoscaler
+
+![bg left:20%](./img/aurora.png)
+
+| Aspect | Cluster Autoscaler | Karpenter |
+|--------|-------------------|-----------|
+| Pre-provisioning | Entire node pool | Single node that fits |
+| Instance selection | First SKU in policy | Cheapest that fits |
+| Consolidation | Empty pools only | Continuous repacking |
+| Multi-family | Static pool | Many families, spot + on-demand |
+| Provisioning speed | Minutes | ~45-60s (vendor benchmark) |
+
+> Estimated 20-40% cost reduction vs Cluster Autoscaler (external benchmark - validate in a pilot).
+
+---
+
+<!-- Karpenter NodePool -->
+## Karpenter: NodePool as Source of Truth
+
+![bg left:20%](./img/aurora.png)
+
+Define intent once; deploy on every platform (AWS/Azure/on-prem natively, GKE via the CloudPilot provider).
+
+```yaml
+apiVersion: karpenter.sh/v1
+kind: NodePool
+spec:
+  template:
+    spec:
+      requirements:
+        - key: "karpenter.sh/capacity-type"
+          operator: In
+          values: ["spot", "on-demand"]   # prefer spot
+        - key: "kubernetes.io/arch"
+          operator: In
+          values: ["amd64"]
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 30m    # tune to workload churn tolerance
+  limits:
+    cpu: "1000"
 ```
 
 ---
 
-<!-- Validation Checklist -->
-## Validation and Observability
+<!-- Karpenter Aurora -->
+## Karpenter on Aurora: The Plan
 
 ![bg left:20%](./img/aurora.png)
 
-### End-to-end check: are recommendations being applied?
-```bash
-kubectl rollout restart deployment/my-app
-kubectl describe pod -l app=my-app   # confirm requests changed
-```
+- **Standard everywhere:** one NodePool/NodeClaim model across AWS, Azure, on-prem, GKE
+- **AWS / Azure / on-prem:** first-party providers (Karpenter v1 is GA)
+- **GKE:** no first-party provider; run via the open-source CloudPilot AI GCP provider (same APIs)
+- **Fallback:** native GKE NAP + Custom Compute Classes, kept ready if the provider is unsuitable
 
-### What to watch in production:
-- **Recommendation vs actual requests** - large gaps mean drift
-- **Eviction count** (Recreate modes) - spikes mean disruption
-- **Recommender lag** - stale recommendations after load changes
-
-> Enable the Prometheus/ServiceMonitor (off by default) to track these over time.
+> GKE provider is pre-1.0 and community-maintained: pin the version, scan it, keep the NAP fallback. Pilot before any production cutover.
 
 ---
 
-<!-- Next Steps -->
-## Next Steps and Open Questions
+<!-- Karpenter limitations -->
+## Karpenter: Risks and Caveats
 
 ![bg left:20%](./img/aurora.png)
 
-### Immediate Actions:
-1. **Review and approve** this presentation and documentation
-2. **Deploy VPA to DEV** for testing with your workloads
-3. **Share feedback** on recommended practices
+- **GKE dependency:** the CloudPilot provider is pre-1.0; breaking changes happen (track `MIGRATION.md`)
+- **Node churn:** aggressive consolidation disrupts pods; tune `consolidateAfter` and use PDBs
+- **Cost figures are benchmarks**, not Aurora measurements; establish your own baseline first
+- **Model change:** switching autoscalers is done at cluster creation, not mid-workload
+- **Set `limits`** so a runaway workload cannot provision unbounded capacity
 
-### Questions for Investigation:
-- Typical recommendation accuracy over time?
-- How recommendations change with workload patterns?
-- Optimal VPA update frequency?
+---
+
+<!-- ============================ PART 4: Interactions ============================ -->
+<!-- Interactions divider -->
+# Part 4: Putting It Together
+## Interactions and anti-patterns
+
+![bg left:30%](./img/aurora.png)
+
+---
+
+<!-- The combined picture -->
+## The Combined Picture
+
+![bg left:20%](./img/aurora.png)
+
+1. **KEDA / HPA** decide replica count from events or schedules
+2. **VPA** sets each pod's CPU/memory requests from usage history
+3. Those pods become scheduling demand
+4. **Karpenter** provisions the cheapest nodes that fit, then consolidates as demand changes
+
+<blockquote>
+Replica count x per-pod size = the pending-pod demand Karpenter satisfies. All three feed one pipeline.
+</blockquote>
+
+---
+
+<!-- Conflict rules -->
+## The Rules That Keep Them From Fighting
+
+![bg left:20%](./img/aurora.png)
+
+| Pair | Rule |
+|------|------|
+| **VPA + HPA** | Never on the same resource. VPA = memory, HPA = CPU (`controlledResources`) |
+| **VPA + KEDA** | Same rule: KEDA is HPA underneath, so split the resource. Safe pairing otherwise |
+| **KEDA + own HPA** | Do not create your own HPA; KEDA owns it (`transfer-hpa-ownership` if needed) |
+| **VPA + Karpenter** | Complementary: VPA changes requests, Karpenter repacks. Set VPA `maxAllowed` and NodePool `limits` |
+| **KEDA 0 + Karpenter** | Scale-to-zero + consolidation empties and removes nodes. Powerful, but watch cold-start latency |
+
+---
+
+<!-- Anti-patterns -->
+## Anti-Patterns to Avoid
+
+![bg left:20%](./img/aurora.png)
+
+- **VPA and HPA/KEDA on the same metric** - they oscillate against each other
+- **VPA `Recreate` on eviction-sensitive workloads** - prefer Initial/InPlace
+- **Scale-to-zero in production** without accounting for cold start
+- **No `maxAllowed` / no NodePool `limits`** - a bad recommendation can request a whole node, and Karpenter will provision it
+- **Aggressive consolidation without PDBs** - node churn disrupts workloads
 
 ---
 
@@ -366,13 +539,13 @@ kubectl describe pod -l app=my-app   # confirm requests changed
 
 ![bg left:20%](./img/aurora.png)
 
-- **What:** VPA is a Kubernetes-native tool for right-sizing container resources
-- **Why:** Reduces waste, improves cluster efficiency, complements HPA
-- **How:** Recommender analyzes, Updater applies, Admission controller enforces
-- **Next Step:** Deploy to DEV, validate with workloads, share findings
+- **VPA** right-sizes pods (how much)
+- **KEDA** scales replicas on real demand, including to zero (how many)
+- **Karpenter** provisions and consolidates nodes (what capacity)
+- **Together** they form one pipeline: keep them off each other's axes and they compound
 
 <blockquote>
-Right-size your resources, optimize your cluster, reduce costs.
+Right-size the pods, scale on real demand, provision only what fits.
 </blockquote>
 
 ---
@@ -382,29 +555,11 @@ Right-size your resources, optimize your cluster, reduce costs.
 
 ![bg left:20%](./img/aurora.png)
 
-### VPA Documentation:
-1. <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA GitHub Repository</a>
-2. <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes Horizontal Pod Autoscaling</a>
-3. <a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Kubernetes Resource Management</a>
+### Upstream:
+1. <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA (kubernetes/autoscaler)</a>
+2. <a href="https://keda.sh/docs/">KEDA documentation</a>
+3. <a href="https://karpenter.sh/">Karpenter documentation</a>
 
 ### Aurora Platform:
 4. <a href="https://github.com/gccloudone-aurora/aurora-platform-charts">Aurora Platform Charts</a>
-5. VPA Implementation Issue #473
-6. VPA Documentation Epic #488
-
----
-
-<!-- Limitations -->
-## Limitations: When NOT to Use VPA
-
-![bg left:20%](./img/aurora.png)
-
-- **Spiky workloads:** VPA reacts to history, so sudden bursts can be under-provisioned until it catches up
-- **JVM / heap-tuned apps:** changing memory requests does not change `-Xmx`; size the runtime, not just the pod
-- **Eviction-sensitive workloads:** avoid `Recreate` where restarts are costly; prefer `Initial` or `InPlace`
-- **Batch / short-lived jobs:** use KEDA Jobs instead; VPA needs time to observe usage
-- **Same resource as HPA:** never let both control the same resource (see integration slide)
-
-<blockquote>
-VPA optimizes steady-state workloads. For bursty or restart-sensitive apps, use it carefully or not at all.
-</blockquote>
+5. VPA / KEDA usage guides and the Karpenter autoscaling proposal (docs-main)
