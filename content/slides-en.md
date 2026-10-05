@@ -97,24 +97,24 @@ Stop guessing, start sizing with data.
 ![bg left:20%](./img/aurora.png)
 
 ### For Production Workloads:
-1. **Initial** - Safe, applies only on pod creation
-2. **InPlace** - Zero disruption, updates in-place when possible
+- **Initial** - Safe, applies only on pod creation
+- **InPlace** - Zero disruption, updates in-place when possible
 
 ```yaml
-# Initial mode - apply only on pod creation
 updatePolicy:
-  updateMode: "Initial"
+  updateMode: "Initial"   # or "InPlace"
 ```
 
-```yaml
-# InPlace mode - try in-place update, never evict
-updatePolicy:
-  updateMode: "InPlace"
-```
+---
+
+<!-- Recommended VPA Modes (dev) -->
+## VPA Modes for Development
+
+![bg left:20%](./img/aurora.png)
 
 ### For Development/Testing:
-- **InPlaceOrRecreate** - Balanced, tries in-place first
-- **Recreate** - Most aggressive, evicts and recreates
+- **InPlaceOrRecreate** - Balanced, tries in-place first, falls back to recreate
+- **Recreate** - Most aggressive, evicts and recreates pods
 
 > **Caveat:** `InPlace` needs the `InPlacePodVerticalScaling` feature gate and a recent VPA. Without it, updates fall back to pod recreation.
 
@@ -192,31 +192,13 @@ kubectl describe vpa my-app-vpa
 
 ![bg left:20%](./img/aurora.png)
 
-### Step 1: Platform-Level (Already Done)
-```yaml
-# In config/config.yaml (aurora-core)
-components:
-  vpa:
-    enabled: true
-    metricsServer:
-      enabled: true  # Required
-```
+### Step 1: Platform-Level - Already Done
+VPA and Metrics Server are enabled in the aurora-core chart. Nothing for you to do here.
 
-### Step 2: Workload-Level (Your Turn)
-```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: my-app-vpa
-  namespace: my-namespace
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: my-app
-  updatePolicy:
-    updateMode: "Initial"  # Or "InPlace"
-```
+### Step 2: Workload-Level - Your Turn
+Create a `VerticalPodAutoscaler` pointing at your Deployment and pick an update mode. The full spec is on the next slide.
+
+> You only need `targetRef` + `updatePolicy` to start. Resource bounds are optional but recommended.
 
 ---
 
@@ -299,31 +281,14 @@ spec:
 
 ![bg left:20%](./img/aurora.png)
 
-### Problem: VPA not generating recommendations
-```bash
-# Check Metrics Server
-kubectl top nodes
-kubectl top pods -n my-namespace
+| Symptom | First thing to check |
+|---------|----------------------|
+| No recommendations | `kubectl top nodes` (Metrics Server up?) then recommender logs |
+| Recommendations not applied | `kubectl get pods -n vpa-system` (admission controller running?) |
+| Pods being evicted | `kubectl get vpa my-app-vpa -o yaml` - switch to Initial or InPlace |
 
-# Check VPA recommender logs
+```bash
 kubectl logs -n vpa-system deployment/vpa-recommender
-```
-
-### Problem: Recommendations not applied
-```bash
-# Check VPA components running
-kubectl get pods -n vpa-system
-
-# Check admission controller
-kubectl logs -n vpa-system deployment/vpa-admission-controller
-```
-
-### Problem: Pods being evicted
-```bash
-# Check VPA mode
-kubectl get vpa my-app-vpa -o yaml
-
-# Consider switching to InPlace or Initial mode
 ```
 
 ---
@@ -345,31 +310,6 @@ kubectl describe pod -l app=my-app   # confirm requests changed
 - **Recommender lag** - stale recommendations after load changes
 
 > Enable the Prometheus/ServiceMonitor (off by default) to track these over time.
-
----
-
-<!-- Implementation Plan -->
-## Implementation Plan
-
-![bg left:20%](./img/aurora.png)
-
-### Phase 1: Validation in DEV (Weeks 1-2)
-- Deploy VPA to Zone DEV
-- Apply baseline policies to test workloads
-- Monitor recommendations and overhead
-- Document findings
-
-### Phase 2: Production Readiness (Weeks 3-4)
-- Define SLOs for recommendation accuracy
-- Create documentation and runbooks
-- Create Terraform module for aurora-platform-charts
-- Integrate with cluster provisioning
-
-### Phase 3: Automation & Handover (Weeks 5-6)
-- CI/CD pipeline for VPA policy updates
-- Alerting on VPA issues
-- Training and documentation
-- Organization-wide rollout
 
 ---
 

@@ -128,24 +128,24 @@ Cesser de deviner, commencer à dimensionner avec des données.
 ![bg left:20%](./img/aurora.png)
 
 ### Pour les workloads en production:
-1. **Initial** - Sécurisé, s'applique uniquement à la création du pod
-2. **InPlace** - Sans perturbation, met à jour en place quand possible
+- **Initial** - Sécurisé, s'applique uniquement à la création du pod
+- **InPlace** - Sans perturbation, met à jour en place quand possible
 
 ```yaml
-# Mode Initial - appliquer uniquement à la création du pod
 updatePolicy:
-  updateMode: "Initial"
+  updateMode: "Initial"   # ou "InPlace"
 ```
 
-```yaml
-# Mode InPlace - essayer la mise à jour en place, ne pas éjecter
-updatePolicy:
-  updateMode: "InPlace"
-```
+---
+
+<!-- Recommended VPA Modes (dev) -->
+## Modes VPA pour le développement
+
+![bg left:20%](./img/aurora.png)
 
 ### Pour le développement/les tests:
-- **InPlaceOrRecreate** - Équilibré, essaie d'abord en place
-- **Recreate** - Plus agressif, éjecte et recrée
+- **InPlaceOrRecreate** - Équilibré, essaie d'abord en place, puis recrée
+- **Recreate** - Plus agressif, éjecte et recrée les pods
 
 > **Mise en garde :** `InPlace` nécessite le feature gate `InPlacePodVerticalScaling` et une version VPA récente. Sans cela, les mises à jour recréent le pod.
 
@@ -223,31 +223,13 @@ kubectl describe vpa my-app-vpa
 
 ![bg left:20%](./img/aurora.png)
 
-### Étape 1: Niveau plateforme (déjà fait)
-```yaml
-# Dans config/config.yaml (aurora-core)
-components:
-  vpa:
-    enabled: true
-    metricsServer:
-      enabled: true  # Requis
-```
+### Étape 1: Niveau plateforme - déjà fait
+VPA et Metrics Server sont activés dans le chart aurora-core. Rien à faire de votre côté.
 
-### Étape 2: Niveau workload (à votre tour)
-```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: my-app-vpa
-  namespace: my-namespace
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: my-app
-  updatePolicy:
-    updateMode: "Initial"  # Ou "InPlace"
-```
+### Étape 2: Niveau workload - à votre tour
+Créez un `VerticalPodAutoscaler` pointant vers votre Deployment et choisissez un mode de mise à jour. Le spec complet est sur la diapositive suivante.
+
+> `targetRef` + `updatePolicy` suffisent pour démarrer. Les bornes de ressources sont optionnelles mais recommandées.
 
 ---
 
@@ -330,31 +312,14 @@ spec:
 
 ![bg left:20%](./img/aurora.png)
 
-### Problème: VPA ne génère pas de recommandations
-```bash
-# Vérifier Metrics Server
-kubectl top nodes
-kubectl top pods -n my-namespace
+| Symptôme | Première chose à vérifier |
+|----------|---------------------------|
+| Aucune recommandation | `kubectl top nodes` (Metrics Server actif?) puis journaux du recommandeur |
+| Recommandations non appliquées | `kubectl get pods -n vpa-system` (contrôleur d'admission actif?) |
+| Pods éjectés | `kubectl get vpa my-app-vpa -o yaml` - passer en Initial ou InPlace |
 
-# Vérifier les journaux du recommandeur VPA
+```bash
 kubectl logs -n vpa-system deployment/vpa-recommender
-```
-
-### Problème: Recommandations non appliquées
-```bash
-# Vérifier que les composants VPA sont en cours d'exécution
-kubectl get pods -n vpa-system
-
-# Vérifier le contrôleur d'admission
-kubectl logs -n vpa-system deployment/vpa-admission-controller
-```
-
-### Problème: Pods éjectés
-```bash
-# Vérifier le mode VPA
-kubectl get vpa my-app-vpa -o yaml
-
-# Envisager de passer au mode InPlace ou Initial
 ```
 
 ---
@@ -376,31 +341,6 @@ kubectl describe pod -l app=my-app   # confirmer que les demandes ont changé
 - **Latence du recommandeur** - recommandations périmées après un changement de charge
 
 > Activez le Prometheus/ServiceMonitor (désactivé par défaut) pour suivre ces signaux dans le temps.
-
----
-
-<!-- Implementation Plan -->
-## Plan de mise en œuvre
-
-![bg left:20%](./img/aurora.png)
-
-### Phase 1: Validation en DEV (semaines 1-2)
-- Déployer VPA dans Zone DEV
-- Appliquer les politiques de base aux workloads de test
-- Surveiller les recommandations et la surcharge
-- Documenter les résultats
-
-### Phase 2: Préparation à la production (semaines 3-4)
-- Définir les SLO pour la précision des recommandations
-- Créer la documentation et les livres de procédures
-- Créer le module Terraform pour aurora-platform-charts
-- Intégrer avec le provisionnement de cluster
-
-### Phase 3: Automatisation et transmission (semaines 5-6)
-- Pipeline CI/CD pour les mises à jour des politiques VPA
-- Alertes sur les problèmes VPA
-- Formation et documentation
-- Rollout organisationnel
 
 ---
 
