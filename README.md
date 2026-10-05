@@ -22,14 +22,14 @@ This repository contains the source for a bilingual (English/French) presentatio
 | `config/header-en.md` | English Marp theme and front-matter (title slide) |
 | `config/header-fr.md` | French Marp theme and front-matter (title slide) |
 | `config/landing.html` | GitHub Pages landing page (copied to `docs/index.html`) |
-| `build-html.mjs` | HTML build script (Marp Core render + aurora theme); run by `make html` |
+| `postprocess.mjs` | Injects the aurora theme and code sizing into the Marp CLI output; run by `make html` |
 | `BUILD.md` | Build architecture and fork/re-theme guide |
 | `img/` | Slide images |
 | `docs/` | Generated GitHub Pages site (built via `make html`, committed) |
 | `.github/workflows/` | CI (build) and release workflows |
 
 > **Build details:** See [`BUILD.md`](BUILD.md) for how the build works, why it uses
-> `build-html.mjs` instead of the Marp CLI, where the theme lives, and a step-by-step
+> the Marp CLI plus a post-processor (`postprocess.mjs`), where the theme lives, and a step-by-step
 > guide to forking this repo into a new topic.
 
 **View the slides online:** <https://github.com/gccloudone-aurora/vpa-presentation/>
@@ -386,14 +386,14 @@ Ce dépôt contient la source d'une présentation bilingue (anglais/français) s
 | `config/header-en.md` | Thème Marp et front-matter en anglais (diapositive titre) |
 | `config/header-fr.md` | Thème Marp et front-matter en français (diapositive titre) |
 | `config/landing.html` | Page d'accueil GitHub Pages (copiée dans `docs/index.html`) |
-| `build-html.mjs` | Script de build HTML (rendu Marp Core + thème aurora); exécuté par `make html` |
+| `postprocess.mjs` | Injecte le thème aurora et le dimensionnement du code dans la sortie du CLI Marp; exécuté par `make html` |
 | `BUILD.md` | Guide d'architecture du build et de fork/re-theme |
 | `img/` | Images des diapositives |
 | `docs/` | Site GitHub Pages généré (construit via `make html`, commit) |
 | `.github/workflows/` | CI (build) et workflows de release |
 
 > **Détails du build :** Voir [`BUILD.md`](BUILD.md) pour le fonctionnement du build,
-> pourquoi il utilise `build-html.mjs` plutôt que la CLI Marp, où se trouve le thème,
+> pourquoi il utilise le CLI Marp plus un post-processeur (`postprocess.mjs`), où se trouve le thème,
 > et un guide étape par étape pour forker ce dépôt vers un nouveau sujet.
 
 **Voir les diapositives en ligne :** <https://github.com/gccloudone-aurora/vpa-presentation/>

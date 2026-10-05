@@ -8,10 +8,5 @@
   },
   "devDependencies": {
     "@marp-team/marp-cli": "^4.5.1"
-  },
-  "dependencies": {
-    "@marp-team/marp-core": "^5.0.2",
-    "beautiful-mermaid": "^1.1.3",
-    "shiki": "^4.5.0"
   }
 }

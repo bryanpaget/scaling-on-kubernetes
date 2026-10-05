@@ -70,7 +70,11 @@ report-en:
 html: setup combine-en combine-fr
 	@echo "Building HTML presentations into $(SITE_DIR)/ for GitHub Pages..."
 	mkdir -p $(SITE_DIR)
-	node build-html.mjs
+	@echo "Rendering clickable (bespoke) presentations via Marp CLI..."
+	-timeout 120 npx marp --html --bespoke.progress --allow-local-files --output $(SITE_DIR)/en.html $(COMBINED_MD_EN)
+	-timeout 120 npx marp --html --bespoke.progress --allow-local-files --output $(SITE_DIR)/fr.html $(COMBINED_MD_FR)
+	@echo "Injecting aurora theme and code sizing..."
+	node postprocess.mjs $(SITE_DIR)/en.html $(SITE_DIR)/fr.html
 	cp $(LANDING_PAGE) $(SITE_DIR)/index.html
 	@mkdir -p $(SITE_DIR)/img
 	@cp -r $(IMG_DIR)/* $(SITE_DIR)/img/ 2>/dev/null || true

@@ -28,36 +28,44 @@ make html
 Which runs, in order:
 1. `combine-en` / `combine-fr` - concatenate the header file and the slides file into
    `temp/slides-*-combined.md` (a plain `cat`).
-2. `node build-html.mjs` - render each combined Markdown file to a full HTML document.
-3. Copy `config/landing.html` to `docs/index.html` and copy `img/` into `docs/img/`.
+2. `npx marp --html ...` (Marp CLI) - render each combined Markdown file into a full,
+   clickable "bespoke" presentation (slide-by-slide, arrow-key navigation).
+3. `node postprocess.mjs` - inject the aurora theme CSS and tag large code blocks.
+4. Copy `config/landing.html` to `docs/index.html` and copy `img/` into `docs/img/`.
 
-### Why `build-html.mjs` instead of `npx marp`
+### Why the Marp CLI + a post-processor
 
 This is the single most important thing to understand, and it cost a lot of time to
 work out:
 
-- The HTML build uses **Marp Core (the library)** directly, not the **Marp CLI**.
-- `marp.render(markdown)` returns `html` and `css` **separately**. The CSS must be
-  injected into a `<style>` tag in a hand-assembled HTML document. If you skip that,
-  the slides render with no styling (the "missing CSS / everything is broken" symptom).
-- `build-html.mjs` assembles a complete `<!DOCTYPE html>` document: `<head>` with the
-  Marp CSS plus our extra theme CSS, then `<body>` with the rendered slide HTML.
+- The HTML build uses the **Marp CLI** (`npx marp`), NOT the Marp Core library directly.
+- The CLI output includes the **bespoke player**: the JavaScript and CSS that make the
+  deck a clickable, one-slide-at-a-time presentation. If you render with the Marp Core
+  library's `marp.render()` instead, you only get raw slide SVGs with no player, and the
+  page becomes a long vertical scroll of every slide. That is the regression to avoid.
+- The custom aurora theme and code-size tweaks are applied **after** the CLI runs, by
+  `postprocess.mjs`, which injects a `<style>` block before `</head>` and tags long
+  code blocks. This keeps the clickable player intact.
 
-Do **not** replace `make html` with `npx marp --html`. The CLI path produced partial
-documents in this environment and does not apply our custom theme.
+The Marp CLI **hangs on exit** in this WSL environment (Chromium/puppeteer cleanup).
+The HTML file is fully written before the hang, so the `html` target wraps each `npx
+marp` call in `timeout` and ignores its exit status (the `-` prefix in the Makefile).
+The build still succeeds. If a build appears to pause at the end, that is the hang, not
+a failure.
 
 ### Dependencies
 
 Declared in `package.json`:
 
-- `@marp-team/marp-core` - the rendering library used by `build-html.mjs`.
-- `shiki` - required by Marp Core for code-block syntax highlighting. If it is missing
-  you get `Cannot find module 'shiki/core'` and the build fails. Keep it installed.
-- `beautiful-mermaid` - a Marp Core optional dependency. Present for completeness.
-- `@marp-team/marp-cli` (devDependency) - only used by the `make pdf` / `make preview-*`
-  targets, not by `make html`.
+- `@marp-team/marp-cli` (devDependency) - the only dependency. It bundles its own
+  Marp Core, so nothing else is needed.
 
-Install everything with:
+Do **NOT** add `@marp-team/marp-core` or `shiki` as project dependencies. They shadow
+the CLI's bundled core and break the CLI with `ERR_REQUIRE_ESM` (shiki is ESM) or
+`Cannot find module 'shiki/core'`. If the CLI starts failing with those errors, check
+that these packages are not in `package.json` / `node_modules`.
+
+Install with:
 
 ```bash
 npm install
@@ -82,7 +90,7 @@ reliable output and is what GitHub Pages serves.
 
 ## 2. Where the theme lives
 
-All custom styling is centralized in **`build-html.mjs`**:
+All custom styling is centralized in **`postprocess.mjs`**:
 
 - `const AURORA = 'linear-gradient(...)'` - the single "aurora borealis" gradient
   definition. Change this one line to re-palette the whole deck.
@@ -145,7 +153,7 @@ headers, the landing page, and the README.
   change the `AURORA` constant.
 
 **What to leave untouched:**
-- `Makefile`, `build-html.mjs`, `.github/workflows/`, `package.json` - the build
+- `Makefile`, `postprocess.mjs`, `.github/workflows/`, `package.json` - the build
   machinery is topic-agnostic.
 
 ### Fork checklist
