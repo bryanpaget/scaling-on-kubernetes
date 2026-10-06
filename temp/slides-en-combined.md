@@ -27,15 +27,6 @@ style: |
 
 #### 2026-10-06 | v2.1 - Draft
 
----
-
-title: "Aurora Karpenter Proposal"
-subtitle: "Why Aurora should learn Karpenter, and when to use a managed version instead"
-date: "2026-10-06"
-version: "v2.1 - Draft"
-
----
-
 ## The point
 
 ![bg left:20%](./img/aurora.png)
