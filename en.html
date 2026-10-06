@@ -160,12 +160,13 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="content" data-marpit-advanced-background-split="left">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="the-scaling-map-four-axes">The Scaling Map: Four Axes</h2>
+<h2 id="the-scaling-stack-three-axes-four-tools">The Scaling Stack: Three Axes, Four Tools</h2>
 
 <table>
 <thead>
 <tr>
-<th>Tool</th>
+<th>Axis</th>
+<th>Tool(s)</th>
 <th>Scales</th>
 <th>Level</th>
 <th>Trigger</th>
@@ -173,34 +174,28 @@ table { font-size: 22px; }
 </thead>
 <tbody>
 <tr>
-<td><strong>HPA</strong></td>
-<td>Replica count</td>
+<td><strong>Pod replica count</strong></td>
+<td>HPA, KEDA</td>
+<td>Replicas</td>
 <td>Pod</td>
-<td>CPU/memory/metrics</td>
+<td>Metrics (HPA) or events/schedule (KEDA)</td>
 </tr>
 <tr>
-<td><strong>VPA</strong></td>
-<td>Resource requests</td>
+<td><strong>Pod resource size</strong></td>
+<td>VPA</td>
+<td>CPU/memory requests+limits</td>
 <td>Pod</td>
 <td>Usage history</td>
 </tr>
 <tr>
-<td><strong>KEDA</strong></td>
-<td>Replica count (incl. 0)</td>
-<td>Pod</td>
-<td>Events, schedules, queues</td>
-</tr>
-<tr>
-<td><strong>Karpenter</strong></td>
+<td><strong>Node capacity</strong></td>
+<td>Karpenter</td>
 <td>Nodes</td>
 <td>Infrastructure</td>
 <td>Pending pods</td>
 </tr>
 </tbody>
 </table>
-<blockquote>
-Workload scalers (HPA/VPA/KEDA) decide what pods need. Karpenter provides the capacity.
-</blockquote>
 <footer>© Aurora - 2026</footer>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
@@ -244,25 +239,25 @@ table { font-size: 22px; }
 <h2 id="how-they-layer">How They Layer</h2>
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">KEDA / HPA</div>
-    <div class="plate">Creates or removes pods</div>
-    <div class="plate">(replica count)</div>
+    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate">Decide replica count</div>
+    <div class="plate">(how many pods)</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sets each pod's</div>
-    <div class="plate">CPU / memory requests</div>
+    <div class="plate">CPU / memory</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Karpenter</div>
-    <div class="plate">Provisions nodes to fit</div>
-    <div class="plate">the resulting pods</div>
+    <div class="plate">Provisions nodes</div>
+    <div class="plate">to fit the pods</div>
   </div>
 </div>
 <blockquote>
-Replica decisions and size decisions both become pending-pod demand that Karpenter satisfies.
+Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
 <footer>© Aurora - 2026</footer>
 </section>
@@ -347,13 +342,14 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="what-is-vpa">What is VPA?</h2>
-<p><strong>Vertical Pod Autoscaler:</strong> automatically adjusts CPU and memory resource <em>requests</em> for your containers</p>
+<p><strong>Vertical Pod Autoscaler:</strong> automatically adjusts CPU and memory resource <em>requests and limits</em> for your containers</p>
 
 <ul>
-<li>Unlike HPA which scales <em>replicas</em>, VPA scales <em>resource requests</em></li>
+<li>Unlike HPA which scales <em>replicas</em>, VPA scales <em>resource requests/limits</em></li>
 <li>Works with Deployments, StatefulSets, DaemonSets</li>
-<li>Two-phase: Recommender (analyze) + Updater (apply)</li>
+<li>Consists of three components: Recommender, Updater, and Admission Controller</li>
 <li>Kubernetes-native via Custom Resource Definitions</li>
+<li>By default scales both requests and limits proportionally; use <code>controlledValues: RequestsOnly</code> to scale requests only</li>
 </ul>
 <blockquote>
 HPA scales how many, VPA scales how much.
@@ -408,9 +404,9 @@ table { font-size: 22px; }
 </ul>
 <h3 id="vpa-solves-this">VPA Solves This:</h3>
 <ul>
-<li><strong>Continuous monitoring:</strong> analyzes actual usage patterns</li>
-<li><strong>Automatic adjustment:</strong> updates resource requests over time</li>
-<li><strong>Right-sizing:</strong> optimizes cluster resource utilization</li>
+<li><strong>Right-sizing at pod creation:</strong> Initial mode applies recommendations only to new pods</li>
+<li><strong>Continuous monitoring:</strong> Recommender analyzes usage over time</li>
+<li><strong>Controlled updates:</strong> Updater can gradually roll out changes via InPlace updates (where available)</li>
 </ul>
 <blockquote>
 Stop guessing, start sizing with data.
@@ -487,7 +483,7 @@ h3 { font-size: 24px; }
 h4 { font-size: 22px; }
 blockquote { font-size: 24px; }
 table { font-size: 22px; }
-" lang="C" data-marpit-pagination="8" style="" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="pseudo" data-marpit-advanced-background-split="left"></section></foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
+" lang="C" data-marpit-pagination="8" style="" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="pseudo" data-marpit-advanced-background-split="left"></section></foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-marpit-fragments="1" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -501,7 +497,7 @@ h3 { font-size: 24px; }
 h4 { font-size: 22px; }
 blockquote { font-size: 24px; }
 table { font-size: 22px; }
-;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="background" data-marpit-advanced-background-split="left"><div data-marpit-advanced-background-container="true" data-marpit-advanced-background-direction="horizontal"><figure style="background-image:url(&quot;./img/aurora.png&quot;);"></figure></div></section></foreignObject><foreignObject width="80%" height="720" x="20%"><section id="9" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
+;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="background" data-marpit-advanced-background-split="left"><div data-marpit-advanced-background-container="true" data-marpit-advanced-background-direction="horizontal"><figure style="background-image:url(&quot;./img/aurora.png&quot;);"></figure></div></section></foreignObject><foreignObject width="80%" height="720" x="20%"><section id="9" data-marpit-fragments="1" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -544,19 +540,19 @@ table { font-size: 22px; }
 </tr>
 <tr>
 <td><strong>InPlace</strong></td>
-<td>Yes (in-place)</td>
-<td>No</td>
+<td>Yes (in-place, no eviction)</td>
+<td>No*</td>
 <td>Recommended for prod</td>
 </tr>
 <tr>
 <td><strong>InPlaceOrRecreate</strong></td>
-<td>Yes (fallback)</td>
-<td>Yes</td>
+<td>Yes (in-place first, then recreate)</td>
+<td>Yes (if InPlace fails)</td>
 <td>Balanced, dev/test</td>
 </tr>
 <tr>
 <td><strong>Recreate</strong></td>
-<td>Yes</td>
+<td>Yes (only via eviction)</td>
 <td>Yes</td>
 <td>Use rarely</td>
 </tr>
@@ -568,13 +564,12 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
-<p><strong>Key distinction:</strong> &quot;Initial&quot; only updates new pods; &quot;InPlace&quot; updates existing pods without eviction.</p>
-<blockquote>
-<p><code>InPlace</code> needs the <code>InPlacePodVerticalScaling</code> feature gate and a recent VPA, or it falls back to recreation.</p>
-</blockquote>
+<ul>
+<li data-marpit-fragment="1">Requires <code>InPlacePodVerticalScaling</code> feature gate and a Kubernetes version that supports it. Falls back to Recreate if unavailable.</li>
+</ul>
 <footer>© Aurora - 2026</footer>
 </section>
-</foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-marpit-fragments="1" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -624,7 +619,7 @@ table { font-size: 22px; }
 <tbody>
 <tr>
 <td>VPA Version</td>
-<td>0.13.0 (appVersion 1.8.0)</td>
+<td>1.7 (latest; appVersion 1.35+)</td>
 </tr>
 <tr>
 <td>Namespace</td>
@@ -700,9 +695,10 @@ table { font-size: 22px; }
       <span class="hljs-bullet">-</span> <span class="hljs-attr">containerName:</span> <span class="hljs-string">&quot;*&quot;</span>
         <span class="hljs-attr">minAllowed:</span> { <span class="hljs-attr">cpu:</span> <span class="hljs-string">50m</span>, <span class="hljs-attr">memory:</span> <span class="hljs-string">64Mi</span> }
         <span class="hljs-attr">maxAllowed:</span> { <span class="hljs-attr">cpu:</span> <span class="hljs-string">500m</span>, <span class="hljs-attr">memory:</span> <span class="hljs-string">512Mi</span> }
+        <span class="hljs-attr">controlledValues:</span> <span class="hljs-string">&quot;RequestsAndLimits&quot;</span>  <span class="hljs-comment"># or &quot;RequestsOnly&quot;</span>
         <span class="hljs-attr">controlledResources:</span> [<span class="hljs-string">&quot;cpu&quot;</span>, <span class="hljs-string">&quot;memory&quot;</span>]
 </code></pre>
-<p><strong>Bounds matter:</strong> <code>maxAllowed</code> caps a runaway recommendation; <code>minAllowed</code> keeps pods schedulable.</p>
+<p><strong>Bounds matter:</strong> <code>minAllowed</code> prevents under-sizing (keeps pods schedulable); <code>maxAllowed</code> prevents over-sizing recommendations. Scales both requests and limits proportionally by default.</p>
 <footer>© Aurora - 2026</footer>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-footer="© Aurora - 2026" data-theme="default" data-style="section { font-size: 26px; }
@@ -749,8 +745,8 @@ table { font-size: 22px; }
 <li><strong>Spiky workloads:</strong> VPA reacts to history; sudden bursts can be under-provisioned until it catches up</li>
 <li><strong>JVM / heap-tuned apps:</strong> changing memory requests does not change <code>-Xmx</code>; size the runtime, not just the pod</li>
 <li><strong>Eviction-sensitive workloads:</strong> avoid <code>Recreate</code> where restarts are costly</li>
-<li><strong>Batch / short-lived jobs:</strong> use KEDA Jobs; VPA needs time to observe usage</li>
 <li><strong>Same resource as HPA/KEDA:</strong> never let two controllers fight over the same resource (see Part 4)</li>
+<li><strong>Very short-lived processes:</strong> VPA needs time to collect and analyze usage data</li>
 </ul>
 <footer>© Aurora - 2026</footer>
 </section>
@@ -898,7 +894,7 @@ table { font-size: 22px; }
 <tbody>
 <tr>
 <td>KEDA Version</td>
-<td>2.20.2</td>
+<td>2.16+ (latest stable)</td>
 </tr>
 <tr>
 <td>Namespace</td>
@@ -1077,13 +1073,13 @@ table { font-size: 22px; }
 
 <h3 id="do-not">DO NOT:</h3>
 <ul>
-<li><strong>Scale to zero in production</strong> - keep <code>minReplicaCount: 1</code>+</li>
-<li><strong>Mix cron with CPU/memory triggers</strong> - HPA takes the MAX, scaling gets unpredictable</li>
+<li><strong>Use KEDA and your own HPA together</strong> - KEDA creates and manages the HPA; you own only the ScaledObject</li>
 <li><strong>Create your own HPA</strong> for a KEDA-managed workload - KEDA owns it</li>
-<li><strong>Use short cooldowns</strong> - use 300s+ in production</li>
+<li><strong>Rely on short cooldowns for isolation</strong> - <code>cooldownPeriod</code> (default 300s) only affects the final scale-from-zero, not general scale-down (that is HPA's <code>behavior</code> window)</li>
 </ul>
 <h3 id="do">DO:</h3>
 <ul>
+<li>Keep <code>minReplicaCount: 1</code>+ in production (no scale-to-zero)</li>
 <li>Add <code>terminationGracePeriodSeconds</code> for long-running consumers</li>
 <li>Use <code>ScaledJob</code> for event-processing batch work</li>
 <li>Validate across a full 24-hour cycle in non-prod</li>
@@ -1246,24 +1242,24 @@ table { font-size: 22px; }
 </thead>
 <tbody>
 <tr>
-<td>Pre-provisioning</td>
-<td>Entire node pool</td>
-<td>Single node that fits</td>
+<td>Node provisioning</td>
+<td>Adds nodes one at a time to a node group</td>
+<td>Provisions single node that fits each pending pod</td>
 </tr>
 <tr>
 <td>Instance selection</td>
-<td>First SKU in policy</td>
-<td>Cheapest that fits</td>
+<td>Uses expanders (least-waste, price, priority)</td>
+<td>Chooses cheapest instance type that fits</td>
 </tr>
 <tr>
 <td>Consolidation</td>
-<td>Empty pools only</td>
-<td>Continuous repacking</td>
+<td>Removes underutilized nodes after draining</td>
+<td>Continuous repacking and node removal</td>
 </tr>
 <tr>
 <td>Multi-family</td>
-<td>Static pool</td>
-<td>Many families, spot + on-demand</td>
+<td>Static pool per node group</td>
+<td>Any family, spot + on-demand mixed</td>
 </tr>
 <tr>
 <td>Provisioning speed</td>
@@ -1317,12 +1313,16 @@ table { font-size: 22px; }
 
 <h2 id="karpenter-nodepool-as-source-of-truth">Karpenter: NodePool as Source of Truth</h2>
 
-<p>Define intent once; deploy on every platform (AWS/Azure/on-prem natively, GKE via the CloudPilot provider).</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only" class="code-lg"><code class="language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">karpenter.sh/v1</span>
+<p>Define compute intent once; tailor the provider-specific <code>nodeClassRef</code> per platform (EC2NodeClass, AKSNodeClass, GKENodeClass, etc).</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only" class="code-xl"><code class="language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">karpenter.sh/v1</span>
 <span class="hljs-attr">kind:</span> <span class="hljs-string">NodePool</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">default</span>
 <span class="hljs-attr">spec:</span>
   <span class="hljs-attr">template:</span>
     <span class="hljs-attr">spec:</span>
+      <span class="hljs-attr">nodeClassRef:</span>
+        <span class="hljs-attr">name:</span> <span class="hljs-string">default</span>           <span class="hljs-comment"># points to EC2NodeClass, AKSNodeClass, etc (provider-specific)</span>
       <span class="hljs-attr">requirements:</span>
         <span class="hljs-bullet">-</span> <span class="hljs-attr">key:</span> <span class="hljs-string">&quot;karpenter.sh/capacity-type&quot;</span>
           <span class="hljs-attr">operator:</span> <span class="hljs-string">In</span>
@@ -1334,7 +1334,7 @@ table { font-size: 22px; }
     <span class="hljs-attr">consolidationPolicy:</span> <span class="hljs-string">WhenEmptyOrUnderutilized</span>
     <span class="hljs-attr">consolidateAfter:</span> <span class="hljs-string">30m</span>    <span class="hljs-comment"># tune to workload churn tolerance</span>
   <span class="hljs-attr">limits:</span>
-    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000&quot;</span>              <span class="hljs-comment"># prevent runaway provisioning</span>
 </code></pre>
 <footer>© Aurora - 2026</footer>
 </section>
@@ -1376,16 +1376,25 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="content" data-marpit-advanced-background-split="left">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="karpenter-on-aurora-the-plan">Karpenter on Aurora: The Plan</h2>
+<h2 id="karpenter-on-aurora-the-strategy">Karpenter on Aurora: The Strategy</h2>
 
+<p><strong>Goal:</strong> Build in-house Karpenter expertise to use across clouds, falling back to CSP-managed solutions when they're sufficient.</p>
 <ul>
-<li><strong>Standard everywhere:</strong> one NodePool/NodeClaim model across AWS, Azure, on-prem, GKE</li>
-<li><strong>AWS / Azure / on-prem:</strong> first-party providers (Karpenter v1 is GA)</li>
-<li><strong>GKE:</strong> no first-party provider; run via the open-source CloudPilot AI GCP provider (same APIs)</li>
-<li><strong>Fallback:</strong> native GKE NAP + Custom Compute Classes, kept ready if the provider is unsuitable</li>
+<li><strong>AWS:</strong> Self-hosted Karpenter (v1 GA provider, full control)</li>
+<li><strong>Azure:</strong> Try AKS NAP (managed Karpenter); switch to self-hosted if constraints appear</li>
+<li><strong>GKE:</strong> Self-hosted Karpenter (via <a href="https://github.com/cloudpilot-ai/karpenter-provider-gcp">CloudPilot AI shim</a>)</li>
+<li><strong>On-premises:</strong> Self-hosted Karpenter (you own the infrastructure)</li>
 </ul>
+<p><strong>Why self-hosted when possible:</strong></p>
+<ul>
+<li>Same NodePool APIs across all platforms</li>
+<li>Full version control and security scanning</li>
+<li>Avoids vendor cost manipulation</li>
+<li>Freedom to migrate if a CSP solution doesn't meet Aurora's goals</li>
+</ul>
+<p><strong>Azure NAP trade-off:</strong> Managed simplicity now, but vendor lock-in risk later.</p>
 <blockquote>
-<p>GKE provider is pre-1.0 and community-maintained: pin the version, scan it, keep the NAP fallback. Pilot before any production cutover.</p>
+Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constraints emerge.
 </blockquote>
 <footer>© Aurora - 2026</footer>
 </section>
@@ -1430,11 +1439,12 @@ table { font-size: 22px; }
 <h2 id="karpenter-risks-and-caveats">Karpenter: Risks and Caveats</h2>
 
 <ul>
-<li><strong>GKE dependency:</strong> the CloudPilot provider is pre-1.0; breaking changes happen (track <code>MIGRATION.md</code>)</li>
-<li><strong>Node churn:</strong> aggressive consolidation disrupts pods; tune <code>consolidateAfter</code> and use PDBs</li>
-<li><strong>Cost figures are benchmarks</strong>, not Aurora measurements; establish your own baseline first</li>
-<li><strong>Model change:</strong> switching autoscalers is done at cluster creation, not mid-workload</li>
-<li><strong>Set <code>limits</code></strong> so a runaway workload cannot provision unbounded capacity</li>
+<li><strong>GCP provider is community-maintained:</strong> the <a href="https://github.com/cloudpilot-ai/karpenter-provider-gcp">CloudPilot AI shim</a> is pre-1.0; breaking changes happen. Pin versions, scan, and keep GKE Workload Autoscaler as fallback</li>
+<li><strong>Node churn:</strong> aggressive consolidation disrupts pods; tune <code>consolidateAfter</code> and use PodDisruptionBudgets</li>
+<li><strong>Azure NAP trade-off:</strong> simpler now, but harder to switch later if constraints appear (vendor-specific APIs, version lock, cost control)</li>
+<li><strong>Model change:</strong> autoscaler choice is set at cluster creation time on all platforms</li>
+<li><strong>Set <code>limits</code></strong> on NodePool to prevent runaway provisioning</li>
+<li><strong>Learn Karpenter first:</strong> understand the open-source project before choosing a managed variant</li>
 </ul>
 <footer>© Aurora - 2026</footer>
 </section>
@@ -1518,16 +1528,16 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="30" data-size="16:9" data-marpit-advanced-background="content" data-marpit-advanced-background-split="left">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="the-combined-picture">The Combined Picture</h2>
+<h2 id="how-it-works-the-complete-picture">How It Works: The Complete Picture</h2>
 
 <ol>
-<li><strong>KEDA / HPA</strong> decide replica count from events or schedules</li>
-<li><strong>VPA</strong> sets each pod's CPU/memory requests from usage history</li>
-<li>Those pods become scheduling demand</li>
-<li><strong>Karpenter</strong> provisions the cheapest nodes that fit, then consolidates as demand changes</li>
+<li><strong>KEDA / HPA</strong> decide replica count (driven by events or metrics)</li>
+<li><strong>VPA</strong> sizes each pod based on usage history</li>
+<li><strong>Combined:</strong> Replica count × per-pod size = total pending-pod demand</li>
+<li><strong>Karpenter</strong> watches for unschedulable pods and provisions nodes</li>
 </ol>
 <blockquote>
-Replica count x per-pod size = the pending-pod demand Karpenter satisfies. All three feed one pipeline.
+All three feed one pipeline. Keep them off each other's axes and they compound.
 </blockquote>
 <footer>© Aurora - 2026</footer>
 </section>
@@ -1585,7 +1595,7 @@ table { font-size: 22px; }
 </tr>
 <tr>
 <td><strong>VPA + KEDA</strong></td>
-<td>Same rule: KEDA is HPA underneath, so split the resource. Safe pairing otherwise</td>
+<td>Conflict only with CPU/memory triggers. Safe with queue depth, cron, or custom metrics</td>
 </tr>
 <tr>
 <td><strong>KEDA + own HPA</strong></td>
@@ -1597,7 +1607,7 @@ table { font-size: 22px; }
 </tr>
 <tr>
 <td><strong>KEDA 0 + Karpenter</strong></td>
-<td>Scale-to-zero + consolidation empties and removes nodes. Powerful, but watch cold-start latency</td>
+<td>Scale-to-zero + consolidation empties and removes nodes. Watch cold-start latency</td>
 </tr>
 </tbody>
 </table>
@@ -1644,11 +1654,11 @@ table { font-size: 22px; }
 <h2 id="anti-patterns-to-avoid">Anti-Patterns to Avoid</h2>
 
 <ul>
-<li><strong>VPA and HPA/KEDA on the same metric</strong> - they oscillate against each other</li>
+<li><strong>VPA and HPA/KEDA on the same metric</strong> - they compete for the same resource and oscillate</li>
 <li><strong>VPA <code>Recreate</code> on eviction-sensitive workloads</strong> - prefer Initial/InPlace</li>
-<li><strong>Scale-to-zero in production</strong> without accounting for cold start</li>
-<li><strong>No <code>maxAllowed</code> / no NodePool <code>limits</code></strong> - a bad recommendation can request a whole node, and Karpenter will provision it</li>
-<li><strong>Aggressive consolidation without PDBs</strong> - node churn disrupts workloads</li>
+<li><strong>Scale-to-zero in production</strong> without planning for cold-start latency</li>
+<li><strong>No <code>maxAllowed</code> on VPA / no <code>limits</code> on NodePool</strong> - a runaway recommendation can pin a node</li>
+<li><strong>Aggressive consolidation without PodDisruptionBudgets</strong> - node churn disrupts workloads; use <code>consolidateAfter</code> and PDBs</li>
 </ul>
 <footer>© Aurora - 2026</footer>
 </section>
