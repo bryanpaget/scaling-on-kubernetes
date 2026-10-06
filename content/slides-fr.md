@@ -18,19 +18,18 @@ Des outils différents, des axes différents. La valeur est dans leur combinaiso
 ---
 
 <!-- Scaling axes map -->
-## La carte de mise à l'échelle : quatre axes
+## La carte de mise à l'échelle : trois axes, quatre outils
 
 ![bg left:20%](./img/aurora.png)
 
-| Outil | Échelle | Niveau | Déclencheur |
-|-------|---------|--------|-------------|
-| **HPA** | Nombre de réplicas | Pod | CPU/mémoire/métriques |
-| **VPA** | Demandes de ressources | Pod | Historique d'utilisation |
-| **KEDA** | Réplicas (jusqu'à 0) | Pod | Événements, horaires, files |
-| **Karpenter** | Nœuds | Infrastructure | Pods en attente |
+| Axe | Outil(s) | Échelle | Niveau | Déclencheur |
+|-----|---------|---------|--------|-------------|
+| **Nombre de réplicas** | HPA, KEDA | Réplicas | Pod | Métriques (HPA) ou événements/horaires (KEDA) |
+| **Taille des ressources** | VPA | Demandes+limites CPU/mémoire | Pod | Historique d'utilisation |
+| **Capacité des nœuds** | Karpenter | Nœuds | Infrastructure | Pods en attente |
 
 <blockquote>
-Les scalers de workload (HPA/VPA/KEDA) décident des besoins. Karpenter fournit la capacité.
+Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
 </blockquote>
 
 ---
@@ -42,26 +41,26 @@ Les scalers de workload (HPA/VPA/KEDA) décident des besoins. Karpenter fournit 
 
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">KEDA / HPA</div>
-    <div class="plate">Crée ou retire des pods</div>
-    <div class="plate">(nombre de réplicas)</div>
+    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate">Décident du nombre</div>
+    <div class="plate">de réplicas</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Fixe les demandes</div>
-    <div class="plate">CPU / mémoire de chaque pod</div>
+    <div class="plate">CPU / mémoire</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisionne les nœuds</div>
-    <div class="plate">adaptés aux pods résultants</div>
+    <div class="plate">adaptés aux pods</div>
   </div>
 </div>
 
 <blockquote>
-Décisions de réplicas et de taille deviennent une demande de pods que Karpenter satisfait.
+Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
 </blockquote>
 
 ---
@@ -78,14 +77,15 @@ Décisions de réplicas et de taille deviennent une demande de pods que Karpente
 <!-- What is VPA? -->
 ## Qu'est-ce que VPA ?
 
-**Vertical Pod Autoscaler :** ajuste automatiquement les demandes CPU et mémoire de vos conteneurs
+**Vertical Pod Autoscaler :** ajuste automatiquement les demandes CPU et mémoire *et les limites* de vos conteneurs
 
 ![bg left:20%](./img/aurora.png)
 
-- Contrairement à HPA qui dimensionne les *réplicas*, VPA dimensionne les *demandes de ressources*
+- Contrairement à HPA qui dimensionne les *réplicas*, VPA dimensionne les *demandes/limites de ressources*
 - Fonctionne avec Deployments, StatefulSets, DaemonSets
-- Deux phases : Recommandeur (analyse) + Updateur (applique)
+- Composé de trois composants : Recommandeur, Updateur et Contrôleur d'admission
 - Natif Kubernetes via les Custom Resource Definitions
+- Par défaut, dimensionne les demandes et limites proportionnellement ; utilisez `controlledValues: RequestsOnly` pour les demandes uniquement
 
 <blockquote>
 HPA dimensionne combien, VPA dimensionne quelle taille.
@@ -104,9 +104,9 @@ HPA dimensionne combien, VPA dimensionne quelle taille.
 - Les demandes statiques ne s'ajustent jamais après le déploiement
 
 ### VPA résout cela :
-- **Surveillance continue :** analyse les modèles d'utilisation réels
-- **Ajustement automatique :** met à jour les demandes au fil du temps
-- **Dimensionnement correct :** optimise l'utilisation du cluster
+- **Dimensionnement à la création de pods :** le mode Initial applique les recommandations uniquement aux nouveaux pods
+- **Surveillance continue :** le Recommandeur analyse l'utilisation au fil du temps
+- **Mises à jour contrôlées :** l'Updateur peut progressivement déployer des changements via les mises à jour InPlace (si disponibles)
 
 <blockquote>
 Cessez de deviner, dimensionnez avec des données.
@@ -171,7 +171,7 @@ Cessez de deviner, dimensionnez avec des données.
 
 | Paramètre | Valeur |
 |-----------|--------|
-| Version VPA | 0.13.0 (appVersion 1.8.0) |
+| Version VPA | 1.7 (dernière ; appVersion 1.35+) |
 | Espace de noms | vpa-system |
 | Metrics Server | Activé (requis) |
 | Contrôleur d'admission | Activé (webhook mutateur) |
@@ -201,10 +201,11 @@ spec:
       - containerName: "*"
         minAllowed: { cpu: 50m, memory: 64Mi }
         maxAllowed: { cpu: 500m, memory: 512Mi }
+        controlledValues: "RequestsAndLimits"  # ou "RequestsOnly"
         controlledResources: ["cpu", "memory"]
 ```
 
-**Les bornes comptent :** `maxAllowed` plafonne une recommandation excessive ; `minAllowed` garde les pods ordonnançables.
+**Les bornes comptent :** `minAllowed` prévient la sous-estimation (garde les pods ordonnançables) ; `maxAllowed` prévient la sur-estimation. Dimensionne les demandes et limites proportionnellement par défaut.
 
 ---
 
@@ -216,8 +217,8 @@ spec:
 - **Charges en pics :** VPA réagit à l'historique ; les pics soudains peuvent être sous-provisionnés
 - **Applications JVM / réglées sur le tas :** changer la mémoire ne change pas `-Xmx` ; dimensionnez le runtime
 - **Charges sensibles aux évictions :** évitez `Recreate` quand les redémarrages coûtent cher
-- **Jobs batch / éphémères :** utilisez KEDA Jobs ; VPA a besoin de temps pour observer
 - **Même ressource que HPA/KEDA :** ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)
+- **Processus très éphémères :** VPA a besoin de temps pour collecter et analyser les données d'utilisation
 
 ---
 
@@ -255,7 +256,7 @@ HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 
 | Paramètre | Valeur |
 |-----------|--------|
-| Version KEDA | 2.20.2 |
+| Version KEDA | 2.16+ (dernière stable) |
 | Espace de noms | keda-system |
 | Metrics Server | Activé (requis) |
 | Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
@@ -323,12 +324,12 @@ spec:
 ![bg left:20%](./img/aurora.png)
 
 ### NE PAS :
-- **Descendre à zéro en production** - gardez `minReplicaCount: 1`+
-- **Mélanger cron et CPU/mémoire** - le HPA prend le MAX, la mise à l'échelle devient imprévisible
+- **Utiliser KEDA et votre propre HPA ensemble** - KEDA crée et gère le HPA ; vous ne gérez que le ScaledObject
 - **Créer votre propre HPA** pour un workload géré par KEDA - KEDA le possède
-- **Utiliser des cooldowns courts** - 300s+ en production
+- **Vous fier à des cooldowns courts pour l'isolement** - `cooldownPeriod` (par défaut 300s) n'affecte que le passage final de zéro, pas la réduction générale (c'est la fenêtre `behavior` de HPA)
 
 ### FAIRE :
+- Gardez `minReplicaCount: 1`+ en production (pas de descente à zéro)
 - Ajoutez `terminationGracePeriodSeconds` pour les consommateurs longue durée
 - Utilisez `ScaledJob` pour le traitement batch événementiel
 - Validez sur un cycle complet de 24 heures en hors prod
@@ -384,10 +385,10 @@ Le Cluster Autoscaler dimensionne des pools prédéfinis. Karpenter choisit le b
 
 | Aspect | Cluster Autoscaler | Karpenter |
 |--------|-------------------|-----------|
-| Pré-provisionnement | Pool de nœuds entier | Un seul nœud adapté |
-| Sélection d'instance | Premier SKU de la politique | Le moins cher qui convient |
-| Consolidation | Pools vides seulement | Repack continu |
-| Multi-famille | Pool statique | Plusieurs familles, spot + on-demand |
+| Provisionnement de nœuds | Ajoute des nœuds un par un à un groupe | Provisionne un seul nœud adapté à chaque pod en attente |
+| Sélection d'instance | Utilise des expanders (least-waste, price, priority) | Choisit le type le moins cher qui convient |
+| Consolidation | Supprime les nœuds sous-utilisés après drainage | Repack et suppression de nœuds continus |
+| Multi-famille | Pool statique par groupe | N'importe quelle famille, spot + on-demand mélangés |
 | Vitesse de provisionnement | Minutes | ~45-60s (benchmark fournisseur) |
 
 > Réduction de coûts estimée de 20-40 % vs Cluster Autoscaler ([étude de cas AWS](https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter)) - à valider en pilote.
@@ -399,14 +400,18 @@ Le Cluster Autoscaler dimensionne des pools prédéfinis. Karpenter choisit le b
 
 ![bg left:20%](./img/aurora.png)
 
-Définissez l'intention une fois ; déployez partout (AWS/Azure/on-prem nativement, GKE via le fournisseur CloudPilot).
+Définissez l'intention une fois ; adaptez le `nodeClassRef` spécifique au fournisseur par plateforme (EC2NodeClass, AKSNodeClass, GKENodeClass, etc).
 
 ```yaml
 apiVersion: karpenter.sh/v1
 kind: NodePool
+metadata:
+  name: default
 spec:
   template:
     spec:
+      nodeClassRef:
+        name: default           # pointe vers EC2NodeClass, AKSNodeClass, etc (spécifique au fournisseur)
       requirements:
         - key: "karpenter.sh/capacity-type"
           operator: In
@@ -418,22 +423,34 @@ spec:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 30m    # ajuster à la tolérance au churn
   limits:
-    cpu: "1000"
+    cpu: "1000"              # prévenir le provisionnement incontrôlé
 ```
 
 ---
 
 <!-- Karpenter Aurora -->
-## Karpenter sur Aurora : le plan
+## Karpenter sur Aurora : la stratégie
 
 ![bg left:20%](./img/aurora.png)
 
-- **Standard partout :** un seul modèle NodePool/NodeClaim sur AWS, Azure, on-prem, GKE
-- **AWS / Azure / on-prem :** fournisseurs first-party (Karpenter v1 est GA)
-- **GKE :** pas de fournisseur first-party ; via le fournisseur open-source CloudPilot AI GCP (mêmes APIs)
-- **Fallback :** NAP GKE natif + Custom Compute Classes, gardé prêt si le fournisseur ne convient pas
+**Objectif :** Construire une expertise Karpenter interne pour l'utiliser entre clouds, en se rabattant sur les solutions gérées des CSP quand elles suffisent.
 
-> Le fournisseur GKE est pré-1.0 et communautaire : épinglez la version, scannez-le, gardez le fallback NAP. Pilotez avant toute bascule en production.
+- **AWS :** Karpenter auto-hébergé (fournisseur v1 GA, contrôle total)
+- **Azure :** Essayer AKS NAP (Karpenter géré) ; basculer à l'auto-hébergé si des contraintes apparaissent
+- **GKE :** Karpenter auto-hébergé (via [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp))
+- **On-premises :** Karpenter auto-hébergé (vous possédez l'infrastructure)
+
+**Pourquoi l'auto-hébergé quand possible :**
+- Mêmes APIs NodePool sur toutes les plateformes
+- Contrôle complet des versions et balayage de sécurité
+- Évite la manipulation des coûts par le CSP
+- Liberté de migration si une solution CSP ne répond pas aux objectifs
+
+**Compromis Azure NAP :** Simplicité gérée maintenant, mais risque de verrouillage du fournisseur plus tard.
+
+<blockquote>
+Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébergé si des contraintes émergeaient.
+</blockquote>
 
 ---
 
@@ -442,11 +459,12 @@ spec:
 
 ![bg left:20%](./img/aurora.png)
 
-- **Dépendance GKE :** le fournisseur CloudPilot est pré-1.0 ; des changements cassants surviennent (suivez `MIGRATION.md`)
-- **Churn de nœuds :** une consolidation agressive perturbe les pods ; ajustez `consolidateAfter` et utilisez des PDB
-- **Les chiffres de coûts sont des benchmarks**, pas des mesures Aurora ; établissez votre propre base d'abord
-- **Changement de modèle :** le changement d'autoscaler se fait à la création du cluster, pas en cours de workload
-- **Définissez `limits`** pour qu'un workload emballé ne provisionne pas de capacité illimitée
+- **Le fournisseur GCP est maintenu par la communauté :** le [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) est pré-1.0 ; des changements cassants surviennent. Épinglez les versions, scannez, gardez l'Autoscaling GKE comme fallback
+- **Churn de nœuds :** une consolidation agressive perturbe les pods ; ajustez `consolidateAfter` et utilisez des PodDisruptionBudgets
+- **Compromis Azure NAP :** plus simple maintenant, mais difficile de basculer plus tard si des contraintes apparaissent (APIs spécifiques du fournisseur, verrouillage des versions, contrôle des coûts)
+- **Changement de modèle :** le choix de l'autoscaler est défini à la création du cluster sur toutes les plateformes
+- **Définissez `limits`** sur NodePool pour prévenir le provisionnement incontrôlé
+- **Apprenez Karpenter d'abord :** comprenez le projet open-source avant de choisir une variante gérée
 
 ---
 
@@ -460,17 +478,17 @@ spec:
 ---
 
 <!-- The combined picture -->
-## L'image combinée
+## Comment ça fonctionne : L'image complète
 
 ![bg left:20%](./img/aurora.png)
 
-1. **KEDA / HPA** décident le nombre de réplicas selon événements ou horaires
-2. **VPA** fixe les demandes CPU/mémoire de chaque pod selon l'historique
-3. Ces pods deviennent une demande d'ordonnancement
-4. **Karpenter** provisionne les nœuds les moins chers qui conviennent, puis consolide
+1. **KEDA / HPA** décident du nombre de réplicas (pilotés par événements ou métriques)
+2. **VPA** dimensionne chaque pod selon l'historique d'utilisation
+3. **Combiné :** Nombre de réplicas × taille par pod = demande totale de pods
+4. **Karpenter** surveille les pods non ordonnançables et provisionne les nœuds
 
 <blockquote>
-Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait. Les trois alimentent un seul pipeline.
+Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et ils se renforcent.
 </blockquote>
 
 ---
@@ -483,10 +501,10 @@ Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfai
 | Paire | Règle |
 |-------|-------|
 | **VPA + HPA** | Jamais la même ressource. VPA = mémoire, HPA = CPU (`controlledResources`) |
-| **VPA + KEDA** | Même règle : KEDA est un HPA en dessous, donc séparez la ressource |
+| **VPA + KEDA** | Conflit uniquement avec déclencheurs CPU/mémoire. Sûr avec profondeur de file, cron, ou métriques personnalisées |
 | **KEDA + votre HPA** | Ne créez pas votre propre HPA ; KEDA le possède (`transfer-hpa-ownership` au besoin) |
 | **VPA + Karpenter** | Complémentaires : VPA change les demandes, Karpenter repack. Définissez `maxAllowed` et `limits` |
-| **KEDA 0 + Karpenter** | Descente à zéro + consolidation vide et retire les nœuds. Puissant, mais attention au cold start |
+| **KEDA 0 + Karpenter** | Descente à zéro + consolidation vide et retire les nœuds. Attention au cold start |
 
 ---
 
@@ -495,11 +513,11 @@ Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfai
 
 ![bg left:20%](./img/aurora.png)
 
-- **VPA et HPA/KEDA sur la même métrique** - ils oscillent l'un contre l'autre
+- **VPA et HPA/KEDA sur la même métrique** - ils se disputent la même ressource et oscillent
 - **VPA `Recreate` sur des workloads sensibles aux évictions** - préférez Initial/InPlace
-- **Descente à zéro en production** sans tenir compte du cold start
-- **Pas de `maxAllowed` / pas de `limits` NodePool** - une mauvaise recommandation peut demander un nœud entier, et Karpenter le provisionnera
-- **Consolidation agressive sans PDB** - le churn de nœuds perturbe les workloads
+- **Descente à zéro en production** sans planifier la latence du cold start
+- **Pas de `maxAllowed` sur VPA / pas de `limits` sur NodePool** - une recommandation excessive peut épingler un nœud
+- **Consolidation agressive sans PodDisruptionBudgets** - le churn de nœuds perturbe ; utilisez `consolidateAfter` et PDB
 
 ---
 
