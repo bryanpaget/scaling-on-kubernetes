@@ -3,7 +3,7 @@ marp: true
 theme: default
 paginate: true
 backgroundColor: "#ffffff"
-header: "Aurora Karpenter Proposal"
+header: "Scaling on Kubernetes - SSC Aurora Platform"
 footer: ""
 size: "16:9"
 style: |
@@ -20,10 +20,12 @@ style: |
 
 <br>
 
-# Aurora Karpenter Proposal
-## Why Aurora should learn Karpenter, and when to use a managed version instead
+# Scaling on Kubernetes
+## VPA, KEDA, and Karpenter on the Aurora Platform
 
 <br>
 
-#### 2026-10-06 | v2.1 - Draft
+#### Aurora Platform Team 2026
+
+*Workload and node autoscaling: a platform team guide*
 

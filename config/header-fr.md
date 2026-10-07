@@ -3,7 +3,7 @@ marp: true
 theme: default
 paginate: true
 backgroundColor: "#ffffff"
-header: "Aurora Karpenter Proposal"
+header: "Mise à l'échelle sur Kubernetes - Plateforme Aurora"
 footer: ""
 size: "16:9"
 style: |
@@ -20,10 +20,12 @@ style: |
 
 <br>
 
-# Aurora Karpenter Proposal
-## Pourquoi Aurora devrait apprendre Karpenter, et quand utiliser une version gérée à la place
+# Mise à l'échelle sur Kubernetes
+## VPA, KEDA et Karpenter sur la plateforme Aurora
 
 <br>
 
-#### 2026-10-06 | v2.1 - Draft
+#### Aurora Platform Team 2026
+
+*Mise à l'échelle des workloads et des nœuds : guide pour l'équipe plateforme*
 
