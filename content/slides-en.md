@@ -642,6 +642,23 @@ All three feed one pipeline. Keep them off each other's axes and they compound.
 
 ---
 
+<!-- Real-world interactions -->
+## Real-World Interactions: Pitfalls & Solutions
+
+![bg left:20%](./img/aurora.png)
+
+| Interaction | Real-World Problem | Solution |
+|-------------|-------------------|----------|
+| **VPA + HPA on same metric** | 🚨 Infinite loop: HPA scales out, VPA sizes up, HPA scales back in, repeat | Use `controlledResources`: HPA=CPU, VPA=Memory |
+| **VPA + KEDA** | 🚨 Race condition: VPA resizes pods while KEDA scales them out | Use VPA only on metrics KEDA doesn't use (e.g., VPA=Memory) |
+| **KEDA + own HPA** | 🚨 Two captains: Both fight over replicas, constant flapping | KEDA owns the HPA - configure triggers inside ScaledObject |
+| **VPA + Karpenter** | 💡 Efficient loop: VPA shrinks pods, Karpenter downsizes nodes | Set `maxAllowed` on VPA, `limits` on Karpenter NodePool |
+| **KEDA 0 + Karpenter** | 🚨 Cold-start: Queue hits 0, Karpenter terminates node, 2-min recovery at peak | Set `minReplicaCount: 1` or use warm pools |
+
+> **The pattern:** VPA (resources) + KEDA (replicas) + Karpenter (nodes) = efficient pipeline when they stay off each other's axes.
+
+---
+
 <!-- Good vs bad interactions -->
 ## Good vs Bad Interactions
 

@@ -648,6 +648,23 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 
 ---
 
+<!-- Real-world interactions -->
+## Interactions réelles : Pièges et solutions
+
+![bg left:20%](./img/aurora.png)
+
+| Interaction | Problème réel | Solution |
+|-------------|--------------|----------|
+| **VPA + HPA sur la même métrique** | 🚨 Boucle infinie : HPA met à l'échelle, VPA dimensionne, HPA diminue, répétition | Utilisez `controlledResources` : HPA=CPU, VPA=Mémoire |
+| **VPA + KEDA** | 🚨 Course : VPA redimensionne les pods pendant que KEDA les met à l'échelle | Utilisez VPA seulement sur les métriques que KEDA n'utilise pas |
+| **KEDA + votre propre HPA** | 🚨 Deux capitaines : Les deux se battent pour les réplicas, flapping constant | KEDA possède l'HPA - définissez les déclencheurs dans ScaledObject |
+| **VPA + Karpenter** | 💡 Boucle efficace : VPA réduit les pods, Karpenter réduit les nœuds | Définissez `maxAllowed` sur VPA, `limits` sur NodePool Karpenter |
+| **KEDA 0 + Karpenter** | 🚨 Cold-start : Queue à 0, Karpenter détruit le nœud, 2-min de recovery | Définissez `minReplicaCount: 1` ou utilisez des warm pools |
+
+> **Le motif :** VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace s'ils restent sur des axes différents.
+
+---
+
 <!-- Good vs bad interactions -->
 ## Bonnes vs mauvaises interactions
 
