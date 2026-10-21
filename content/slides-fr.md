@@ -30,10 +30,6 @@ Des outils différents, des axes différents. La valeur est dans leur combinaiso
 | **Taille des ressources** | VPA | Demandes+limites CPU/mémoire | Pod | Historique d'utilisation |
 | **Capacité des nœuds** | Karpenter | Nœuds | Infrastructure | Pods en attente |
 
-<blockquote>
-Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
-</blockquote>
-
 ---
 
 <!-- How they layer -->
@@ -45,19 +41,19 @@ Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfai
   <div class="flow-box">
     <div class="plate plate-head">HPA / KEDA</div>
     <div class="plate">Décident du nombre</div>
-    <div class="plate">de réplicas</div>
+    <div class="plate">*(Combien de pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">VPA</div>
-    <div class="plate">Fixe les demandes</div>
-    <div class="plate">CPU / mémoire</div>
+    <div class="plate">Définit les bornes</div>
+    <div class="plate">*(CPU / mémoire)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Karpenter</div>
-    <div class="plate">Provisionne les nœuds</div>
-    <div class="plate">adaptés aux pods</div>
+    <div class="plate">Provisionne les nœuds bruts</div>
+    <div class="plate">*(S'adapte aux pods)*</div>
   </div>
 </div>
 
@@ -79,18 +75,16 @@ Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfai
 <!-- What is VPA? -->
 ## Qu'est-ce que VPA ?
 
-**Vertical Pod Autoscaler :** ajuste automatiquement les demandes CPU et mémoire *et les limites* de vos conteneurs
+**Vertical Pod Autoscaler :** cible dynamiquement les contraintes
 
-![bg left:20%](./img/aurora.png)
-
-- Contrairement à HPA qui dimensionne les *réplicas*, VPA dimensionne les *demandes/limites de ressources*
-- Fonctionne avec Deployments, StatefulSets, DaemonSets
-- Composé de trois composants : Recommandeur, Updateur et Contrôleur d'admission
-- Natif Kubernetes via les Custom Resource Definitions
-- Par défaut, dimensionne les demandes et limites proportionnellement ; utilisez `controlledValues: RequestsOnly` pour les demandes uniquement
+* **Cibles :** Demandes et limites CPU/mémoire des workloads
+* **Workloads :** Deployments, StatefulSets, DaemonSets
+* **Architecture :** Recommandeur, Updateur, Contrôleur d'admission
+* **Natifs :** Mis en œuvre via les CRDs standards
+* **Configuration :** Utilisez `controlledValues: RequestsOnly` pour protéger les limites personnalisées
 
 <blockquote>
-HPA dimensionne combien, VPA dimensionne quelle taille.
+HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
 </blockquote>
 
 ---
@@ -149,69 +143,32 @@ Cessez de deviner, dimensionnez avec des données.
 <!-- How the Recommender works -->
 ## Comment le Recommandeur fonctionne
 
-![bg left:20%](./img/aurora.png)
+![bg left:25%](./img/aurora.png)
 
-Le Recommandeur est le "cerveau" fondamental de VPA. Il ne modifie pas votre cluster - il calcule et propose seulement des valeurs.
+Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il ne modifie jamais les pods en cours d'exécution.
 
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">1. Surveillance continue</div>
-    <div class="plate">Extrait des métriques en temps réel et historiques</div>
-    <div class="plate">du Metrics Server/Prometheus</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">2. Analyse historique</div>
-    <div class="plate">Moyenne mobile décroissante</div>
-    <div class="plate">Les pics comptent le plus (pas d'OOM !)</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">3. Génère les cibles</div>
-    <div class="plate">Borne inférieure, Cible, Borne supérieure, Cible sans plafond</div>
-    <div class="plate">Écrit dans le statut VPA</div>
-  </div>
-</div>
-
-> **Le Recommandeur propose seulement.** L'Updateur et le Contrôleur d'admission décident *quand* et *comment* appliquer les changements.
+1. **Surveillance continue** - Extrait l'utilisation du Metrics Server/Prometheus
+2. **Analyse historique** - Moyenne mobile décroissante, les pics comptent le plus (pas d'OOM !)
+3. **Génération des cibles** - Calcule et écrit quatre zones cibles dans le statut VPA
 
 ---
 
 <!-- In-Place Resizing -->
 ## Redimensionnement en place : right-sizing sans interruption
 
-![bg left:20%](./img/aurora.png)
+![bg left:25%](./img/aurora.png)
 
-VPA peut redimensionner les pods *sans éviction* avec le mode In-Place - mais cela nécessite des conditions spécifiques.
+Modifie les bornes CPU et mémoire **sans éviction de vos pods**.
 
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">1. Recommandeur</div>
-    <div class="plate">Calcule les nouvelles ressources</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">2. VPA met à jour</div>
-    <div class="plate">Spécification du pod avec les nouvelles valeurs</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">3. Kubelet</div>
-    <div class="plate">Met à jour les cgroups dynamiquement</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">4. App</div>
-    <div class="plate">Utilise les nouvelles ressources instantanément</div>
-  </div>
-</div>
+* **CPU élastique :** Les runtimes absorbent sans heurts les allocations CPU modifiées
+* **Limites mémoire :** Les runtimes (comme JVM) doivent supporter le suivi dynamique des cgroups
+* **Marge du nœud :** Le nœud physique doit avoir de la capacité de rechange pour monter
+* **Protection downscale :** Réduire la mémoire trop agressivement peut déclencher des OOM
+* **Exigence K8s :** Gérée dynamiquement par Aurora via le feature gate `InPlacePodVerticalScaling` (v1.27+).
 
-**Conditions pour zéro interruption :**
-- **Support du runtime :** JVM/Node.js doivent lire les limites cgroup dynamiquement (pas seulement au démarrage)
-- **Capacité du nœud :** Le nœud doit avoir des ressources de rechange
-- **Risque de downscaling :** Réduire la mémoire trop agressivement peut déclencher des OOM
-
-> **Pourquoi InPlaceOrRecreate ?** Si InPlace échoue (nœud plein, runtime non compatible), il tombe en sécurité sur eviction/recreate.
+<blockquote>
+Fallback : <b>InPlaceOrRecreate</b> retourne à l'éviction si l'espace nœud ou la compatibilité runtime est verrouillée.
+</blockquote>
 
 ---
 
@@ -224,33 +181,12 @@ VPA peut redimensionner les pods *sans éviction* avec le mode In-Place - mais c
 |------|---------------------------|--------|---------------------|
 | **Off** | Non | Non | Analyse seulement |
 | **Initial** | Non | Non | Recommandé pour prod |
-| **InPlace** | Oui (en place) | Non | Recommandé pour prod |
-| **InPlaceOrRecreate** | Oui (fallback) | Oui | Équilibré, dev/test |
-| **Recreate** | Oui | Oui | À utiliser rarement |
+| **InPlace** | Oui (en place, sans eviction) | No* | Recommandé pour prod |
+| **InPlaceOrRecreate** | Oui (en place d'abord, puis recréation) | Oui (si InPlace échoue) | Équilibré, dev/test |
+| **Recreate** | Oui (seulement via eviction) | Oui | À utiliser rarement |
 | **Auto** | Déconseillé | Déconseillé | Ne pas utiliser |
 
-**Distinction clé :** « Initial » ne met à jour que les nouveaux pods ; « InPlace » met à jour les pods existants sans éviction.
-
-> `InPlace` nécessite le feature gate `InPlacePodVerticalScaling` et une version VPA récente, sinon il recrée le pod.
-
----
-
-<!-- Aurora VPA defaults -->
-## VPA sur Aurora : statut d'adoption
-
-![bg left:20%](./img/aurora.png)
-
-| Paramètre | Valeur |
-|-----------|--------|
-| Version VPA | 1.7 (dernière ; appVersion 1.35+) |
-| Espace de noms | vpa-system (en développement) |
-| Metrics Server | Activé (requis) |
-| Contrôleur d'admission | Activé (webhook mutateur) |
-| Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
-
-**Statut actuel :** Aurora développe VPA en tant que fonctionnalité de plateforme. L'implémentation est en cours mais pas encore activée par défaut.
-
-**Déploiement :** via le chart aurora-core. L'activation au niveau plateforme est déjà faite.
+* Nécessite le feature gate `InPlacePodVerticalScaling` et une version Kubernetes qui le supporte. Recrée le pod si indisponible.
 
 ---
 
@@ -309,9 +245,18 @@ spec:
 <!-- What is KEDA -->
 ## Qu'est-ce que KEDA ?
 
-**Kubernetes Event-Driven Autoscaler :** dimensionne les réplicas selon des événements, files ou horaires
+**Kubernetes Event-Driven Autoscaler :** dimensionne les réplicas selon des événements, files ou horaires cron
 
 ![bg left:20%](./img/aurora.png)
+
+- Met à l'échelle sur des signaux externes : lag Kafka, profondeur de file, horaires cron, ou trafic HTTP
+- Fonctionne comme un broker : traduit les métriques externes en cibles HPA natives
+- Permet la descente à zéro : décharge en toute sécurité les workloads inactifs jusqu'à 0 réplicas
+- Config via `ScaledObject` (longue durée) ou `ScaledJob` (batch)
+
+<blockquote>
+HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
+</blockquote>
 
 - Réagit à des signaux externes : lag Kafka, profondeur de file, cron, métriques personnalisées
 - Peut **descendre à zéro** quand il n'y a rien à faire
@@ -405,7 +350,7 @@ kind: ScaledObject
 spec:
   scaleTargetRef:
     name: my-app-deployment
-  minReplicaCount: 0            # descente à zéro (hors prod)
+  minReplicaCount: 0            # descente à zéro (hors prod seulement)
   maxReplicaCount: 5
   cooldownPeriod: 300
   triggers:
@@ -425,8 +370,8 @@ spec:
 ![bg left:20%](./img/aurora.png)
 
 ### NE PAS :
-- **Utiliser KEDA et votre propre HPA ensemble** - KEDA crée et gère l'HPA ; vous configurez seulement le ScaledObject
-- **Vous fier à des cooldowns courts pour l'isolement** - `cooldownPeriod` (par défaut 300s) n'affecte que le passage final de zéro, pas la réduction générale (c'est la fenêtre `behavior` de HPA)
+- **Utiliser KEDA alongside votre propre HPA** - KEDA crée et gère l'HPA ; vous configurez seulement le ScaledObject
+- **Rely on short cooldowns for isolation** - `cooldownPeriod` (par défaut 300s) n'affecte que la descente finale à zéro, pas la réduction générale (c'est la fenêtre `behavior` de HPA)
 
 ### FAIRE :
 - Gardez `minReplicaCount: 1`+ en production (pas de descente à zéro)
@@ -434,7 +379,7 @@ spec:
 - Utilisez `ScaledJob` pour le traitement batch événementiel
 - Validez sur un cycle complet de 24 heures en hors prod
 
-> **Astuce :** Pensez à KEDA comme le service HPA - vous configurez ce qui doit être dimensionné (ScaledObject), KEDA gère le contrôleur HPA réel en coulisses.
+> **Astuce :** Pensez à KEDA comme le service HPA - vous configurez ce qui doit être mis à l'échelle (ScaledObject), KEDA gère le contrôleur HPA réel en coulisses.
 
 > **C'est l'axe 'combien'.** Ensuite : Karpenter provisionne *quelle capacité* pour les pods.
 
@@ -582,7 +527,7 @@ Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébe
 
 ![bg left:20%](./img/aurora.png)
 
-- **Le fournisseur GCP est maintenu par la communauté :** le [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) est pré-1.0 ; des changements cassants surviennent. Épinglez les versions, scannez, gardez l'Autoscaling GKE comme fallback
+- **Le fournisseur GCP est maintenu par la communauté :** le [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) est pré-1.0 ; des changements cassants surviennent. Épinglez les versions, scannez, et gardez GKE Workload Autoscaler comme fallback
 - **Churn de nœuds :** une consolidation agressive perturbe les pods ; ajustez `consolidateAfter` et utilisez des PodDisruptionBudgets
 - **Azure NAP (Karpenter géré) :** plus simple maintenant, mais [github.com/Azure/karpenter-provider-azure/issues/1351](https://github.com/Azure/karpenter-provider-azure/issues/1351) indique des limites actuelles ; envisagez l'auto-hébergé pour un contrôle complet
 - **Changement de modèle :** le choix de l'autoscaler est défini à la création du cluster sur toutes les plateformes
@@ -726,7 +671,7 @@ A: C'est une migration bleu-verte sécurisée. Karpenter peut fonctionner simult
 
 ---
 
-### Groupe 2 : Stabilité, rayon d'action et disponibilité
+### Groupe 2 : Stabilité, rayon d'explosion et disponibilité
 
 **Q: Consolidation Karpenter + mes PodDisruptionBudgets + interruptions spot — que devient ma disponibilité ?**
 

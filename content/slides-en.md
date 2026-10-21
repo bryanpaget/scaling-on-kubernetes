@@ -22,38 +22,34 @@ Different tools, different axes. The value is in how they combine.
 <!-- Scaling axes map -->
 ## The Scaling Stack: Three Axes
 
-![bg left:20%](./img/aurora.png)
-
 | Axis | Tool | Scales | Level | Trigger |
 |------|------|--------|-------|---------|
 | **Pod replica count** | KEDA | Replicas | Pod | Events, queues, schedules |
 | **Pod resource size** | VPA | CPU/memory requests+limits | Pod | Usage history |
-| **Node capacity** | Karpenter | Nodes | Infrastructure | Pending pods |
+| **Node capacity** | Karpenter | Nodes | Infra | Pending pods |
 
 ---
 
 <!-- How they layer -->
 ## How They Layer
 
-![bg left:20%](./img/aurora.png)
-
 <div class="flow">
   <div class="flow-box">
     <div class="plate plate-head">HPA / KEDA</div>
     <div class="plate">Decide replica count</div>
-    <div class="plate">(how many pods)</div>
+    <div class="plate">*(How many pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">VPA</div>
-    <div class="plate">Sets each pod's</div>
-    <div class="plate">CPU / memory</div>
+    <div class="plate">Sets resource bounds</div>
+    <div class="plate">*(CPU / memory)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Karpenter</div>
-    <div class="plate">Provisions nodes</div>
-    <div class="plate">to fit the pods</div>
+    <div class="plate">Provisions bare nodes</div>
+    <div class="plate">*(Fits the pods)*</div>
   </div>
 </div>
 
@@ -75,15 +71,13 @@ Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- What is VPA? -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler:** automatically adjusts CPU and memory resource *requests and limits* for your containers
+**Vertical Pod Autoscaler:** dynamically targets constraints
 
-![bg left:20%](./img/aurora.png)
-
-- Unlike HPA which scales *replicas*, VPA scales *resource requests/limits*
-- Works with Deployments, StatefulSets, DaemonSets
-- Consists of three components: Recommender, Updater, and Admission Controller
-- Kubernetes-native via Custom Resource Definitions
-- By default scales both requests and limits proportionally; use `controlledValues: RequestsOnly` to scale requests only
+* **Targets:** Workload CPU/memory requests & limits
+* **Workloads:** Deployments, StatefulSets, DaemonSets
+* **Architecture:** Recommender, Updater, Admission Controller
+* **Native:** Implemented via standard CRDs
+* **Config:** Use `controlledValues: RequestsOnly` to protect custom limits
 
 <blockquote>
 HPA scales how many, VPA scales how much.
@@ -145,69 +139,32 @@ Stop guessing, start sizing with data.
 <!-- How the Recommender works -->
 ## How the Recommender Works
 
-![bg left:20%](./img/aurora.png)
+![bg left:25%](./img/aurora.png)
 
-The Recommender is the foundational "brain" of VPA. It doesn't modify your cluster - it only calculates and proposes values.
+The foundational "brain" of VPA. It only **proposes** metrics—it never modifies running pods.
 
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">1. Continuous Monitoring</div>
-    <div class="plate">Pulls real-time & historical metrics</div>
-    <div class="plate">from Metrics Server/Prometheus</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">2. Historical Analysis</div>
-    <div class="plate">Decaying moving average</div>
-    <div class="plate">Peaks matter most (no OOMs!)</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">3. Generates Targets</div>
-    <div class="plate">Lower bound, Target, Upper bound, Uncapped</div>
-    <div class="plate">Writes to VPA Status</div>
-  </div>
-</div>
-
-> **Recommender only proposes.** The Updater and Admission Controller decide *when* and *how* to apply the changes.
+1. **Continuous Monitoring** - Pulls utilization from Metrics Server/Prometheus
+2. **Historical Analysis** - Decaying moving average, peaks matter most (no OOMs!)
+3. **Target Generation** - Calculates and writes four target zones to VPA Status
 
 ---
 
 <!-- In-Place Resizing -->
 ## In-Place Resizing: Zero-Interruption Right-Sizing
 
-![bg left:20%](./img/aurora.png)
+![bg left:25%](./img/aurora.png)
 
-VPA can resize pods *without eviction* using In-Place mode - but it requires specific conditions.
+Modifies CPU and memory boundaries **without evicting your pods**.
 
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">1. Recommender</div>
-    <div class="plate">Calculates new resource needs</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">2. VPA Updates</div>
-    <div class="plate">Pod spec with new values</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">3. Kubelet</div>
-    <div class="plate">Updates cgroups dynamically</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">4. App</div>
-    <div class="plate">Uses new resources instantly</div>
-  </div>
-</div>
+* **Elastic CPU:** Runtimes seamlessly absorb altered CPU allocations
+* **Memory Limits:** Runtimes (like JVM) must support dynamic cgroup tracking
+* **Node Headroom:** Physical node must possess spare capacity to scale up
+* **Downscale Protection:** Shrinking memory too aggressively can trigger OOM kills
+* **K8s Requirement:** Managed dynamically by Aurora via the `InPlacePodVerticalScaling` feature gate (v1.27+).
 
-**Requirements for zero interruption:**
-- **Runtime support:** JVM/Node.js need to read cgroup limits dynamically (not just at startup)
-- **Node capacity:** The node must have spare resources to grant
-- **Downscaling risk:** Shrinking memory too aggressively can trigger OOM kills
-
-> **Why InPlaceOrRecreate?** If InPlace fails (node full, runtime doesn't support it), it safely falls back to eviction/recreate.
+<blockquote>
+Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
+</blockquote>
 
 ---
 
@@ -226,25 +183,6 @@ VPA can resize pods *without eviction* using In-Place mode - but it requires spe
 | **Auto** | Deprecated | Deprecated | Do not use |
 
 * Requires `InPlacePodVerticalScaling` feature gate and a Kubernetes version that supports it. Falls back to Recreate if unavailable.
-
----
-
-<!-- Aurora VPA defaults -->
-## VPA on Aurora: Adoption Status
-
-![bg left:20%](./img/aurora.png)
-
-| Setting | Value |
-|---------|-------|
-| VPA Version | 1.7 (latest; appVersion 1.35+) |
-| Namespace | vpa-system (planned) |
-| Metrics Server | Enabled (required) |
-| Admission Controller | Enabled (mutating webhook) |
-| Prometheus/ServiceMonitor | Disabled (opt-in per workload) |
-
-**Current status:** Aurora is developing VPA as a platform feature. The implementation is underway but not yet enabled by default.
-
-**Deployment:** via the aurora-core chart.
 
 ---
 
@@ -303,17 +241,17 @@ spec:
 <!-- What is KEDA -->
 ## What is KEDA?
 
-**Kubernetes Event-Driven Autoscaler:** scales replica count based on events, queues, or schedules
+**Kubernetes Event-Driven Autoscaler:** scales replica count based on events, queues, or cron schedules
 
 ![bg left:20%](./img/aurora.png)
 
-- Scales on external signals: Kafka lag, queue depth, cron, custom metrics
-- Can **scale to zero** when there is nothing to do
-- Drives a standard HPA under the hood (you do not create the HPA yourself)
+- Scales on external signals: Kafka lag, queue depth, cron schedules, or HTTP traffic
+- Acts as a broker: translates external metrics into native HPA targets
+- Enables scale-to-zero: safely unloads idle workloads down to 0 replicas
 - Config via `ScaledObject` (long-running) or `ScaledJob` (batch)
 
 <blockquote>
-HPA reacts to CPU. KEDA reacts to the thing that actually drives your load.
+HPA reacts to CPU. KEDA reacts to what actually drives your load.
 </blockquote>
 
 ---
