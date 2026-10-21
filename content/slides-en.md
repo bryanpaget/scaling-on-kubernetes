@@ -691,28 +691,66 @@ Right-size the pods, scale on real demand, provision only what fits.
 
 ---
 
-<!-- Q&A -->
-## Questions?
+<!-- Afterword: FAQs -->
+## Appendix: Advanced Questions & Answers
 
 ![bg left:20%](./img/aurora.png)
 
-### Harder Questions
+> **Note:** These are detailed answers you may not present live. Keep them as reference material for follow-up discussions or deeper technical discussions.
+
+---
+
+### Group 1: Architectural & Tooling Questions
 
 **Q: Why KEDA instead of plain HPA with custom/external metrics? HPA v2 already supports those.**
 
+A: While HPA v2 supports custom metrics, it requires deploying and maintaining complex Prometheus Adapter infrastructure. KEDA is entirely plug-and-play with 60+ built-in event sources. More importantly, native HPA cannot scale to zero—it can only scale down to 1. KEDA is the only mechanism that allows true zero resource consumption when idle.
+
+---
+
 **Q: VPA and HPA can't both touch CPU — so how do I scale a web app on CPU and right-size it?**
 
-**Q: Karpenter consolidation + my PodDisruptionBudgets + spot interruptions — what actually happens to my availability?**
+A: We decouple the metrics. For typical web apps, we assign HPA to manage CPU (handling unpredictable traffic spikes by scaling out) and VPA to manage Memory (right-sizing the baseline footprint over time). If we must right-size CPU, we run VPA in Initial mode—it benchmarks CPU requests only at pod birth, then hands total scaling control to the HPA.
 
-**Q: What's the blast radius / rollback story if VPA recommends something terrible in Initial or InPlace mode?**
+---
 
 **Q: If autoscaler choice is fixed at cluster creation, what's the migration path from Cluster Autoscaler to Karpenter?**
 
+A: It's a safe blue-green migration. Karpenter can run simultaneously alongside Cluster Autoscaler. We deploy Karpenter, introduce a new NodePool, and slowly taint or scale down the old Managed Node Groups. Workloads naturally drain from CAS and land on Karpenter-provisioned hardware without cluster recreation.
+
+---
+
+### Group 2: Stability, Blast Radius & Availability
+
+**Q: Karpenter consolidation + my PodDisruptionBudgets + spot interruptions — what actually happens to my availability?**
+
+A: Kubernetes native controls always win. Karpenter strictly respects PodDisruptionBudgets. If a consolidation or spot replacement violates your PDB, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
+
+---
+
+**Q: What's the blast radius / rollback story if VPA recommends something terrible in Initial or InPlace mode?**
+
+A: The blast radius is tightly constrained. We enforce safety rails using VPA `minAllowed` and `maxAllowed` limits so rogue recommendations can never starve or balloon a pod. If a bad update goes live, rollback is instant: delete the VPA object or change its mode to Off, and manually hardcode the last-known-stable resource requests in your deployment manifest.
+
+---
+
+**Q: Scale-to-zero cold starts — how bad, and how do I mitigate (keep-warm, min replicas)?**
+
+A: The cold start is real—typically 1-3 minutes if Karpenter must provision a raw node from scratch. We mitigate based on application tier: Tier-1 customer-facing apps are barred from scaling to zero (`minReplicas: 1`). For async workers, we accept the delay or use Karpenter headroom to keep small buffers of empty, pre-warmed capacity ready.
+
+---
+
+### Group 3: Business & Timeline Questions
+
 **Q: Cost: the 20–40% is an AWS marketing number. What have we measured?**
+
+A: Marketing numbers assume a worst-case baseline. In our testing, savings depend heavily on workload profile. For highly variable dev/test environments and event workers, we're tracking close to that [X]% mark due to overnight scale-to-zero and Karpenter consolidation. For steady-state production apps, savings are lower but stability improves drastically.
+
+---
 
 **Q: Timeline — when can I actually use these?**
 
-**Q: Scale-to-zero cold starts — how bad, and how do I mitigate (keep-warm, min replicas)?**
+A: Phase 1 (VPA in Recommendation/Off mode + Karpenter for Non-Prod) is available [Target Date]. Phase 2 (Full automated scaling and In-Place upgrades for Prod) is slated for [Target Date] following our soak-testing period.
 
 ---
 

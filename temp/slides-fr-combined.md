@@ -728,28 +728,66 @@ Dimensionnez les pods, échelonnez selon la demande réelle, provisionnez seulem
 
 ---
 
-<!-- Q&A -->
-## Questions ?
+<!-- Afterword: FAQs -->
+## Appendice : Questions avancées et réponses
 
 ![bg left:20%](./img/aurora.png)
 
-### Questions plus difficiles
+> **Note :** Ce sont des réponses détaillées que vous ne présenterez peut-être pas en direct. Gardez-les comme matériel de référence pour les discussions ultérieures ou les discussions techniques plus profondes.
+
+---
+
+### Groupe 1 : Questions architecturales et d'outillage
 
 **Q: Pourquoi KEDA plutôt qu'un HPA classique avec métriques personnalisées ? HPA v2 les supporte déjà.**
 
+A: Bien qu'HPA v2 supporte les métriques personnalisées, cela nécessite de déployer et maintenir une infrastructure complexe Prometheus Adapter. KEDA est entièrement "plug-and-play" avec 60+ sources d'événements intégrées. Plus important encore, HPA natif ne peut pas descendre à zéro — il ne peut que descendre à 1. KEDA est le seul mécanisme qui permet une consommation de ressources véritablement nulle quand inactif.
+
+---
+
 **Q: VPA et HPA ne peuvent pas tous les deux toucher au CPU — comment mettre à l'échelle une app web sur le CPU tout en la dimensionnant correctement ?**
 
-**Q: Consolidation Karpenter + mes PodDisruptionBudgets + interruptions spot — que devient ma disponibilité ?**
+A: Nous découplons les métriques. Pour les apps web typiques, nous assignons HPA à gérer le CPU (gérant les pics de trafic imprévisibles par le scaling horizontal) et VPA à gérer la mémoire (right-sizing de l'empreinte de base dans le temps). Si nous devons dimensionner le CPU, nous utilisons le mode Initial de VPA — il évalue les demandes CPU seulement à la naissance du pod, puis passe le contrôle total au HPA.
 
-**Q: Quel est le rayon d'explosion / le scénario de rollback si VPA recommande une chose terrible en mode Initial ou InPlace ?**
+---
 
 **Q: Si le choix de l'autoscaler est fixé à la création du cluster, quel est le chemin de migration depuis Cluster Autoscaler vers Karpenter ?**
 
+A: C'est une migration bleu-verte sécurisée. Karpenter peut fonctionner simultanément avec Cluster Autoscaler. Nous déployons Karpenter, introduisons un nouveau NodePool, puis taintons ou réduisons progressivement les anciens Managed Node Groups. Les workloads drainent naturellement de CAS et atterrissent sur le matériel provisionné par Karpenter sans recréation du cluster.
+
+---
+
+### Groupe 2 : Stabilité, rayon d'action et disponibilité
+
+**Q: Consolidation Karpenter + mes PodDisruptionBudgets + interruptions spot — que devient ma disponibilité ?**
+
+A: Les contrôles natifs Kubernetes toujours gagnent. Karpenter respecte strictement les PodDisruptionBudgets. Si une consolidation ou une remplacement spot viole votre PDB, Karpenter annule le mouvement. Pour les workloads critiques, nous pouvons injecter `karpenter.sh/do-not-disrupt: "true"` pour verrouiller les pods à leur nœud actuel de façon permanente.
+
+---
+
+**Q: Quel est le rayon d'explosion / le scénario de rollback si VPA recommande une chose terrible en mode Initial ou InPlace ?**
+
+A: Le rayon d'explosion est strictement contrôlé. Nous imposons des garde-fous avec les limites `minAllowed` et `maxAllowed` de VPA pour que les recommandations folles ne puissent jamais affamer ou gonfler un pod. Si une mauvaise mise à jour sort, le rollback est instantané : supprimez l'objet VPA ou changez son mode en Off, et encodez manuellement les dernières demandes de ressources stables dans votre manifeste de déploiement.
+
+---
+
+**Q: Latence cold start à zéro — combien c'est grave, et comment l'atténuer (keep-warm, min replicas) ?**
+
+A: Le cold start est réel — typiquement 1-3 minutes si Karpenter doit provisionner un nœud brut à partir de zéro. Nous atténuons selon le niveau d'application : Les apps Tier-1 accédées par les clients sont interdites de descente à zéro (`minReplicas: 1`). Pour les workers async, nous acceptons le délai ou utilisons la marge de Karpenter pour garder de petits buffers de capacité pré-chauffée prête.
+
+---
+
+### Groupe 3 : Questions business et chronologie
+
 **Q: Coût : le 20–40% est un chiffre marketing AWS. Qu'avons-nous mesuré ?**
+
+A: Les chiffres marketing supposent une base pire cas. Dans nos tests, les économies dépendent fortement du profil de charge. Pour les environnements dev/test très variables et les workers événementiels, nous nous rapprochons de ce pourcentage [X]% grâce à la descente à zéro nocturne et la consolidation Karpenter. Pour les apps production à état stable, les économies sont moindres mais la stabilité s'améliore considérablement.
+
+---
 
 **Q: Chronologie — quand pourrai-je vraiment utiliser ceux-ci ?**
 
-**Q: Latence cold start à zéro — combien c'est grave, et comment l'atténuer (keep-warm, min replicas) ?**
+A: La Phase 1 (VPA en mode Recommendation/Off + Karpenter pour Non-Prod) est disponible [Date cible]. La Phase 2 (Full scaling automatisé et mises à jour In-Place pour Prod) est prévue pour [Date cible] après notre période de test.
 
 ---
 
