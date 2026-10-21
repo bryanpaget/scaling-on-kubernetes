@@ -613,8 +613,6 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 <!-- Good vs bad interactions -->
 ## Bonnes vs mauvaises interactions
 
-![bg left:20%](./img/aurora.png)
-
 | Scénario de workload | État idéal (Bon) | Catastrophe en production (Mauvais) |
 |---------------------|-----------------|-----------------------------------|
 | **IoT / Événements haute volume** (ex: télemetry de partage de vélos) | KEDA met à l'échelle les réplicas sur la vitesse des événements tandis que VPA borde la mémoire. Karpenter packe les nœuds étroitement. | HPA et KEDA se battent sur la même métrique CPU. Le nombre de pods oscille sauvagement, causant des pertes de données utilisateurs pendant le pic de trafic du matin. |
