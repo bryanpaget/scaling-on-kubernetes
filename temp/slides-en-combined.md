@@ -51,13 +51,13 @@ Different tools, different axes. The value is in how they combine.
 ---
 
 <!-- Scaling axes map -->
-## The Scaling Stack: Three Axes, Four Tools
+## The Scaling Stack: Three Axes
 
 ![bg left:20%](./img/aurora.png)
 
-| Axis | Tool(s) | Scales | Level | Trigger |
-|------|---------|--------|-------|---------|
-| **Pod replica count** | HPA, KEDA | Replicas | Pod | Metrics (HPA) or events/schedule (KEDA) |
+| Axis | Tool | Scales | Level | Trigger |
+|------|------|--------|-------|---------|
+| **Pod replica count** | KEDA | Replicas | Pod | Events, queues, schedules |
 | **Pod resource size** | VPA | CPU/memory requests+limits | Pod | Usage history |
 | **Node capacity** | Karpenter | Nodes | Infrastructure | Pending pods |
 
@@ -277,6 +277,35 @@ spec:
 <blockquote>
 HPA reacts to CPU. KEDA reacts to the thing that actually drives your load.
 </blockquote>
+
+---
+
+<!-- How KEDA works -->
+## How KEDA Works
+
+![bg left:20%](./img/aurora.png)
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">ScaledObject</div>
+    <div class="plate">You define:</div>
+    <div class="plate">Events, triggers, scaling rules</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">KEDA Operator</div>
+    <div class="plate">Creates & manages:</div>
+    <div class="plate">Standard HPA behind the scenes</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">HPA</div>
+    <div class="plate">Controls replica count</div>
+    <div class="plate">for your deployment</div>
+  </div>
+</div>
+
+> **You only configure the ScaledObject.** KEDA owns the HPA and ensures it stays in sync with your event-based scaling rules.
 
 ---
 
@@ -517,13 +546,13 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 
 ![bg left:20%](./img/aurora.png)
 
-1. **KEDA / HPA** decide replica count (driven by events or metrics)
+1. **KEDA** decides replica count (events, queues, schedules)
 2. **VPA** sizes each pod based on usage history
 3. **Combined:** Replica count × per-pod size = total pending-pod demand
 4. **Karpenter** watches for unschedulable pods and provisions nodes
 
 <blockquote>
-All four feed one pipeline. Keep them off each other's axes and they compound.
+All three feed one pipeline. Keep them off each other's axes and they compound.
 </blockquote>
 
 ---

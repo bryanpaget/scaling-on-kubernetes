@@ -51,13 +51,13 @@ Des outils différents, des axes différents. La valeur est dans leur combinaiso
 ---
 
 <!-- Scaling axes map -->
-## La carte de mise à l'échelle : trois axes, quatre outils
+## La carte de mise à l'échelle : trois axes
 
 ![bg left:20%](./img/aurora.png)
 
-| Axe | Outil(s) | Échelle | Niveau | Déclencheur |
-|-----|---------|---------|--------|-------------|
-| **Nombre de réplicas** | HPA, KEDA | Réplicas | Pod | Métriques (HPA) ou événements/horaires (KEDA) |
+| Axe | Outil | Échelle | Niveau | Déclencheur |
+|-----|-------|---------|--------|-------------|
+| **Nombre de réplicas** | KEDA | Réplicas | Pod | Événements, files, horaires |
 | **Taille des ressources** | VPA | Demandes+limites CPU/mémoire | Pod | Historique d'utilisation |
 | **Capacité des nœuds** | Karpenter | Nœuds | Infrastructure | Pods en attente |
 
@@ -283,6 +283,35 @@ spec:
 <blockquote>
 HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 </blockquote>
+
+---
+
+<!-- Comment KEDA fonctionne -->
+## Comment KEDA fonctionne
+
+![bg left:20%](./img/aurora.png)
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">ScaledObject</div>
+    <div class="plate">Vous définissez :</div>
+    <div class="plate">Événements, déclencheurs, règles</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">Opérateur KEDA</div>
+    <div class="plate">Crée & gère :</div>
+    <div class="plate">HPA standard en coulisses</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">HPA</div>
+    <div class="plate">Contrôle le nombre de réplicas</div>
+    <div class="plate">de votre déploiement</div>
+  </div>
+</div>
+
+> **Vous configurez seulement le ScaledObject.** KEDA possède l'HPA et le maintient synchronisé avec vos règles de scaling pilotées par les événements.
 
 ---
 
@@ -523,7 +552,7 @@ Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébe
 
 ![bg left:20%](./img/aurora.png)
 
-1. **KEDA / HPA** décident du nombre de réplicas (pilotés par événements ou métriques)
+1. **KEDA** décide du nombre de réplicas (événements, files, horaires)
 2. **VPA** dimensionne chaque pod selon l'historique d'utilisation
 3. **Combiné :** Nombre de réplicas × taille par pod = demande totale de pods
 4. **Karpenter** surveille les pods non ordonnançables et provisionne les nœuds
