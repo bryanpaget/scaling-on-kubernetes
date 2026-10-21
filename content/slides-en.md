@@ -173,6 +173,44 @@ The Recommender is the foundational "brain" of VPA. It doesn't modify your clust
 
 ---
 
+<!-- In-Place Resizing -->
+## In-Place Resizing: Zero-Interruption Right-Sizing
+
+![bg left:20%](./img/aurora.png)
+
+VPA can resize pods *without eviction* using In-Place mode - but it requires specific conditions.
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">1. Recommender</div>
+    <div class="plate">Calculates new resource needs</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">2. VPA Updates</div>
+    <div class="plate">Pod spec with new values</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">3. Kubelet</div>
+    <div class="plate">Updates cgroups dynamically</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">4. App</div>
+    <div class="plate">Uses new resources instantly</div>
+  </div>
+</div>
+
+**Requirements for zero interruption:**
+- **Runtime support:** JVM/Node.js need to read cgroup limits dynamically (not just at startup)
+- **Node capacity:** The node must have spare resources to grant
+- **Downscaling risk:** Shrinking memory too aggressively can trigger OOM kills
+
+> **Why InPlaceOrRecreate?** If InPlace fails (node full, runtime doesn't support it), it safely falls back to eviction/recreate.
+
+---
+
 <!-- VPA Modes -->
 ## VPA Modes: Choose Your Risk Profile
 

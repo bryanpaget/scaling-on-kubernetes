@@ -208,6 +208,44 @@ Le Recommandeur est le "cerveau" fondamental de VPA. Il ne modifie pas votre clu
 
 ---
 
+<!-- In-Place Resizing -->
+## Redimensionnement en place : right-sizing sans interruption
+
+![bg left:20%](./img/aurora.png)
+
+VPA peut redimensionner les pods *sans éviction* avec le mode In-Place - mais cela nécessite des conditions spécifiques.
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">1. Recommandeur</div>
+    <div class="plate">Calcule les nouvelles ressources</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">2. VPA met à jour</div>
+    <div class="plate">Spécification du pod avec les nouvelles valeurs</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">3. Kubelet</div>
+    <div class="plate">Met à jour les cgroups dynamiquement</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">4. App</div>
+    <div class="plate">Utilise les nouvelles ressources instantanément</div>
+  </div>
+</div>
+
+**Conditions pour zéro interruption :**
+- **Support du runtime :** JVM/Node.js doivent lire les limites cgroup dynamiquement (pas seulement au démarrage)
+- **Capacité du nœud :** Le nœud doit avoir des ressources de rechange
+- **Risque de downscaling :** Réduire la mémoire trop agressivement peut déclencher des OOM
+
+> **Pourquoi InPlaceOrRecreate ?** Si InPlace échoue (nœud plein, runtime non compatible), il tombe en sécurité sur eviction/recreate.
+
+---
+
 <!-- VPA Modes -->
 ## Modes VPA : choisissez votre profil de risque
 
