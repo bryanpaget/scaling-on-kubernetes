@@ -632,12 +632,12 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 ![bg left:20%](./img/aurora.png)
 
 - **VPA** dimensionne les pods (quelle taille)
-- **KEDA** dimensionne les réplicas selon la demande réelle, jusqu'à zéro (combien)
+- **KEDA** met à l'échelle les réplicas selon la demande réelle, jusqu'à zéro (combien)
 - **Karpenter** provisionne et consolide les nœuds (quelle capacité)
-- **Ensemble** ils forment un pipeline : gardez-les hors des axes des autres et ils se renforcent
+- **Ensemble, ils forment un moteur de mise à l'échelle unique :** gardez leurs métriques découplées et leur efficacité se multiplie.
 
 <blockquote>
-Dimensionnez les pods, échelonnez selon la demande réelle, provisionnez seulement ce qui convient.
+Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez seulement ce qui convient.
 </blockquote>
 
 ---

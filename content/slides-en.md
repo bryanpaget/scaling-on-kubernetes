@@ -621,7 +621,7 @@ All three feed one pipeline. Keep them off each other's axes and they compound.
 - **VPA** right-sizes pods (how much)
 - **KEDA** scales replicas on real demand, including to zero (how many)
 - **Karpenter** provisions and consolidates nodes (what capacity)
-- **Together** they form one pipeline: keep them off each other's axes and they compound
+- **Together, they form a single scaling engine:** keep their metrics decoupled and their efficiency multiplies.
 
 <blockquote>
 Right-size the pods, scale on real demand, provision only what fits.
