@@ -1129,7 +1129,7 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="35" data-size="16:9" data-marpit-advanced-background="content" data-marpit-advanced-background-split="left">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="keda-on-aurora-adoption-status">KEDA on Aurora: Adoption Status</h2>
+<h2 id="keda-on-aurora">KEDA on Aurora</h2>
 
 <table>
 <thead>
@@ -1145,7 +1145,7 @@ table { font-size: 22px; }
 </tr>
 <tr>
 <td>Namespace</td>
-<td>keda-system (planned)</td>
+<td>keda-system</td>
 </tr>
 <tr>
 <td>Metrics Server</td>
@@ -1157,7 +1157,6 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
-<p><strong>Current status:</strong> Aurora is developing KEDA as a platform feature. The implementation is underway but not yet enabled by default.</p>
 <blockquote>
 KEDA is the platform-native way to scale replicas based on real demand signals.
 </blockquote>
@@ -1565,7 +1564,7 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:20%;" data-marpit-pagination-total="35" data-size="16:9" data-marpit-advanced-background="content" data-marpit-advanced-background-split="left">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="karpenter-on-aurora-the-strategy">Karpenter on Aurora: The Strategy</h2>
+<h2 id="karpenter-on-aurora">Karpenter on Aurora</h2>
 
 <p><strong>Goal:</strong> Build in-house Karpenter expertise to use across clouds, falling back to CSP-managed solutions when they're sufficient.</p>
 <ul>
@@ -1574,7 +1573,6 @@ table { font-size: 22px; }
 <li><strong>GKE:</strong> Self-hosted Karpenter (via <a href="https://github.com/cloudpilot-ai/karpenter-provider-gcp">CloudPilot AI shim</a>)</li>
 <li><strong>On-premises:</strong> Self-hosted Karpenter (you own the infrastructure)</li>
 </ul>
-<p><strong>Current status:</strong> Aurora is developing Karpenter as a platform feature. The implementation is underway but not yet enabled by default.</p>
 <p><strong>Why self-hosted when possible:</strong></p>
 <ul>
 <li>Same NodePool APIs across all platforms</li>
