@@ -36,11 +36,13 @@ style: |
 
 ![bg left:20%](./img/aurora.png)
 
-Trois autoscalers qu'Aurora exploite, et comment ils s'articulent :
+Mise à l'échelle sur Aurora : comprendre comment les autoscalers s'articulent
 
 - **VPA** - dimensionne les demandes CPU/mémoire des pods
 - **KEDA** - mise à l'échelle des réplicas pilotée par événements et horaires (jusqu'à zéro)
 - **Karpenter** - provisionnement de nœuds juste-à-temps et consolidation
+
+> **Note :** Aurora développe activement ces outils en tant que fonctionnalités de plateforme. KEDA est le plus avancé mais n'est pas encore activé par défaut.
 
 <blockquote>
 Des outils différents, des axes différents. La valeur est dans leur combinaison.
@@ -203,10 +205,12 @@ Cessez de deviner, dimensionnez avec des données.
 | Paramètre | Valeur |
 |-----------|--------|
 | Version VPA | 1.7 (dernière ; appVersion 1.35+) |
-| Espace de noms | vpa-system |
+| Espace de noms | vpa-system (en développement) |
 | Metrics Server | Activé (requis) |
 | Contrôleur d'admission | Activé (webhook mutateur) |
 | Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
+
+**Statut actuel :** Aurora développe VPA en tant que fonctionnalité de plateforme. L'implémentation est en cours mais pas encore activée par défaut.
 
 **Déploiement :** via le chart aurora-core. L'activation au niveau plateforme est déjà faite.
 
@@ -287,38 +291,16 @@ HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 
 | Paramètre | Valeur |
 |-----------|--------|
-| Version KEDA | 2.16+ (dernière stable) |
-| Espace de noms | keda-system |
+| Version KEDA | 2.20.2 (dernière stable) |
+| Espace de noms | keda-system (en développement) |
 | Metrics Server | Activé (requis) |
 | Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
 
-**Deux façons de l'utiliser :**
-- **Mise à l'échelle hors heures native** (recommandé) : `offHoursScaling` dans le chart aurora-namespace ; les ScaledObjects sont générés
-- **ScaledObject manuel :** pour événements, files, ou logique personnalisée
+**Statut actuel :** Aurora développe KEDA en tant que fonctionnalité de plateforme. L'implémentation est en cours mais pas encore activée par défaut.
 
----
-
-<!-- KEDA platform-native -->
-## KEDA : mise à l'échelle hors heures native
-
-![bg left:20%](./img/aurora.png)
-
-Recommandé pour la mise à l'échelle selon les heures d'affaires. Désactivé par défaut.
-
-```yaml
-offHoursScaling:
-  enabled: true
-  defaultSchedule:
-    start: "0 7 * * 1-5"        # lun-ven 7:00
-    end: "0 19 * * 1-5"         # lun-ven 19:00
-    timezone: "America/Toronto"
-  minReplicas: 1                # garder 1 hors heures (prod)
-  workloads:
-    - name: my-api
-      businessHoursReplicas: 2
-```
-
-Le chart génère pour vous les ScaledObjects, labels et annotations conformes.
+<blockquote>
+KEDA est le moyen natif de la plateforme pour mettre à l'échelle les réplicas selon les signaux de demande réels.
+</blockquote>
 
 ---
 
@@ -471,13 +453,13 @@ spec:
 - **GKE :** Karpenter auto-hébergé (via [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp))
 - **On-premises :** Karpenter auto-hébergé (vous possédez l'infrastructure)
 
+**Statut actuel :** Aurora développe Karpenter en tant que fonctionnalité de plateforme. L'implémentation est en cours mais pas encore activée par défaut.
+
 **Pourquoi l'auto-hébergé quand possible :**
 - Mêmes APIs NodePool sur toutes les plateformes
 - Contrôle complet des versions et balayage de sécurité
 - Évite la manipulation des coûts par le CSP
 - Liberté de migration si une solution CSP ne répond pas aux objectifs
-
-**Compromis Azure NAP :** Simplicité gérée maintenant, mais risque de verrouillage du fournisseur plus tard.
 
 <blockquote>
 Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébergé si des contraintes émergeaient.
@@ -492,7 +474,7 @@ Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébe
 
 - **Le fournisseur GCP est maintenu par la communauté :** le [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) est pré-1.0 ; des changements cassants surviennent. Épinglez les versions, scannez, gardez l'Autoscaling GKE comme fallback
 - **Churn de nœuds :** une consolidation agressive perturbe les pods ; ajustez `consolidateAfter` et utilisez des PodDisruptionBudgets
-- **Compromis Azure NAP :** plus simple maintenant, mais difficile de basculer plus tard si des contraintes apparaissent (APIs spécifiques du fournisseur, verrouillage des versions, contrôle des coûts)
+- **Azure NAP (Karpenter géré) :** plus simple maintenant, mais [github.com/Azure/karpenter-provider-azure/issues/1351](https://github.com/Azure/karpenter-provider-azure/issues/1351) indique des limites actuelles ; envisagez l'auto-hébergé pour un contrôle complet
 - **Changement de modèle :** le choix de l'autoscaler est défini à la création du cluster sur toutes les plateformes
 - **Définissez `limits`** sur NodePool pour prévenir le provisionnement incontrôlé
 - **Apprenez Karpenter d'abord :** comprenez le projet open-source avant de choisir une variante gérée
@@ -533,7 +515,7 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 |-------|-------|
 | **VPA + HPA** | Jamais la même ressource. VPA = mémoire, HPA = CPU (`controlledResources`) |
 | **VPA + KEDA** | Conflit uniquement avec déclencheurs CPU/mémoire. Sûr avec profondeur de file, cron, ou métriques personnalisées |
-| **KEDA + votre HPA** | Ne créez pas votre propre HPA ; KEDA le possède (`transfer-hpa-ownership` au besoin) |
+| **KEDA + HPA** | Ne gérez pas votre propre HPA - KEDA s'en occupe automatiquement (vous configurez seulement le ScaledObject) |
 | **VPA + Karpenter** | Complémentaires : VPA change les demandes, Karpenter repack. Définissez `maxAllowed` et `limits` |
 | **KEDA 0 + Karpenter** | Descente à zéro + consolidation vide et retire les nœuds. Attention au cold start |
 
@@ -549,6 +531,22 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 - **Descente à zéro en production** sans planifier la latence du cold start
 - **Pas de `maxAllowed` sur VPA / pas de `limits` sur NodePool** - une recommandation excessive peut épingler un nœud
 - **Consolidation agressive sans PodDisruptionBudgets** - le churn de nœuds perturbe ; utilisez `consolidateAfter` et PDB
+
+---
+
+<!-- Good vs bad interactions -->
+## Bonnes vs mauvaises interactions
+
+![bg left:20%](./img/aurora.png)
+
+| Scénario | Bonne interaction | Mauvaise interaction |
+|----------|-------------------|----------------------|
+| **Système de partage de vélos** (comme Hello Bike) | KEDA scale selon la disponibilité (événements), VPA dimensionne les pods CPU, Karpenter ajoute des nœuds | HPA/KEDA sur la même métrique que VPA cause des oscillations |
+| **Contrôle de drone swarm** | KEDA scale selon la profondeur de file, VPA dimensionne pour le traitement mémoire lourd, Karpenter provisionne des nœuds GPU | Pas de `limits` sur Karpenter entraîne un provisionnement incontrôlé |
+| **Défense cyber** | KEDA scale selon la détection de menaces (événements), VPA dimensionne pour les pics CPU, Karpenter ajoute des nœuds | Descente à zéro en prod cause de la latence de détection |
+| **Motif général** | VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace | Deux contrôleurs se battent pour le même axe |
+
+> **Astuce :** Pensez-y comme un pipeline - VPA dimensionne chaque pod, KEDA décide combien, Karpenter fournit l'infrastructure.
 
 ---
 
@@ -568,6 +566,31 @@ Dimensionnez les pods, échelonnez selon la demande réelle, provisionnez seulem
 
 ---
 
+<!-- Q&A -->
+## Questions ?
+
+![bg left:20%](./img/aurora.png)
+
+### Questions plus difficiles
+
+**Q: Pourquoi KEDA plutôt qu'un HPA classique avec métriques personnalisées ? HPA v2 les supporte déjà.**
+
+**Q: VPA et HPA ne peuvent pas tous les deux toucher au CPU — comment mettre à l'échelle une app web sur le CPU tout en la dimensionnant correctement ?**
+
+**Q: Consolidation Karpenter + mes PodDisruptionBudgets + interruptions spot — que devient ma disponibilité ?**
+
+**Q: Quel est le rayon d'explosion / le scénario de rollback si VPA recommande une chose terrible en mode Initial ou InPlace ?**
+
+**Q: Si le choix de l'autoscaler est fixé à la création du cluster, quel est le chemin de migration depuis Cluster Autoscaler vers Karpenter ?**
+
+**Q: Coût : le 20–40% est un chiffre marketing AWS. Qu'avons-nous mesuré ?**
+
+**Q: Chronologie — quand pourrai-je vraiment utiliser ceux-ci ?**
+
+**Q: Latence cold start à zéro — combien c'est grave, et comment l'atténuer (keep-warm, min replicas) ?**
+
+---
+
 <!-- References -->
 ## Références
 
@@ -580,4 +603,5 @@ Dimensionnez les pods, échelonnez selon la demande réelle, provisionnez seulem
 
 ### Plateforme Aurora :
 4. <a href="https://github.com/gccloudone-aurora/aurora-platform-charts">Aurora Platform Charts</a>
-5. Guides d'utilisation VPA / KEDA et la proposition d'autoscaling Karpenter (docs-main)
+5. <a href="https://github.com/Azure/karpenter-provider-azure/issues/1351">Issue Azure NAP #1351</a>
+6. Guides d'utilisation VPA / KEDA et la proposition d'autoscaling Karpenter (docs-main)
