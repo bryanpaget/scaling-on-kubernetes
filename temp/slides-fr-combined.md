@@ -198,7 +198,7 @@ Cessez de deviner, dimensionnez avec des données.
 ---
 
 <!-- Aurora VPA defaults -->
-## VPA sur Aurora : valeurs par défaut
+## VPA sur Aurora : statut d'adoption
 
 ![bg left:20%](./img/aurora.png)
 
@@ -255,6 +255,8 @@ spec:
 - **Même ressource que HPA/KEDA :** ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)
 - **Processus très éphémères :** VPA a besoin de temps pour collecter et analyser les données d'utilisation
 
+> **C'est l'axe 'quelle taille'.** Ensuite : KEDA décide *combien* de réplicas vous avez besoin.
+
 ---
 
 <!-- ============================ PARTIE 2: KEDA ============================ -->
@@ -284,8 +286,29 @@ HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 
 ---
 
+<!-- Pourquoi KEDA est important -->
+## Pourquoi KEDA est important
+
+![bg left:20%](./img/aurora.png)
+
+### Le problème du dimensionnement des réplicas :
+- **HPA sur CPU/mémoire :** scale trop tard - quand le CPU est déjà haut, il est déjà trop tard
+- **Réplicas statiques :** soit sur-provisionné (capacité gaspillée), soit sous-provisionné (mauvaise UX)
+- **Scaling manuel :** réactif, source d'erreurs, épuisant
+
+### KEDA résout cela :
+- **Scaling piloté par les événements :** commencez à scale *avant* que le CPU ne monte - lag Kafka, profondeur de file, ou alertes Prometheus
+- **Descente à zéro :** quand il n'y a rien à faire, exécutez 0 réplicas. Quand le trafic arrive, scalez vers N
+- **Intégration HPA :** KEDA crée et possède l'HPA ; vous configurez seulement le ScaledObject
+
+<blockquote>
+Scalez sur ce qui pilote votre charge, pas sur ce qu'il semble après le fait.
+</blockquote>
+
+---
+
 <!-- KEDA Aurora defaults -->
-## KEDA sur Aurora : valeurs par défaut
+## KEDA sur Aurora : statut d'adoption
 
 ![bg left:20%](./img/aurora.png)
 
@@ -337,8 +360,7 @@ spec:
 ![bg left:20%](./img/aurora.png)
 
 ### NE PAS :
-- **Utiliser KEDA et votre propre HPA ensemble** - KEDA crée et gère le HPA ; vous ne gérez que le ScaledObject
-- **Créer votre propre HPA** pour un workload géré par KEDA - KEDA le possède
+- **Utiliser KEDA et votre propre HPA ensemble** - KEDA crée et gère l'HPA ; vous configurez seulement le ScaledObject
 - **Vous fier à des cooldowns courts pour l'isolement** - `cooldownPeriod` (par défaut 300s) n'affecte que le passage final de zéro, pas la réduction générale (c'est la fenêtre `behavior` de HPA)
 
 ### FAIRE :
@@ -346,6 +368,10 @@ spec:
 - Ajoutez `terminationGracePeriodSeconds` pour les consommateurs longue durée
 - Utilisez `ScaledJob` pour le traitement batch événementiel
 - Validez sur un cycle complet de 24 heures en hors prod
+
+> **Astuce :** Pensez à KEDA comme le service HPA - vous configurez ce qui doit être dimensionné (ScaledObject), KEDA gère le contrôleur HPA réel en coulisses.
+
+> **C'est l'axe 'combien'.** Ensuite : Karpenter provisionne *quelle capacité* pour les pods.
 
 ---
 
@@ -479,6 +505,8 @@ Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébe
 - **Définissez `limits`** sur NodePool pour prévenir le provisionnement incontrôlé
 - **Apprenez Karpenter d'abord :** comprenez le projet open-source avant de choisir une variante gérée
 
+> **C'est l'axe infrastructure.** Vous avez maintenant : VPA (quelle taille) + KEDA (combien) + Karpenter (quelle capacité) = un pipeline complet.
+
 ---
 
 <!-- ============================ PARTIE 4: Interactions ============================ -->
@@ -515,9 +543,11 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 |-------|-------|
 | **VPA + HPA** | Jamais la même ressource. VPA = mémoire, HPA = CPU (`controlledResources`) |
 | **VPA + KEDA** | Conflit uniquement avec déclencheurs CPU/mémoire. Sûr avec profondeur de file, cron, ou métriques personnalisées |
-| **KEDA + HPA** | Ne gérez pas votre propre HPA - KEDA s'en occupe automatiquement (vous configurez seulement le ScaledObject) |
+| **KEDA + HPA** | Ne configurez pas à la fois le ScaledObject de KEDA et votre propre HPA pour le même déploiement — KEDA crée et possède l'HPA sous-jacent automatiquement |
 | **VPA + Karpenter** | Complémentaires : VPA change les demandes, Karpenter repack. Définissez `maxAllowed` et `limits` |
 | **KEDA 0 + Karpenter** | Descente à zéro + consolidation vide et retire les nœuds. Attention au cold start |
+
+> **Ce que "votre propre HPA" signifie :** Créer un manifeste HorizontalPodAutoscaler Kubernetes qui cible le même déploiement qu'un ScaledObject KEDA. Les deux autoscalers se battront sur le nombre de réplicas, causant des oscillations et des échafaudages d'API.
 
 ---
 
@@ -539,14 +569,14 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 
 ![bg left:20%](./img/aurora.png)
 
-| Scénario | Bonne interaction | Mauvaise interaction |
-|----------|-------------------|----------------------|
-| **Système de partage de vélos** (comme Hello Bike) | KEDA scale selon la disponibilité (événements), VPA dimensionne les pods CPU, Karpenter ajoute des nœuds | HPA/KEDA sur la même métrique que VPA cause des oscillations |
-| **Contrôle de drone swarm** | KEDA scale selon la profondeur de file, VPA dimensionne pour le traitement mémoire lourd, Karpenter provisionne des nœuds GPU | Pas de `limits` sur Karpenter entraîne un provisionnement incontrôlé |
-| **Défense cyber** | KEDA scale selon la détection de menaces (événements), VPA dimensionne pour les pics CPU, Karpenter ajoute des nœuds | Descente à zéro en prod cause de la latence de détection |
-| **Motif général** | VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace | Deux contrôleurs se battent pour le même axe |
+| Scénario | Bon | Mauvais |
+|----------|-----|---------|
+| **Système de partage de vélos** (comme Hello Bike) | KEDA scale selon les événements de vélos, VPA dimensionne les pods, Karpenter ajoute des nœuds | HPA + KEDA sur la même métrique cause des oscillations |
+| **Contrôle de drone swarm** | KEDA scale selon la profondeur de file, VPA dimensionne pour la mémoire, Karpenter ajoute des GPU | Pas de `limits` sur Karpenter → provisionnement incontrôlé |
+| **Défense cyber** | KEDA scale selon les événements de menace, VPA dimensionne pour les pics CPU, Karpenter ajoute des nœuds | Descente à zéro en prod → latence de détection |
+| **Général** | VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace | HPA + KEDA sur le même déploiement → oscillation |
 
-> **Astuce :** Pensez-y comme un pipeline - VPA dimensionne chaque pod, KEDA décide combien, Karpenter fournit l'infrastructure.
+> **Astuce :** KEDA crée et possède un HPA en coulisses. Ne créez pas votre propre HPA pour le même workload.
 
 ---
 

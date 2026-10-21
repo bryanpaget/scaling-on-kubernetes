@@ -161,7 +161,7 @@ Stop guessing, start sizing with data.
 ---
 
 <!-- Aurora VPA defaults -->
-## VPA on Aurora: Platform Defaults
+## VPA on Aurora: Adoption Status
 
 ![bg left:20%](./img/aurora.png)
 
@@ -218,6 +218,8 @@ spec:
 - **Same resource as HPA/KEDA:** never let two controllers fight over the same resource (see Part 4)
 - **Very short-lived processes:** VPA needs time to collect and analyze usage data
 
+> **That's the 'how much' axis.** Next: KEDA decides *how many* replicas you need.
+
 ---
 
 <!-- ============================ PART 2: KEDA ============================ -->
@@ -247,8 +249,29 @@ HPA reacts to CPU. KEDA reacts to the thing that actually drives your load.
 
 ---
 
+<!-- Why KEDA matters -->
+## Why KEDA Matters
+
+![bg left:20%](./img/aurora.png)
+
+### The Replica Scaling Problem:
+- **HPA on CPU/memory:** Scales too late - by the time CPU is high, it's already too late
+- **Static replicas:** Either over-provision (wasted capacity) or under-provision (bad UX)
+- **Manual scaling:** Reactive, error-prone, exhausting
+
+### KEDA Solves This:
+- **Event-driven scale-up:** Start scaling *before* CPU rises - Kafka lag, queue depth, or Prometheus alerts
+- **Scale-to-zero:** When there's nothing to do, run 0 replicas. When traffic arrives, scale to N
+- **HPA integration:** KEDA creates and owns the HPA; you just configure the ScaledObject
+
+<blockquote>
+Scale on what drives your load, not on what it looks like after the fact.
+</blockquote>
+
+---
+
 <!-- KEDA Aurora defaults -->
-## KEDA on Aurora: Platform Defaults
+## KEDA on Aurora: Adoption Status
 
 ![bg left:20%](./img/aurora.png)
 
@@ -307,10 +330,11 @@ spec:
 - Keep `minReplicaCount: 1`+ in production (no scale-to-zero)
 - Add `terminationGracePeriodSeconds` for long-running consumers
 - Use `ScaledJob` for event-processing batch work
+- Validate across a full 24-hour cycle in non-prod
 
 > **Tip:** Think of KEDA as the "HPA service" - you configure what to scale (ScaledObject), KEDA manages the actual HPA controller behind the scenes.
 
-- Validate across a full 24-hour cycle in non-prod
+> **That's the 'how many' axis.** Next: Karpenter provisions *what capacity* to fit the pods.
 
 ---
 
@@ -444,6 +468,8 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 - **Set `limits`** on NodePool to prevent runaway provisioning
 - **Learn Karpenter first:** understand the open-source project before choosing a managed variant
 
+> **That's the infrastructure axis.** You now have: VPA (how much) + KEDA (how many) + Karpenter (what capacity) = a complete pipeline.
+
 ---
 
 <!-- ============================ PART 4: Interactions ============================ -->
@@ -480,9 +506,11 @@ All four feed one pipeline. Keep them off each other's axes and they compound.
 |------|------|
 | **VPA + HPA** | Never on the same resource. VPA = memory, HPA = CPU (`controlledResources`) |
 | **VPA + KEDA** | Conflict only with CPU/memory triggers. Safe with queue depth, cron, or custom metrics |
-| **KEDA + HPA** | Don't manage your own HPA - KEDA handles it automatically (you only configure the ScaledObject) |
+| **KEDA + HPA** | Don't configure both KEDA's ScaledObject and your own HPA for the same deployment — KEDA creates and owns the underlying HPA automatically |
 | **VPA + Karpenter** | Complementary: VPA changes requests, Karpenter repacks. Set VPA `maxAllowed` and NodePool `limits` |
 | **KEDA 0 + Karpenter** | Scale-to-zero + consolidation empties and removes nodes. Watch cold-start latency |
+
+> **What "your own HPA" means:** Creating a Kubernetes HorizontalPodAutoscaler manifest that targets the same deployment as a KEDA ScaledObject. Both autoscalers will fight over replica count, causing flapping and API thrashing.
 
 ---
 
@@ -504,14 +532,14 @@ All four feed one pipeline. Keep them off each other's axes and they compound.
 
 ![bg left:20%](./img/aurora.png)
 
-| Scenario | Good Interaction | Bad Interaction |
-|----------|------------------|-----------------|
-| **Bike sharing system** (like Hello Bike) | KEDA scales on bike availability (events), VPA sizes pods for CPU, Karpenter adds nodes | HPA/KEDA on same metric as VPA causes oscillation |
-| **Drone swarm control** | KEDA scales on queue depth, VPA sizes for memory-heavy processing, Karpenter provisions GPU nodes | No `limits` on Karpenter leads to runaway provisioning |
-| **Cyber defense** | KEDA scales on threat detection (events), VPA sizes for CPU bursts, Karpenter adds nodes | Scale-to-zero in prod causes detection latency |
-| **General pattern** | VPA (resources) + KEDA (replicas) + Karpenter (nodes) = efficient pipeline | Two controllers fight for same axis |
+| Scenario | Good | Bad |
+|----------|------|-----|
+| **Bike sharing** (like Hello Bike) | KEDA scales on bike events, VPA sizes pods, Karpenter adds nodes | HPA + KEDA on same metric causes oscillation |
+| **Drone swarm control** | KEDA scales on queue depth, VPA sizes for memory, Karpenter adds GPU nodes | No `limits` on Karpenter → runaway provisioning |
+| **Cyber defense** | KEDA scales on threat events, VPA sizes for CPU bursts, Karpenter adds nodes | Scale-to-zero in prod → detection latency |
+| **General** | VPA (resources) + KEDA (replicas) + Karpenter (nodes) = efficient pipeline | HPA + KEDA on same deployment → flapping |
 
-> **Tip:** Think of it as a pipeline - VPA sizes each pod, KEDA decides how many, Karpenter provides the infrastructure.
+> **Tip:** KEDA creates and owns an HPA behind the scenes. Don't create your own HPA for the same workload.
 
 ---
 
