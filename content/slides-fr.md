@@ -375,18 +375,16 @@ Scalez sur ce qui pilote votre charge, pas sur ce qu'il semble après le fait.
 ---
 
 <!-- KEDA Aurora defaults -->
-## KEDA sur Aurora : statut d'adoption
+## KEDA sur Aurora
 
 ![bg left:20%](./img/aurora.png)
 
 | Paramètre | Valeur |
 |-----------|--------|
 | Version KEDA | 2.20.2 (dernière stable) |
-| Espace de noms | keda-system (en développement) |
+| Espace de noms | keda-system |
 | Metrics Server | Activé (requis) |
 | Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
-
-**Statut actuel :** Aurora développe KEDA en tant que fonctionnalité de plateforme. L'implémentation est en cours mais pas encore activée par défaut.
 
 <blockquote>
 KEDA est le moyen natif de la plateforme pour mettre à l'échelle les réplicas selon les signaux de demande réels.
@@ -535,7 +533,7 @@ spec:
 ---
 
 <!-- Karpenter Aurora -->
-## Karpenter sur Aurora : la stratégie
+## Karpenter sur Aurora
 
 ![bg left:20%](./img/aurora.png)
 
@@ -545,8 +543,6 @@ spec:
 - **Azure :** Essayer AKS NAP (Karpenter géré) ; basculer à l'auto-hébergé si des contraintes apparaissent
 - **GKE :** Karpenter auto-hébergé (via [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp))
 - **On-premises :** Karpenter auto-hébergé (vous possédez l'infrastructure)
-
-**Statut actuel :** Aurora développe Karpenter en tant que fonctionnalité de plateforme. L'implémentation est en cours mais pas encore activée par défaut.
 
 **Pourquoi l'auto-hébergé quand possible :**
 - Mêmes APIs NodePool sur toutes les plateformes

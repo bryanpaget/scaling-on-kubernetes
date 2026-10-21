@@ -369,18 +369,16 @@ Scale on what drives your load, not on what it looks like after the fact.
 ---
 
 <!-- KEDA Aurora defaults -->
-## KEDA on Aurora: Adoption Status
+## KEDA on Aurora
 
 ![bg left:20%](./img/aurora.png)
 
 | Setting | Value |
 |---------|-------|
 | KEDA Version | 2.20.2 (latest stable) |
-| Namespace | keda-system (planned) |
+| Namespace | keda-system |
 | Metrics Server | Enabled (required) |
 | Prometheus/ServiceMonitor | Disabled (opt-in per workload) |
-
-**Current status:** Aurora is developing KEDA as a platform feature. The implementation is underway but not yet enabled by default.
 
 <blockquote>
 KEDA is the platform-native way to scale replicas based on real demand signals.
@@ -529,7 +527,7 @@ spec:
 ---
 
 <!-- Karpenter Aurora -->
-## Karpenter on Aurora: The Strategy
+## Karpenter on Aurora
 
 ![bg left:20%](./img/aurora.png)
 
@@ -539,8 +537,6 @@ spec:
 - **Azure:** Try AKS NAP (managed Karpenter); switch to self-hosted if constraints appear
 - **GKE:** Self-hosted Karpenter (via [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp))
 - **On-premises:** Self-hosted Karpenter (you own the infrastructure)
-
-**Current status:** Aurora is developing Karpenter as a platform feature. The implementation is underway but not yet enabled by default.
 
 **Why self-hosted when possible:**
 - Same NodePool APIs across all platforms
