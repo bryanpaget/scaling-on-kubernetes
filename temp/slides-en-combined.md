@@ -633,12 +633,12 @@ All three feed one pipeline. Keep them off each other's axes and they compound.
 
 ![bg left:20%](./img/aurora.png)
 
-| Scenario | Good | Bad |
-|----------|------|-----|
-| **Bike sharing** (like Hello Bike) | KEDA scales on bike events, VPA sizes pods, Karpenter adds nodes | HPA + KEDA on same metric causes oscillation |
-| **Drone swarm control** | KEDA scales on queue depth, VPA sizes for memory, Karpenter adds GPU nodes | No `limits` on Karpenter → runaway provisioning |
-| **Cyber defense** | KEDA scales on threat events, VPA sizes for CPU bursts, Karpenter adds nodes | Scale-to-zero in prod → detection latency |
-| **General** | VPA (resources) + KEDA (replicas) + Karpenter (nodes) = efficient pipeline | HPA + KEDA on same deployment → flapping |
+| Workload Scenario | The Ideal State (Good) | The Production Catastrophe (Bad) |
+|-------------------|----------------------|---------------------------------|
+| **High-Volume IoT / Events** (e.g., Bike sharing telemetry) | KEDA scales replicas on event velocity while VPA bounds memory. Karpenter packs nodes tightly. | HPA and KEDA fight over the same CPU metric. Pod counts oscillate wildly, dropping user data during peak morning traffic. |
+| **Heavy Compute Processing** (e.g., Drone swarm ML tracking) | KEDA monitors work queues while Karpenter dynamically provisions specialized, exact-fit GPU nodes. | No budget limits set on Karpenter. An unhandled application code loop triggers a runaway, massive cloud spending spike overnight. |
+| **Latency-Critical APIs** (e.g., Cyber threat defense) | KEDA scales replicas based on network anomalies; VPA is set to Initial mode to avoid mid-flight restarts. Scale-to-Zero is left enabled. An unexpected cyber threat experiences a 2-minute cold-start delay while bare nodes boot up. | Scale-to-zero in prod → detection latency |
+| **Standard Multi-Tier Apps** (General Web Services) | VPA handles vertical memory right-sizing while KEDA or HPA handles horizontal traffic spikes. Both tools look at CPU. The scaling loops overlap, triggering rapid, endless pod eviction cycles known as deployment flapping. | — |
 
 > **Tip:** KEDA creates and owns an HPA behind the scenes. Don't create your own HPA for the same workload.
 

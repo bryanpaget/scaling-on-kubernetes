@@ -1926,31 +1926,31 @@ table { font-size: 22px; }
 <table>
 <thead>
 <tr>
-<th>Scénario</th>
-<th>Bon</th>
-<th>Mauvais</th>
+<th>Scénario de workload</th>
+<th>État idéal (Bon)</th>
+<th>Catastrophe en production (Mauvais)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Système de partage de vélos</strong> (comme Hello Bike)</td>
-<td>KEDA scale selon les événements de vélos, VPA dimensionne les pods, Karpenter ajoute des nœuds</td>
-<td>HPA + KEDA sur la même métrique cause des oscillations</td>
+<td><strong>IoT / Événements haute volume</strong> (ex: télemetry de partage de vélos)</td>
+<td>KEDA met à l'échelle les réplicas sur la vitesse des événements tandis que VPA borde la mémoire. Karpenter packe les nœuds étroitement.</td>
+<td>HPA et KEDA se battent sur la même métrique CPU. Le nombre de pods oscille sauvagement, causant des pertes de données utilisateurs pendant le pic de trafic du matin.</td>
 </tr>
 <tr>
-<td><strong>Contrôle de drone swarm</strong></td>
-<td>KEDA scale selon la profondeur de file, VPA dimensionne pour la mémoire, Karpenter ajoute des GPU</td>
-<td>Pas de <code>limits</code> sur Karpenter → provisionnement incontrôlé</td>
+<td><strong>Traitement lourd</strong> (ex: suivi ML drone swarm)</td>
+<td>KEDA surveille les files de travail tandis que Karpenter provisionne dynamiquement des nœuds GPU spécialisés et exactement adaptés.</td>
+<td>Aucune limite budgétaire sur Karpenter. Une boucle de code application non gérée déclenche une hausse massive imprévue des coûts cloud overnight.</td>
 </tr>
 <tr>
-<td><strong>Défense cyber</strong></td>
-<td>KEDA scale selon les événements de menace, VPA dimensionne pour les pics CPU, Karpenter ajoute des nœuds</td>
+<td><strong>API critique en latence</strong> (ex: défense cyber)</td>
+<td>KEDA met à l'échelle les réplicas selon les anomalies réseau; VPA est configuré en mode Initial pour éviter les redémarrages en vol. Descente à zéro est activée. Une menace cyber imprévue subit un délai de cold-start de 2 minutes pendant que les nœuds bruts bootent.</td>
 <td>Descente à zéro en prod → latence de détection</td>
 </tr>
 <tr>
-<td><strong>Général</strong></td>
-<td>VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace</td>
-<td>HPA + KEDA sur le même déploiement → oscillation</td>
+<td><strong>Apps multi-tiers standard</strong> (Services Web généraux)</td>
+<td>VPA gère le dimensionnement vertical de la mémoire tandis que KEDA ou HPA gère les pics de trafic horizontal. Les deux outils regardent le CPU. Les boucles de scaling se chevauchent, déclenchant des cycles d'éviction de pods rapides et infinis appelés flapping de déploiement.</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>

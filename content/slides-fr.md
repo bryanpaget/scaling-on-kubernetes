@@ -615,12 +615,12 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 
 ![bg left:20%](./img/aurora.png)
 
-| Scénario | Bon | Mauvais |
-|----------|-----|---------|
-| **Système de partage de vélos** (comme Hello Bike) | KEDA scale selon les événements de vélos, VPA dimensionne les pods, Karpenter ajoute des nœuds | HPA + KEDA sur la même métrique cause des oscillations |
-| **Contrôle de drone swarm** | KEDA scale selon la profondeur de file, VPA dimensionne pour la mémoire, Karpenter ajoute des GPU | Pas de `limits` sur Karpenter → provisionnement incontrôlé |
-| **Défense cyber** | KEDA scale selon les événements de menace, VPA dimensionne pour les pics CPU, Karpenter ajoute des nœuds | Descente à zéro en prod → latence de détection |
-| **Général** | VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace | HPA + KEDA sur le même déploiement → oscillation |
+| Scénario de workload | État idéal (Bon) | Catastrophe en production (Mauvais) |
+|---------------------|-----------------|-----------------------------------|
+| **IoT / Événements haute volume** (ex: télemetry de partage de vélos) | KEDA met à l'échelle les réplicas sur la vitesse des événements tandis que VPA borde la mémoire. Karpenter packe les nœuds étroitement. | HPA et KEDA se battent sur la même métrique CPU. Le nombre de pods oscille sauvagement, causant des pertes de données utilisateurs pendant le pic de trafic du matin. |
+| **Traitement lourd** (ex: suivi ML drone swarm) | KEDA surveille les files de travail tandis que Karpenter provisionne dynamiquement des nœuds GPU spécialisés et exactement adaptés. | Aucune limite budgétaire sur Karpenter. Une boucle de code application non gérée déclenche une hausse massive imprévue des coûts cloud overnight. |
+| **API critique en latence** (ex: défense cyber) | KEDA met à l'échelle les réplicas selon les anomalies réseau; VPA est configuré en mode Initial pour éviter les redémarrages en vol. Descente à zéro est activée. Une menace cyber imprévue subit un délai de cold-start de 2 minutes pendant que les nœuds bruts bootent. | Descente à zéro en prod → latence de détection |
+| **Apps multi-tiers standard** (Services Web généraux) | VPA gère le dimensionnement vertical de la mémoire tandis que KEDA ou HPA gère les pics de trafic horizontal. Les deux outils regardent le CPU. Les boucles de scaling se chevauchent, déclenchant des cycles d'éviction de pods rapides et infinis appelés flapping de déploiement. | — |
 
 > **Astuce :** KEDA crée et possède un HPA en coulisses. Ne créez pas votre propre HPA pour le même workload.
 
