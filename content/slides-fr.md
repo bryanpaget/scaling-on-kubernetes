@@ -465,19 +465,40 @@ spec:
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Provisionner</div>
-    <div class="plate">Le nœud le moins cher</div>
-    <div class="plate">qui convient au pod</div>
+    <div class="plate">Bin-packing de tous les pods</div>
+    <div class="plate">Nœud exact-le moins cher</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Consolider</div>
-    <div class="plate">Repack des workloads</div>
-    <div class="plate">Retrait des nœuds inactifs</div>
+    <div class="plate">Repack et retire les nœuds</div>
+    <div class="plate">Respects les PDBs</div>
   </div>
 </div>
 
+> **Le grand changement :** Karpenter contourne les groupes de nœuds. Il parle directement à l'API du fournisseur avec une intelligence de bin-packing.
+
+---
+
+<!-- Karpenter deep dive -->
+## Comment Karpenter fonctionne : trois étapes
+
+![bg left:20%](./img/aurora.png)
+
+| Étape | Ce qui se passe | Pourquoi c'est important |
+|-------|----------------|-------------------------|
+| **1. Surveiller** | Piloté par les événements : surveille les pods non ordonnançables milliseconde par milliseconde | Pas de délai de polling → ~45s pour monter |
+| **2. Provisionner** | Bin-packing de tous les pods sur le nœud exact-le moins cher | 3-4 pods sur un nœud à 15$/mois, pas 3x 100$/mois |
+| **3. Consolider** | Repack les workloads, retire les nœuds inactifs (vide, swap nœud unique, multi-nœuds) | Économise 20-40% vs Cluster Autoscaler |
+
+**Capacités clés :**
+- **Accès direct à l'API :** Pas de Auto Scaling Groups - crée un nœud parfait par demande
+- **Bin-packing :** Agrège tous les pods, trouve le placement optimal
+- **Respects les PDBs :** Ne violera jamais vos budgets de disruption
+- **Attributs de nœuds :** Lit nodeSelector, affinités, tolerations, GPUs
+
 <blockquote>
-Le Cluster Autoscaler dimensionne des pools prédéfinis. Karpenter choisit le bon nœud selon la demande, puis range.
+Le Cluster Autoscaler ajoute aux pools prédéfinis. Karpenter construit le nœud parfait par demande de pod.
 </blockquote>
 
 ---

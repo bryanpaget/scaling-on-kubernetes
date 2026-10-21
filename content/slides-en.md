@@ -459,19 +459,40 @@ spec:
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Provision</div>
-    <div class="plate">Cheapest node</div>
-    <div class="plate">that fits the pod</div>
+    <div class="plate">Bin-packs all pending pods</div>
+    <div class="plate">Cheapest exact-fit node</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Consolidate</div>
-    <div class="plate">Repack workloads</div>
-    <div class="plate">Remove idle nodes</div>
+    <div class="plate">Repack & remove idle</div>
+    <div class="plate">Respects PDBs</div>
   </div>
 </div>
 
+> **The Big Shift:** Karpenter bypasses Node Groups entirely. It talks directly to the cloud API with bin-packing intelligence.
+
+---
+
+<!-- Karpenter deep dive -->
+## How Karpenter Works: Three Steps
+
+![bg left:20%](./img/aurora.png)
+
+| Step | What Happens | Why It Matters |
+|------|-------------|----------------|
+| **1. Watch** | Event-driven: Watches unschedulable pods *millisecond-by-millisecond* | No polling delay → ~45s scale-up |
+| **2. Provision** | Bin-packs all pending pods onto the *cheapest exact-fit* node | 3-4 pods on one $15/mo node, not 3x $100/mo nodes |
+| **3. Consolidate** | Repacks workloads, removes idle nodes (empty, single-node swap, multi-node) | Saves 20-40% vs Cluster Autoscaler |
+
+**Key capabilities:**
+- **Direct API access:** No Auto Scaling Groups - spins up one perfect node per demand
+- **Bin-packing:** Aggregates all pending pods, finds optimal layout
+- **Respects PDBs:** Will never violate your disruption budgets
+- **Node attributes:** Reads nodeSelector, affinity, tolerations, GPU requirements
+
 <blockquote>
-Cluster Autoscaler scales pre-defined pools. Karpenter picks the right node per demand, then tidies up.
+Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node per pod demand.
 </blockquote>
 
 ---
