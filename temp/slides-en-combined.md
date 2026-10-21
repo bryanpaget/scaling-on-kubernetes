@@ -173,6 +173,37 @@ Stop guessing, start sizing with data.
 
 ---
 
+<!-- How the Recommender works -->
+## How the Recommender Works
+
+![bg left:20%](./img/aurora.png)
+
+The Recommender is the foundational "brain" of VPA. It doesn't modify your cluster - it only calculates and proposes values.
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">1. Continuous Monitoring</div>
+    <div class="plate">Pulls real-time & historical metrics</div>
+    <div class="plate">from Metrics Server/Prometheus</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">2. Historical Analysis</div>
+    <div class="plate">Decaying moving average</div>
+    <div class="plate">Peaks matter most (no OOMs!)</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">3. Generates Targets</div>
+    <div class="plate">Lower bound, Target, Upper bound, Uncapped</div>
+    <div class="plate">Writes to VPA Status</div>
+  </div>
+</div>
+
+> **Recommender only proposes.** The Updater and Admission Controller decide *when* and *how* to apply the changes.
+
+---
+
 <!-- VPA Modes -->
 ## VPA Modes: Choose Your Risk Profile
 

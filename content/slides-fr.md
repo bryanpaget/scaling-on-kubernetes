@@ -146,6 +146,37 @@ Cessez de deviner, dimensionnez avec des données.
 
 ---
 
+<!-- How the Recommender works -->
+## Comment le Recommandeur fonctionne
+
+![bg left:20%](./img/aurora.png)
+
+Le Recommandeur est le "cerveau" fondamental de VPA. Il ne modifie pas votre cluster - il calcule et propose seulement des valeurs.
+
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">1. Surveillance continue</div>
+    <div class="plate">Extrait des métriques en temps réel et historiques</div>
+    <div class="plate">du Metrics Server/Prometheus</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">2. Analyse historique</div>
+    <div class="plate">Moyenne mobile décroissante</div>
+    <div class="plate">Les pics comptent le plus (pas d'OOM !)</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">3. Génère les cibles</div>
+    <div class="plate">Borne inférieure, Cible, Borne supérieure, Cible sans plafond</div>
+    <div class="plate">Écrit dans le statut VPA</div>
+  </div>
+</div>
+
+> **Le Recommandeur propose seulement.** L'Updateur et le Contrôleur d'admission décident *quand* et *comment* appliquer les changements.
+
+---
+
 <!-- VPA Modes -->
 ## Modes VPA : choisissez votre profil de risque
 
