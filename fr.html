@@ -119,10 +119,6 @@ table { font-size: 22px; }
 <blockquote>
 <p><strong>Note :</strong> Aurora développe activement ces outils en tant que fonctionnalités de plateforme. KEDA est le plus avancé mais n'est pas encore activé par défaut.</p>
 </blockquote>
-<br />
-<blockquote>
-Des outils différents, des axes différents. La valeur est dans leur combinaison.
-</blockquote>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Mise à l'échelle sur Kubernetes - Plateforme Aurora" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
@@ -149,62 +145,30 @@ table { font-size: 22px; }
 <header>Mise à l'échelle sur Kubernetes - Plateforme Aurora</header>
 
 <h2 id="la-carte-de-mise-%C3%A0-l%C3%A9chelle--trois-axes">La carte de mise à l'échelle : trois axes</h2>
-<table>
-<thead>
-<tr>
-<th>Axe</th>
-<th>Outil</th>
-<th>Échelle</th>
-<th>Niveau</th>
-<th>Déclencheur</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Nombre de réplicas</strong></td>
-<td>KEDA</td>
-<td>Réplicas</td>
-<td>Pod</td>
-<td>Événements, files, horaires</td>
-</tr>
-<tr>
-<td><strong>Taille des ressources</strong></td>
-<td>VPA</td>
-<td>Demandes+limites CPU/mémoire</td>
-<td>Pod</td>
-<td>Historique d'utilisation</td>
-</tr>
-<tr>
-<td><strong>Capacité des nœuds</strong></td>
-<td>Karpenter</td>
-<td>Nœuds</td>
-<td>Infrastructure</td>
-<td>Pods en attente</td>
-</tr>
-</tbody>
-</table>
 <div class="flow">
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Décident du nombre</div>
+    <div class="plate">Décide du nombre de réplicas</div>
+    <div class="plate">Événements, files, horaires</div>
     <div class="plate">*(Combien de pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Définit les bornes</div>
+    <div class="plate">Demandes+limites CPU/mémoire</div>
     <div class="plate">*(CPU / mémoire)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisionne les nœuds bruts</div>
+    <div class="plate">Pods en attente → nœuds</div>
     <div class="plate">*(S'adapte aux pods)*</div>
   </div>
 </div>
-<br />
 <blockquote>
-Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
+Nombre de réplicas × taille par pod = la demande de pods que Karpenter satisfait.
 </blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-paginate="true" data-background-color="#ffffff" data-header="Mise à l'échelle sur Kubernetes - Plateforme Aurora" data-theme="default" data-style="section { font-size: 26px; }
@@ -266,7 +230,7 @@ table { font-size: 22px; }
 <header>Mise à l'échelle sur Kubernetes - Plateforme Aurora</header>
 
 <h2 id="quest-ce-que-vpa">Qu'est-ce que VPA ?</h2>
-<p><strong>Vertical Pod Autoscaler :</strong> cible dynamiquement les contraintes</p>
+<p><strong>Vertical Pod Autoscaler :</strong> ajuste automatiquement les demandes et limites CPU/mémoire des pods Kubernetes en fonction de l'utilisation en temps réel et des bornes prédéfinies</p>
 <ul>
 <li data-marpit-fragment="1"><strong>Cibles :</strong> Demandes et limites CPU/mémoire des workloads</li>
 <li data-marpit-fragment="2"><strong>Workloads :</strong> Deployments, StatefulSets, DaemonSets</li>

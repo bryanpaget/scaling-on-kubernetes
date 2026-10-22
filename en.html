@@ -160,63 +160,30 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="the-scaling-stack-three-axes">The Scaling Stack: Three Axes</h2>
-
-<table>
-<thead>
-<tr>
-<th>Axis</th>
-<th>Tool</th>
-<th>Scales</th>
-<th>Level</th>
-<th>Trigger</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Pod replica count</strong></td>
-<td>KEDA</td>
-<td>Replicas</td>
-<td>Pod</td>
-<td>Events, queues, schedules</td>
-</tr>
-<tr>
-<td><strong>Pod resource size</strong></td>
-<td>VPA</td>
-<td>CPU/memory requests+limits</td>
-<td>Pod</td>
-<td>Usage history</td>
-</tr>
-<tr>
-<td><strong>Node capacity</strong></td>
-<td>Karpenter</td>
-<td>Nodes</td>
-<td>Infra</td>
-<td>Pending pods</td>
-</tr>
-</tbody>
-</table>
 <div class="flow">
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Decide replica count</div>
+    <div class="plate">Decides replica count</div>
+    <div class="plate">Events, queues, schedules</div>
     <div class="plate">*(How many pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sets resource bounds</div>
+    <div class="plate">CPU/memory requests+limits</div>
     <div class="plate">*(CPU / memory)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisions bare nodes</div>
+    <div class="plate">Pending pods → nodes</div>
     <div class="plate">*(Fits the pods)*</div>
   </div>
 </div>
-<br />
 <blockquote>
-Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
+Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
@@ -285,7 +252,7 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="what-is-vpa">What is VPA?</h2>
-<p><strong>Vertical Pod Autoscaler:</strong> dynamically targets constraints</p>
+<p><strong>Vertical Pod Autoscaler:</strong> automatically adjusts the CPU and memory resource requests and limits of running Kubernetes pods based on real-time usage and predefined boundaries</p>
 <ul>
 <li data-marpit-fragment="1"><strong>Targets:</strong> Workload CPU/memory requests &amp; limits</li>
 <li data-marpit-fragment="2"><strong>Workloads:</strong> Deployments, StatefulSets, DaemonSets</li>
