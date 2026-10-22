@@ -136,8 +136,6 @@ Profils plutôt que prédictions. Verrouillez l'empreinte optimale dès le jour 
 <!-- How VPA Works -->
 ## Comment VPA fonctionne : trois composants
 
-![bg left:20%](./img/aurora.png)
-
 <div class="flow">
   <div class="flow-box">
     <div class="plate plate-head">Recommandeur</div>
@@ -388,9 +386,7 @@ L'opérateur réveille le workload ; le Metrics Server le met à l'échelle.
 ---
 
 <!-- Exemple de ScaledObject de production avancé -->
-## KEDA : Exemple de Spec pour la Production (Enterprise-Grade)
-
-Un `ScaledObject` de production doit contrôler les comportements de l'HPA en aval, les seuils de secours (fallback) et les mécaniques d'authentification.
+## KEDA : Exemple de ScaledObject
 
 ```yaml
 apiVersion: keda.sh/v1alpha1

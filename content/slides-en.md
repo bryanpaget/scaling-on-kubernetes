@@ -58,7 +58,8 @@ Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- ============================ PART 1: VPA ============================ -->
 <!-- VPA section divider -->
 # Part 1: VPA
-## Right-sizing pod resources
+## Vertical Pod Autoscaling
+### Right-sizing pod resources
 
 ![bg left:30%](./img/aurora.png)
 
@@ -418,15 +419,15 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
 <!-- KEDA Production Guardrails -->
 ## KEDA Production Guardrails
 
-### ⚠️ Scale-To-Zero Production Trap
+### Scale-To-Zero Production Trap
 **Risk:** Scaling APIs or critical consumers to 0 replicas guarantees 1-3 minute cold-start penalties
 **Mitigation:** `minReplicaCount: 1` for Tier-1; reserve scale-to-zero for non-prod or async batch workers
 
-### ⚖️ Stabilization Window Tuning
+### Stabilization Window Tuning
 **Do not:** Control high-velocity scale-down with `cooldownPeriod`
 **Do:** Use `advanced.horizontalPodAutoscalerConfig.behavior` for native HPA rules
 
-### 🛡️ Telemetry & Observability
+### Telemetry & Observability
 **Monitor:** `keda_metrics_adapter_scaler_errors` Prometheus counter
 **Alert:** Broker credential expiration causes silent scaler failure
 
@@ -435,7 +436,8 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
 <!-- ============================ PART 3: Karpenter ============================ -->
 <!-- Karpenter section divider -->
 # Part 3: Karpenter
-## Just-in-time node provisioning
+## Open source, cloud-agnostic node autoscaler
+### Just-in-time node provisioning
 
 ![bg left:30%](./img/aurora.png)
 
