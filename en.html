@@ -116,9 +116,8 @@ table { font-size: 22px; }
 <li><strong>KEDA</strong> - event- and schedule-driven replica scaling (including scale-to-zero)</li>
 <li><strong>Karpenter</strong> - just-in-time node provisioning and consolidation</li>
 </ul>
-<blockquote>
-<p><strong>Note:</strong> Aurora is actively developing these tools as platform features. KEDA is the most mature but not yet enabled by default.</p>
-</blockquote>
+<br />
+<br />
 <blockquote>
 Different tools, different axes. The value is in how they combine.
 </blockquote>
@@ -216,6 +215,7 @@ table { font-size: 22px; }
     <div class="plate">*(Fits the pods)*</div>
   </div>
 </div>
+<br />
 <blockquote>
 Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
@@ -294,6 +294,7 @@ table { font-size: 22px; }
 <li data-marpit-fragment="4"><strong>Native:</strong> Implemented via standard CRDs</li>
 <li data-marpit-fragment="5"><strong>Config:</strong> Use <code>controlledValues: RequestsOnly</code> to protect custom limits</li>
 </ul>
+<br />
 <blockquote>
 HPA scales how many, VPA scales how much.
 </blockquote>
@@ -343,6 +344,7 @@ table { font-size: 22px; }
 <li><strong>Continuous monitoring:</strong> Recommender analyzes usage over time</li>
 <li><strong>Controlled updates:</strong> Updater can gradually roll out changes via InPlace updates (where available)</li>
 </ul>
+<br />
 <blockquote>
 Stop guessing, start sizing with data.
 </blockquote>
@@ -504,6 +506,7 @@ table { font-size: 22px; }
 <li data-marpit-fragment="4"><strong>Downscale Protection:</strong> Shrinking memory too aggressively can trigger OOM kills</li>
 <li data-marpit-fragment="5"><strong>K8s Requirement:</strong> Managed dynamically by Aurora via the <code>InPlacePodVerticalScaling</code> feature gate (v1.27+).</li>
 </ul>
+<br />
 <blockquote>
 Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
 </blockquote>
@@ -797,6 +800,7 @@ table { font-size: 22px; }
 <li>Enables scale-to-zero: safely unloads idle workloads down to 0 replicas</li>
 <li>Config via <code>ScaledObject</code> (long-running) or <code>ScaledJob</code> (batch)</li>
 </ul>
+<br />
 <blockquote>
 HPA reacts to CPU. KEDA reacts to what actually drives your load.
 </blockquote>
@@ -915,6 +919,7 @@ table { font-size: 22px; }
 <li><strong>Scale-to-zero:</strong> When there's nothing to do, run 0 replicas. When traffic arrives, scale to N</li>
 <li><strong>HPA integration:</strong> KEDA creates and owns the HPA; you just configure the ScaledObject</li>
 </ul>
+<br />
 <blockquote>
 Scale on what drives your load, not on what it looks like after the fact.
 </blockquote>
@@ -985,6 +990,7 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br />
 <blockquote>
 KEDA is the platform-native way to scale replicas based on real demand signals.
 </blockquote>
@@ -1283,6 +1289,7 @@ table { font-size: 22px; }
 <li><strong>Respects PDBs:</strong> Will never violate your disruption budgets</li>
 <li><strong>Node attributes:</strong> Reads nodeSelector, affinity, tolerations, GPU requirements</li>
 </ul>
+<br />
 <blockquote>
 Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node per pod demand.
 </blockquote>
@@ -1485,6 +1492,7 @@ table { font-size: 22px; }
 <li>Avoids vendor cost manipulation</li>
 <li>Freedom to migrate if a CSP solution doesn't meet Aurora's goals</li>
 </ul>
+<br />
 <blockquote>
 Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constraints emerge.
 </blockquote>
@@ -1628,6 +1636,7 @@ table { font-size: 22px; }
 <li><strong>Combined:</strong> Replica count × per-pod size = total pending-pod demand</li>
 <li><strong>Karpenter</strong> watches for unschedulable pods and provisions nodes</li>
 </ol>
+<br />
 <blockquote>
 All three feed one pipeline. Keep their axes decoupled to achieve optimal, right-sized scaling.
 </blockquote>
@@ -1881,6 +1890,7 @@ table { font-size: 22px; }
 <li><strong>Karpenter</strong> provisions and consolidates nodes (what capacity)</li>
 <li><strong>Together, they form a single scaling engine:</strong> keep their metrics decoupled and their efficiency multiplies.</li>
 </ul>
+<br />
 <blockquote>
 Right-size the pods, scale on real demand, provision only what fits.
 </blockquote>
