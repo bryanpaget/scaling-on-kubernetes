@@ -294,19 +294,9 @@ KEDA splits its responsibilities into two sub-systems to maintain high performan
 
 <br>
 
-<blockquote>
-Telemetry Ingestion → Metrics Server (scale-up) + Operator (scale-from-zero).
-</blockquote>
+---
 
-    <div class="plate">Directly patches pod replicas</div>
-  </div>
-
-</div>
-
-<br>
-
-<blockquote>
-Telemetry Ingestion &rarr; Metrics Server (for scaling up) + Operator (for waking from zero).
+<!-- KEDA Scale-To-Zero Mechanics -->
 </blockquote>
 
 ---
