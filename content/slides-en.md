@@ -345,15 +345,13 @@ Scaling to zero requires deep coordination because a native Kubernetes HPA canno
 ---
 
 <!-- Advanced Production ScaledObject Example -->
-The Operator wakes the workload up; the Metrics Server scales it up.
-</blockquote>
-    <div class="plate plate-head">Hand-Off (1 → N)</div>
-    <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
-  </div>
-</div>
 
 ---
 
+<!-- Advanced Production ScaledObject Example -->
+## KEDA: ScaledObject Example
+
+```yaml
 <!-- Advanced Production ScaledObject Example -->
 ## KEDA: ScaledObject Example
 

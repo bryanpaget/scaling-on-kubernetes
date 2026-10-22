@@ -376,15 +376,13 @@ Scaling to zero requires deep coordination because a native Kubernetes HPA canno
 ---
 
 <!-- Advanced Production ScaledObject Example -->
-The Operator wakes the workload up; the Metrics Server scales it up.
-</blockquote>
-    <div class="plate plate-head">Hand-Off (1 → N)</div>
-    <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
-  </div>
-</div>
 
 ---
 
+<!-- Advanced Production ScaledObject Example -->
+## KEDA: ScaledObject Example
+
+```yaml
 <!-- Advanced Production ScaledObject Example -->
 ## KEDA: ScaledObject Example
 
@@ -429,23 +427,6 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 - **Prometheus / Thanos Scaler:** Scale microservices based on HTTP Error Rates, Inbound Request Velocity (RPS), or query execution durations
 - **Cron / Calendar Scaler:** Pre-warm clusters before business hours. Combine with `desiredReplicas` to force scale-ups before morning shifts log in
 - **CPU/Memory Fallback:** KEDA can scale on standard system resource metrics if configured as a secondary trigger, providing a safe backup if your primary event stream becomes degraded
-
----
-
-<!-- KEDA Production Guardrails -->
-## KEDA Production Guardrails
-
-### Scale-To-Zero Production Trap
-**Risk:** Scaling APIs or critical consumers to 0 replicas guarantees 1-3 minute cold-start penalties
-**Mitigation:** `minReplicaCount: 1` for Tier-1; reserve scale-to-zero for non-prod or async batch workers
-
-### Stabilization Window Tuning
-**Do not:** Control high-velocity scale-down with `cooldownPeriod`
-**Do:** Use `advanced.horizontalPodAutoscalerConfig.behavior` for native HPA rules
-
-### Telemetry & Observability
-**Monitor:** `keda_metrics_adapter_scaler_errors` Prometheus counter
-**Alert:** Broker credential expiration causes silent scaler failure
 
 ---
 
