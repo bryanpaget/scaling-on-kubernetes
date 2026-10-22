@@ -56,7 +56,7 @@ This presentation covers three autoscaling tools and how they work together on A
 
 Together they form a four-layer scaling stack:
 1. VPA scales *resource requests* (pod level)
-2. HPA/KEDA scale *replica count* (pod level)
+2. KEDA scale *replica count* (pod level)
 3. Karpenter scales *node count* (infrastructure level)
 4. All layers interact - understand the conflicts and synergies
 
@@ -88,7 +88,7 @@ Together they form a four-layer scaling stack:
 
 **Part 4: Interactions & Anti-Patterns** - Putting them together
 15. How all four axes layer: replica decisions + size decisions → node demand
-16. Conflict rules: VPA + HPA/KEDA (never same resource), KEDA + your own HPA (don't), VPA + Karpenter (complementary)
+16. Conflict rules: VPA + KEDA (never same resource), KEDA + your own HPA (don't), VPA + Karpenter (complementary)
 17. Anti-patterns: oscillation, aggressive consolidation without PDBs, no resource bounds  
 
 ---

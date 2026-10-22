@@ -32,7 +32,7 @@ Different tools, different axes. The value is in how they combine.
 
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate plate-head">KEDA</div>
     <div class="plate">Decide replica count</div>
     <div class="plate">*(How many pods)*</div>
   </div>
@@ -219,7 +219,7 @@ spec:
 - **Spiky workloads:** VPA reacts to history; sudden bursts can be under-provisioned until it catches up
 - **JVM / heap-tuned apps:** changing memory requests does not change `-Xmx`; size the runtime, not just the pod
 - **Eviction-sensitive workloads:** avoid `Recreate` where restarts are costly
-- **Same resource as HPA/KEDA:** never let two controllers fight over the same resource (see Part 4)
+- **Same resource as KEDA:** never let two controllers fight over the same resource (see Part 4)
 - **Very short-lived processes:** VPA needs time to collect and analyze usage data
 
 > **That's the 'how much' axis.** Next: KEDA decides *how many* replicas you need.
@@ -592,7 +592,7 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 | **OOM Cascade** | Memory leak → VPA raises memory → leak consumes more → node OOM → kernel kills all pods. | Single app takes down everything on the node. |
 | **Phantom Capacity** | KEDA scales to 200, Karpenter orders Spot nodes. Spot unavailable → KEDA jumps to 400. | 500 pods booted for 200 of demand. |
 
-> **Remember:** Keep metrics decoupled. VPA (memory), HPA/KEDA (CPU/traffic), Karpenter (pending pods).
+> **Remember:** Keep metrics decoupled. VPA (memory), KEDA (CPU/traffic), Karpenter (pending pods).
 
 ---
 
@@ -656,20 +656,6 @@ A: The blast radius is tightly constrained. We enforce safety rails using VPA `m
 **Q: Scale-to-zero cold starts — how bad, and how do I mitigate (keep-warm, min replicas)?**
 
 A: The cold start is real—typically 1-3 minutes if Karpenter must provision a raw node from scratch. We mitigate based on application tier: Tier-1 customer-facing apps are barred from scaling to zero (`minReplicas: 1`). For async workers, we accept the delay or use Karpenter headroom to keep small buffers of empty, pre-warmed capacity ready.
-
----
-
-### Group 3: Business & Timeline Questions
-
-**Q: Cost: the 20–40% is an AWS marketing number. What have we measured?**
-
-A: Marketing numbers assume a worst-case baseline. In our testing, savings depend heavily on workload profile. For highly variable dev/test environments and event workers, we're tracking close to that [X]% mark due to overnight scale-to-zero and Karpenter consolidation. For steady-state production apps, savings are lower but stability improves drastically.
-
----
-
-**Q: Timeline — when can I actually use these?**
-
-A: Phase 1 (VPA in Recommendation/Off mode + Karpenter for Non-Prod) is available [Target Date]. Phase 2 (Full automated scaling and In-Place upgrades for Prod) is slated for [Target Date] following our soak-testing period.
 
 ---
 

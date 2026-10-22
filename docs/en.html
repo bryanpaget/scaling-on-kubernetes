@@ -199,7 +199,7 @@ table { font-size: 22px; }
 </table>
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate plate-head">KEDA</div>
     <div class="plate">Decide replica count</div>
     <div class="plate">*(How many pods)*</div>
   </div>
@@ -702,7 +702,7 @@ table { font-size: 22px; }
 <li><strong>Spiky workloads:</strong> VPA reacts to history; sudden bursts can be under-provisioned until it catches up</li>
 <li><strong>JVM / heap-tuned apps:</strong> changing memory requests does not change <code>-Xmx</code>; size the runtime, not just the pod</li>
 <li><strong>Eviction-sensitive workloads:</strong> avoid <code>Recreate</code> where restarts are costly</li>
-<li><strong>Same resource as HPA/KEDA:</strong> never let two controllers fight over the same resource (see Part 4)</li>
+<li><strong>Same resource as KEDA:</strong> never let two controllers fight over the same resource (see Part 4)</li>
 <li><strong>Very short-lived processes:</strong> VPA needs time to collect and analyze usage data</li>
 </ul>
 <blockquote>
@@ -1832,7 +1832,7 @@ table { font-size: 22px; }
 </tbody>
 </table>
 <blockquote>
-<p><strong>Remember:</strong> Keep metrics decoupled. VPA (memory), HPA/KEDA (CPU/traffic), Karpenter (pending pods).</p>
+<p><strong>Remember:</strong> Keep metrics decoupled. VPA (memory), KEDA (CPU/traffic), Karpenter (pending pods).</p>
 </blockquote>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }

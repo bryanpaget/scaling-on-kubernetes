@@ -63,7 +63,7 @@ Different tools, different axes. The value is in how they combine.
 
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate plate-head">KEDA</div>
     <div class="plate">Decide replica count</div>
     <div class="plate">*(How many pods)*</div>
   </div>
@@ -250,7 +250,7 @@ spec:
 - **Spiky workloads:** VPA reacts to history; sudden bursts can be under-provisioned until it catches up
 - **JVM / heap-tuned apps:** changing memory requests does not change `-Xmx`; size the runtime, not just the pod
 - **Eviction-sensitive workloads:** avoid `Recreate` where restarts are costly
-- **Same resource as HPA/KEDA:** never let two controllers fight over the same resource (see Part 4)
+- **Same resource as KEDA:** never let two controllers fight over the same resource (see Part 4)
 - **Very short-lived processes:** VPA needs time to collect and analyze usage data
 
 > **That's the 'how much' axis.** Next: KEDA decides *how many* replicas you need.
@@ -623,7 +623,7 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 | **OOM Cascade** | Memory leak → VPA raises memory → leak consumes more → node OOM → kernel kills all pods. | Single app takes down everything on the node. |
 | **Phantom Capacity** | KEDA scales to 200, Karpenter orders Spot nodes. Spot unavailable → KEDA jumps to 400. | 500 pods booted for 200 of demand. |
 
-> **Remember:** Keep metrics decoupled. VPA (memory), HPA/KEDA (CPU/traffic), Karpenter (pending pods).
+> **Remember:** Keep metrics decoupled. VPA (memory), KEDA (CPU/traffic), Karpenter (pending pods).
 
 ---
 

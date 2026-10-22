@@ -30,7 +30,7 @@ Des outils différents, des axes différents. La valeur est dans leur combinaiso
 
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate plate-head">KEDA</div>
     <div class="plate">Décident du nombre</div>
     <div class="plate">*(Combien de pods)*</div>
   </div>
@@ -217,7 +217,7 @@ spec:
 - **Charges en pics :** VPA réagit à l'historique ; les pics soudains peuvent être sous-provisionnés
 - **Applications JVM / réglées sur le tas :** changer la mémoire ne change pas `-Xmx` ; dimensionnez le runtime
 - **Charges sensibles aux évictions :** évitez `Recreate` quand les redémarrages coûtent cher
-- **Même ressource que HPA/KEDA :** ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)
+- **Même ressource que KEDA :** ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)
 - **Processus très éphémères :** VPA a besoin de temps pour collecter et analyser les données d'utilisation
 
 > **C'est l'axe 'quelle taille'.** Ensuite : KEDA décide *combien* de réplicas vous avez besoin.
@@ -576,7 +576,7 @@ Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mi
 
 ![bg left:20%](./img/aurora.png)
 
-- **VPA et HPA/KEDA sur la même métrique** - ils se disputent la même ressource et oscillent
+- **VPA et KEDA sur la même métrique** - ils se disputent la même ressource et oscillent
 - **VPA `Recreate` sur des workloads sensibles aux évictions** - préférez Initial/InPlace
 - **Descente à zéro en production** sans planifier la latence du cold start
 - **Pas de `maxAllowed` sur VPA / pas de `limits` sur NodePool** - une recommandation excessive peut épingler un nœud
@@ -629,7 +629,7 @@ Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mi
 | **Cascade OOM** | Fuite mémoire → VPA augmente mémoire → fuite consomme plus → nœud OOM → kernel tue tous pods. | Single app prend tout le monde sur le nœud. |
 | **Capacité fantôme** | KEDA monte à 200, Karpenter commande nœuds Spot. Spot indisponible → KEDA passe à 400. | 500 pods bootés pour une demande de 200. |
 
-> **Souvenez-vous :** Gardez les métriques découplées. VPA (mémoire), HPA/KEDA (CPU/traffic), Karpenter (pods en attente).
+> **Souvenez-vous :** Gardez les métriques découplées. VPA (mémoire), KEDA (CPU/traffic), Karpenter (pods en attente).
 
 ---
 
