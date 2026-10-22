@@ -860,22 +860,22 @@ table { font-size: 22px; }
 <p>La mise à l'échelle à zéro nécessite une coordination spécifique car un HPA natif de Kubernetes ne peut techniquement pas évaluer un workload à <code>0</code> réplica.</p>
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">1. La phase d'inactivité</div>
+    <div class="plate plate-head">La phase d'inactivité</div>
     <div class="plate">Workload à `0`. L'HPA natif est dormant.</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">2. La surveillance active par l'opérateur</div>
+    <div class="plate plate-head">La surveillance active par l'opérateur</div>
     <div class="plate">L'opérateur interroge le déclencheur toutes les `pollingInterval` secondes</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">3. Le démarrage (0 → 1)</div>
+    <div class="plate plate-head">Le démarrage (0 → 1)</div>
     <div class="plate">L'opérateur applique un patch sur le champ replicas du déploiement pour passer de 0 à 1</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">4. Passage de relais (1 → N)</div>
+    <div class="plate plate-head">Passage de relais (1 → N)</div>
     <div class="plate">Le Metrics Server alimente l'HPA pour la mise à l'échelle forte charge</div>
   </div>
 </div>
