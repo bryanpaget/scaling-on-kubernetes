@@ -112,9 +112,9 @@ table { font-size: 22px; }
 
 <p>Scaling on Aurora: understanding how autoscalers fit together</p>
 <ul>
-<li><strong>VPA</strong> - right-sizes pod CPU/memory requests</li>
-<li><strong>KEDA</strong> - event- and schedule-driven replica scaling (including scale-to-zero)</li>
-<li><strong>Karpenter</strong> - just-in-time node provisioning and consolidation</li>
+<li><strong>VPA</strong> Vertical Pod Autoscaling: right-sizes pod CPU/memory requests</li>
+<li><strong>KEDA</strong> Kubernetes Event-Driven Autoscaling: event- and schedule-driven replica scaling (including scale-to-zero)</li>
+<li><strong>Karpenter</strong>: cloud agnostic, just-in-time node provisioning and consolidation</li>
 </ul>
 <br />
 <blockquote>
@@ -162,17 +162,17 @@ table { font-size: 22px; }
 <h2 id="the-scaling-stack-three-axes">The Scaling Stack: Three Axes</h2>
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">KEDA</div>
-    <div class="plate">Scales replica count</div>
-    <div class="plate">Driven by events & queues</div>
-    <div class="plate"><i>(How many pods)</i></div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sizes pod resources</div>
     <div class="plate">Adjusts requests & limits</div>
     <div class="plate"><i>(How big of a pod)</i></div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">KEDA</div>
+    <div class="plate">Scales replica count</div>
+    <div class="plate">Driven by events & queues</div>
+    <div class="plate"><i>(How many pods)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
@@ -394,25 +394,25 @@ table { font-size: 22px; }
 <p>Modifies resource boundaries <strong>on the fly with zero restarts or evictions</strong>.</p>
 <div class="flow" style="font-size: 0.85em; gap: 12px; margin-top: 20px;">
   <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">1. Code Runtime</div>
+    <div class="plate plate-head">Code Runtime</div>
     <div class="plate">Elastic Sizing</div>
     <div class="plate">CPU Scales Freely</div>
     <div class="plate" style="font-size:16px; padding:8px;">Memory requires dynamic cgroup tracking (e.g., configuring dynamic JVM heap bounds).</div>
   </div>
   <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">2. Node Headroom</div>
+    <div class="plate plate-head">Node Headroom</div>
     <div class="plate">Physical Space</div>
     <div class="plate">Immediate Resource</div>
     <div class="plate" style="font-size:16px; padding:8px;">The underlying physical host must possess spare capacity to grant an upward resize request.</div>
   </div>
   <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">3. Downscale Trap</div>
+    <div class="plate plate-head">Downscale Trap</div>
     <div class="plate">Risk Management</div>
     <div class="plate">OOM Killer Target</div>
     <div class="plate" style="font-size:16px; padding:8px;">Shrinking memory footprints too aggressively will trigger instant Linux kernel OOM kills.</div>
   </div>
   <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">4. Platform Engine</div>
+    <div class="plate plate-head">Platform Engine</div>
     <div class="plate">Core Provisioning</div>
     <div class="plate">Feature Gate Active</div>
     <div class="plate" style="font-size:16px; padding:8px;">Orchestrated natively by the Aurora control plane via Kubernetes v1.27+ configurations.</div>
@@ -444,7 +444,7 @@ table { font-size: 22px; }
 <p>Instead of a generic feature list, think of VPA modes as a spectrum balancing <strong>Runtime Stability</strong> against <strong>Resource Efficiency</strong>.</p>
 <div class="flow" style="font-size: 0.85em; gap: 12px;">
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">1. Off</div>
+    <div class="plate plate-head">Off</div>
     <div class="plate">Analysis Only</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -452,7 +452,7 @@ table { font-size: 22px; }
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">2. Initial</div>
+    <div class="plate plate-head">Initial</div>
     <div class="plate">Sized at Birth</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -460,7 +460,7 @@ table { font-size: 22px; }
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">3. InPlace</div>
+    <div class="plate plate-head">InPlace</div>
     <div class="plate">Live Flexing</div>
     <div class="plate">No Evictions*</div>
     <div class="plate">Yes Updates</div>
@@ -468,7 +468,7 @@ table { font-size: 22px; }
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">4. Recreate</div>
+    <div class="plate plate-head">Recreate</div>
     <div class="plate">Hard Eviction</div>
     <div class="plate">Yes Evictions</div>
     <div class="plate">Yes Updates</div>

@@ -26,17 +26,17 @@ Different tools, different axes. The value is in how they combine.
 
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">KEDA</div>
-    <div class="plate">Scales replica count</div>
-    <div class="plate">Driven by events & queues</div>
-    <div class="plate"><i>(How many pods)</i></div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sizes pod resources</div>
     <div class="plate">Adjusts requests & limits</div>
     <div class="plate"><i>(How big of a pod)</i></div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">KEDA</div>
+    <div class="plate">Scales replica count</div>
+    <div class="plate">Driven by events & queues</div>
+    <div class="plate"><i>(How many pods)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
