@@ -107,8 +107,6 @@ Profiles over predictions. Lock in optimal footprint on day zero, with zero runt
 <!-- How VPA Works -->
 ## How VPA Works: Three Components
 
-![bg left:20%](./img/aurora.png)
-
 <div class="flow">
   <div class="flow-box">
     <div class="plate plate-head">Recommender</div>
