@@ -150,8 +150,6 @@ The foundational "brain" of VPA. It only **proposes** metrics—it never modifie
 <!-- In-Place Resizing -->
 ## In-Place Resizing: Zero-Interruption Right-Sizing
 
-![bg left:25%](./img/aurora.png)
-
 Modifies CPU and memory allocation on the fly without evicting or restarting running pods.
 
 To achieve true zero-interruption scaling, four layers must align:
@@ -182,8 +180,6 @@ Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runti
 | **Recreate** | Yes (only via eviction) | Yes | Use rarely |
 | **Auto** | Deprecated | Deprecated | Do not use |
 
-* Requires `InPlacePodVerticalScaling` feature gate and a Kubernetes version that supports it. Falls back to Recreate if unavailable.
-
 ---
 
 <!-- VPA example -->
@@ -210,8 +206,6 @@ spec:
         controlledResources: ["cpu", "memory"]
 ```
 
-**Bounds matter:** `minAllowed` prevents under-sizing (keeps pods schedulable); `maxAllowed` prevents over-sizing recommendations. Scales both requests and limits proportionally by default.
-
 ---
 
 <!-- VPA limitations -->
@@ -225,6 +219,8 @@ spec:
 - **Same resource as KEDA:** never let two controllers fight over the same resource (see Part 4)
 - **Very short-lived processes:** VPA needs time to collect and analyze usage data
 
+<br>
+
 > **That's the 'how much' axis.** Next: KEDA decides *how many* replicas you need.
 
 ---
@@ -234,20 +230,9 @@ spec:
 # Part 2: KEDA
 ## Kubernetes Event-Driven Autoscaling
 
-![bg left:30%](./img/aurora.png)
+![bg left:50%](./img/aurora.png)
 
 ### Scaling Replicas on Real-World Demand
-
-KEDA intercepts the **origin of load**—like queue depth or cron schedules—instead of waiting for your servers to overheat.
-
-- **Scale-to-Zero:** Safely shuts down idle apps to stop wasting budget.
-- **Direct Event Hooks:** Seamless integration with Kafka, RabbitMQ, and metrics.
-
-<blockquote>
-Standard HPA watches the consequence of load (CPU). KEDA watches the origin of load (Events).
-</blockquote>
-
-![bg left:30%](./img/aurora.png)
 
 ---
 
@@ -255,8 +240,6 @@ Standard HPA watches the consequence of load (CPU). KEDA watches the origin of l
 ## What is KEDA?
 
 **Kubernetes Event-Driven Autoscaler:** An advanced metrics broker that unifies external event telemetry with native Kubernetes horizontal scaling.
-
-![bg left:20%](./img/aurora.png)
 
 - **The Metric Broker:** Bridges cloud/on-prem event streams directly to your workloads without complex custom adapters
 - **Decoupled Metric Lifecycle:** Frees your autoscaling loops from standard infrastructure metrics (CPU/Memory)
@@ -274,38 +257,42 @@ Standard HPA watches the consequence of load (CPU). KEDA watches the origin of l
 <!-- KEDA Architecture Deep Dive -->
 ## KEDA Architecture: The Dual-Controller Engine
 
-KEDA splits its responsibilities into two independent sub-systems to maintain high performance without blocking your cluster control plane.
+KEDA splits its responsibilities into two sub-systems to maintain high performance without blocking your cluster control plane.
 
-<div class="flow">
-  <div class="flow-box" style="width: 30%;">
-    <div class="plate plate-head">External Scaler</div>
-    <div class="plate">Kafka, RabbitMQ, Prometheus, etc.</div>
-    <div class="plate">Telemetry source</div>
+<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
+  
+  <!-- Column 1: Ingestion -->
+  <div style="width: 30%; border: 1px dashed #777; padding: 10px; border-radius: 6px;">
+    <div class="plate plate-head" style="background: #4A5568;">Telemetry Sources</div>
+    <div class="plate">Kafka Lag</div>
+    <div class="plate">RabbitMQ Depth</div>
+    <div class="plate">Prometheus Queries</div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 30%;">
-    <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate">Manages ScaledObject lifecycle</div>
-  </div>
-</div>
 
-<div style="display: flex; justify-content: space-between; margin-top: 20px;">
-  <div style="width: 48%;">
+  <div style="display: flex; align-items: center; font-size: 1.5em; color: #2d7d9a;">&rarr;</div>
+
+  <!-- Column 2: 1 to N Engine -->
+  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
     <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
-    <div class="plate">HPA v2 External Metrics provider</div>
-    <div class="plate">HPA polls every 15s</div>
-    <div class="plate">Handles 1 → N scaling</div>
+    <div class="plate"><b>Handles 1 &rarr; N Scaling</b></div>
+    <div class="plate">Acts as an HPA v2 provider</div>
+    <div class="plate">Native HPA polls every 15s</div>
   </div>
-  <div style="width: 48%;">
+
+  <!-- Column 3: 0 to 1 Engine -->
+  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
     <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
-    <div class="plate">Bypasses HPA</div>
-    <div class="plate">Directly patches spec.replicas</div>
-    <div class="plate">Handles 0 ↔ 1 scaling</div>
+    <div class="plate"><b>Handles 0 &harr; 1 Scaling</b></div>
+    <div class="plate">Bypasses native HPA limits</div>
+    <div class="plate">Directly patches pod replicas</div>
   </div>
+
 </div>
+
+<br>
 
 <blockquote>
-Metrics Server (for scale-up) + Operator (for scale-from-zero) = True zero-to-N scaling.
+Telemetry Ingestion &rarr; Metrics Server (for scaling up) + Operator (for waking from zero).
 </blockquote>
 
 ---
@@ -313,25 +300,49 @@ Metrics Server (for scale-up) + Operator (for scale-from-zero) = True zero-to-N 
 <!-- KEDA Scale-To-Zero Mechanics -->
 ## KEDA Scale-To-Zero: How It Actually Works
 
-Scaling to zero requires a distinct coordination dance because a native Kubernetes HPA cannot technically evaluate a workload at `0` replicas.
+Scaling to zero requires deep coordination because a native Kubernetes HPA cannot evaluate a workload sitting at `0` replicas.
 
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">The Idle Phase</div>
-    <div class="plate">Workload at `0`. Native HPA dormant.</div>
+<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; font-size: 0.85em;">
+
+  <!-- Step 1 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #718096;">
+    <div style="font-weight: bold; color: #4A5568; margin-bottom: 5px;">1. The Idle Phase</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      The workload sits at <b>0 replicas</b>. Because there are no pods running, the native HPA has no active metrics to pull and falls completely dormant.
+    </div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Active Operator Probe</div>
-    <div class="plate">Operator polls trigger every `pollingInterval` seconds</div>
+
+  <!-- Step 2 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
+    <div style="font-weight: bold; color: #2d7d9a; margin-bottom: 5px;">2. Active Probing</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      The <b>KEDA Operator</b> keeps watch. It independently polls your external event stream (e.g., Kafka) every <code>pollingInterval</code> seconds.
+    </div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Kickstart (0 → 1)</div>
-    <div class="plate">Operator patches deployment replicas from 0 to 1</div>
+
+  <!-- Step 3 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
+    <div style="font-weight: bold; color: #2b6cb0; margin-bottom: 5px;">3. The Kickstart</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      Events arrive! The Operator wakes up, bypasses the HPA entirely, and directly patches the deployment's <code>spec.replicas</code> from <b>0 to 1</b>.
+    </div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+
+  <!-- Step 4 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
+    <div style="font-weight: bold; color: #2f855a; margin-bottom: 5px;">4. Engine Hand-Off</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      With 1 pod alive, the HPA activates. The <b>KEDA Metrics Server</b> takes over telemetry routing, feeding the HPA to handle heavy <b>1 &rarr; N scaling</b>.
+    </div>
+  </div>
+
+</div>
+
+<br>
+
+<blockquote>
+The Operator wakes the workload up; the Metrics Server scales it up.
+</blockquote>
     <div class="plate plate-head">Hand-Off (1 → N)</div>
     <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
   </div>

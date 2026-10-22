@@ -179,8 +179,6 @@ Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il
 <!-- In-Place Resizing -->
 ## Redimensionnement en place : right-sizing sans interruption
 
-![bg left:25%](./img/aurora.png)
-
 Modifie l'allocation CPU et mémoire à la volée sans éviction ni redémarrage des pods en cours d'exécution.
 
 Pour obtenir une mise à l'échelle à interruption nulle, quatre couches doivent s'aligner :
@@ -211,8 +209,6 @@ Fallback : <b>InPlaceOrRecreate</b> retourne à l'éviction si l'espace nœud ou
 | **Recreate** | Oui (seulement via eviction) | Oui | À utiliser rarement |
 | **Auto** | Déconseillé | Déconseillé | Ne pas utiliser |
 
-* Nécessite le feature gate `InPlacePodVerticalScaling` et une version Kubernetes qui le supporte. Recrée le pod si indisponible.
-
 ---
 
 <!-- VPA example -->
@@ -239,8 +235,6 @@ spec:
         controlledResources: ["cpu", "memory"]
 ```
 
-**Les bornes comptent :** `minAllowed` prévient la sous-estimation (garde les pods ordonnançables) ; `maxAllowed` prévient la sur-estimation. Dimensionne les demandes et limites proportionnellement par défaut.
-
 ---
 
 <!-- VPA limitations -->
@@ -253,6 +247,8 @@ spec:
 - **Charges sensibles aux évictions :** évitez `Recreate` quand les redémarrages coûtent cher
 - **Même ressource que KEDA :** ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)
 - **Processus très éphémères :** VPA a besoin de temps pour collecter et analyser les données d'utilisation
+
+<br>
 
 > **C'est l'axe 'quelle taille'.** Ensuite : KEDA décide *combien* de réplicas vous avez besoin.
 
@@ -287,36 +283,47 @@ L'HPA standard surveille la conséquence de la charge (le CPU). KEDA surveille l
 ---
 
 <!-- Architecture KEDA en profondeur -->
+<!-- Architecture KEDA en profondeur -->
 ## Architecture de KEDA : Le moteur à double contrôleur
 
-KEDA divise ses responsabilités en deux sous-systèmes indépendants afin de maintenir des performances élevées sans bloquer le plan de contrôle (control plane) de votre cluster.
+KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des performances élevées sans bloquer le plan de contrôle de votre cluster.
 
-<div class="flow">
-  <div class="flow-box" style="width: 30%;">
-    <div class="plate plate-head">Scaler Externe</div>
-    <div class="plate">Kafka, RabbitMQ, Prometheus, etc.</div>
-    <div class="plate">Source de télémétrie</div>
+<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
+
+  <!-- Column 1: Ingestion -->
+  <div style="width: 30%; border: 1px dashed #777; padding: 10px; border-radius: 6px;">
+    <div class="plate plate-head" style="background: #4A5568;">Sources de télémétrie</div>
+    <div class="plate">Lag Kafka</div>
+    <div class="plate">Profondeur RabbitMQ</div>
+    <div class="plate">Requêtes Prometheus</div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 30%;">
-    <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate">Gère le cycle de vie des ScaledObjects</div>
+
+  <div style="display: flex; align-items: center; font-size: 1.5em; color: #2d7d9a;">&rarr;</div>
+
+  <!-- Column 2: 1 to N Engine -->
+  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
+    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
+    <div class="plate"><b>gestion de la montée 1 &rarr; N</b></div>
+    <div class="plate">Agit comme fournisseur HPA v2</div>
+    <div class="plate">HPA natif interroge toutes les 15s</div>
   </div>
+
+  <!-- Column 3: 0 to 1 Engine -->
+  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
+    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
+    <div class="plate"><b>gestion de la descente 0 &harr; 1</b></div>
+    <div class="plate">Contourne les limites HPA native</div>
+    <div class="plate">Modifie directement les réplicas pod</div>
+  </div>
+
 </div>
 
-<div style="display: flex; justify-content: space-between; margin-top: 20px;">
-  <div style="width: 48%;">
-    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
-    <div class="plate">Fournisseur de métriques HPA v2</div>
-    <div class="plate">HPA interroge toutes les 15s</div>
-    <div class="plate">Gère la mise à l'échelle 1 → N</div>
-  </div>
-  <div style="width: 48%;">
-    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
-    <div class="plate">Contourne l'HPA</div>
-    <div class="plate">Modifie directement spec.replicas</div>
-    <div class="plate">Gère la mise à l'échelle 0 ↔ 1</div>
-  </div>
+<br>
+
+<blockquote>
+Ingestion de télémétrie &rarr; Metrics Server (montée) + Operator (ravivage depuis zéro).
+</blockquote>
+
 </div>
 
 <blockquote>
@@ -326,27 +333,53 @@ Metrics Server (pour la montée en charge) + Operator (pour la descente à zéro
 ---
 
 <!-- Mécanismes du Scale-To-Zero KEDA -->
+<!-- Mécanismes du Scale-To-Zero KEDA -->
 ## Scale-To-Zero avec KEDA : Comment ça fonctionne réellement
 
-La mise à l'échelle à zéro nécessite une coordination spécifique car un HPA natif de Kubernetes ne peut techniquement pas évaluer un workload à `0` réplica.
+La mise à l'échelle à zéro nécessite une coordination approfondie car un HPA natif de Kubernetes ne peut pas évaluer un workload à `0` réplica.
 
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">La phase d'inactivité</div>
-    <div class="plate">Workload à `0`. L'HPA natif est dormant.</div>
+<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; font-size: 0.85em;">
+
+  <!-- Étape 1 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #718096;">
+    <div style="font-weight: bold; color: #4A5568; margin-bottom: 5px;">1. Phase d'inactivité</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      Le workload est à <b>0 réplicas</b>. Sans pods actifs, l'HPA natif n'a plus de métriques et devient complètement inactif.
+    </div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">La surveillance active par l'opérateur</div>
-    <div class="plate">L'opérateur interroge le déclencheur toutes les `pollingInterval` secondes</div>
+
+  <!-- Étape 2 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
+    <div style="font-weight: bold; color: #2d7d9a; margin-bottom: 5px;">2. Surveillance active</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      L' <b>opérateur KEDA</b> surveille. Il interroge indépendamment votre flux d'événements (ex: Kafka) toutes les <code>pollingInterval</code> secondes.
+    </div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Le démarrage (0 → 1)</div>
-    <div class="plate">L'opérateur applique un patch sur le champ replicas du déploiement pour passer de 0 à 1</div>
+
+  <!-- Étape 3 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
+    <div style="font-weight: bold; color: #2b6cb0; margin-bottom: 5px;">3. Démarrage (kickstart)</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      Des événements arrivent ! L'opérateur réveille le workload, contourne l'HPA et patche directement <code>spec.replicas</code> de <b>0 à 1</b>.
+    </div>
   </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+
+  <!-- Étape 4 -->
+  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
+    <div style="font-weight: bold; color: #2f855a; margin-bottom: 5px;">4. Passerelle des moteurs</div>
+    <div style="font-size: 0.9em; line-height: 1.3;">
+      Avec 1 pod actif, l'HPA s'active. Le <b>Metrics Server KEDA</b> gère la télémétrie et alimente l'HPA pour la montée en charge <b>1 &rarr; N</b>.
+    </div>
+  </div>
+
+</div>
+
+<br>
+
+<blockquote>
+L'opérateur réveille le workload ; le Metrics Server le met à l'échelle.
+</blockquote>
+
     <div class="plate plate-head">Passage de relais (1 → N)</div>
     <div class="plate">Le Metrics Server alimente l'HPA pour la mise à l'échelle forte charge</div>
   </div>
