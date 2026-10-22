@@ -281,155 +281,174 @@ spec:
 
 ---
 
-<!-- ============================ PARTIE 2: KEDA ============================ -->
-<!-- KEDA section divider -->
+<!-- ============================ PARTIE 2 : KEDA ============================ -->
+<!-- Diviseur de section KEDA -->
 # Partie 2 : KEDA
-## Mise à l'échelle par événements et horaires
+## Mise à l'échelle pilotée par les événements et réplication à haut débit
 
 ![bg left:30%](./img/aurora.png)
 
 ---
 
-<!-- What is KEDA -->
+<!-- Qu'est-ce que KEDA : Définition architecturale approfondie -->
 ## Qu'est-ce que KEDA ?
 
-**Kubernetes Event-Driven Autoscaler :** dimensionne les réplicas selon des événements, files ou horaires cron
+**Kubernetes Event-Driven Autoscaler :** Un courtier de métriques (metrics broker) avancé qui unifie la télémétrie des événements externes avec la mise à l'échelle horizontale native de Kubernetes.
 
 ![bg left:20%](./img/aurora.png)
 
-- Met à l'échelle sur des signaux externes : lag Kafka, profondeur de file, horaires cron, ou trafic HTTP
-- Fonctionne comme un broker : traduit les métriques externes en cibles HPA natives
-- Permet la descente à zéro : décharge en toute sécurité les workloads inactifs jusqu'à 0 réplicas
-- Config via `ScaledObject` (longue durée) ou `ScaledJob` (batch)
+- **Le courtier de métriques :** Connecte directement les flux d'événements cloud ou sur site (on-prem) à vos workloads, sans adaptateurs personnalisés complexes
+- **Cycle de vie des métriques découplé :** Libère vos boucles d'autoscaling des métriques d'infrastructure standard (CPU/Mémoire)
+- **Mise à l'échelle à zéro (Scale-to-Zero) effective :** Fournit le seul framework fiable dans Kubernetes pour réduire un workload standard à strictement 0 réplica
+- **Orchestration pilotée par CRD :** Géré nativement via `ScaledObject` (pour les Deployments/StatefulSets) et `ScaledJob` (pour les boucles de traitement par lots éphémères)
 
 <br>
 
 <blockquote>
-HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
+L'HPA standard surveille la conséquence de la charge (le CPU). KEDA surveille l'origine de la charge (les Événements).
 </blockquote>
 
 ---
 
-<!-- Comment KEDA fonctionne -->
-## Comment KEDA fonctionne
+<!-- Architecture KEDA en profondeur -->
+## Architecture de KEDA : Le moteur à double contrôleur
 
-![bg left:20%](./img/aurora.png)
+KEDA divise ses responsabilités en deux sous-systèmes indépendants afin de maintenir des performances élevées sans bloquer le plan de contrôle (control plane) de votre cluster.
 
 <div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">ScaledObject</div>
-    <div class="plate">Vous définissez :</div>
-    <div class="plate">Événements, déclencheurs, règles</div>
+  <div class="flow-box" style="width: 30%;">
+    <div class="plate plate-head">Scaler Externe</div>
+    <div class="plate">Kafka, RabbitMQ, Prometheus, etc.</div>
+    <div class="plate">Source de télémétrie</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Opérateur KEDA</div>
-    <div class="plate">Crée & gère :</div>
-    <div class="plate">HPA standard en coulisses</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">HPA</div>
-    <div class="plate">Contrôle le nombre de réplicas</div>
-    <div class="plate">de votre déploiement</div>
+  <div class="flow-box" style="width: 30%;">
+    <div class="plate plate-head">KEDA Operator</div>
+    <div class="plate">Gère le cycle de vie des ScaledObjects</div>
   </div>
 </div>
 
-> **Vous configurez seulement le ScaledObject.** KEDA possède l'HPA et le maintient synchronisé avec vos règles de scaling pilotées par les événements.
-
----
-
-<!-- Pourquoi KEDA est important -->
-## Pourquoi KEDA est important
-
-![bg left:20%](./img/aurora.png)
-
-### Le problème du dimensionnement des réplicas :
-- **HPA sur CPU/mémoire :** scale trop tard - quand le CPU est déjà haut, il est déjà trop tard
-- **Réplicas statiques :** soit sur-provisionné (capacité gaspillée), soit sous-provisionné (mauvaise UX)
-- **Scaling manuel :** réactif, source d'erreurs, épuisant
-
-### KEDA résout cela :
-- **Scaling piloté par les événements :** commencez à scale *avant* que le CPU ne monte - lag Kafka, profondeur de file, ou alertes Prometheus
-- **Descente à zéro :** quand il n'y a rien à faire, exécutez 0 réplicas. Quand le trafic arrive, scalez vers N
-- **Intégration HPA :** KEDA crée et possède l'HPA ; vous configurez seulement le ScaledObject
-
-<br>
+<div style="display: flex; justify-content: space-between; margin-top: 20px;">
+  <div style="width: 48%;">
+    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
+    <div class="plate">Fournisseur de métriques HPA v2</div>
+    <div class="plate">HPA interroge toutes les 15s</div>
+    <div class="plate">Gère la mise à l'échelle 1 → N</div>
+  </div>
+  <div style="width: 48%;">
+    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
+    <div class="plate">Contourne l'HPA</div>
+    <div class="plate">Modifie directement spec.replicas</div>
+    <div class="plate">Gère la mise à l'échelle 0 ↔ 1</div>
+  </div>
+</div>
 
 <blockquote>
-Scalez sur ce qui pilote votre charge, pas sur ce qu'il semble après le fait.
+Metrics Server (pour la montée en charge) + Operator (pour la descente à zéro) = Mise à l'échelle zéro à N complète.
 </blockquote>
 
 ---
 
-<!-- KEDA Aurora defaults -->
-## KEDA sur Aurora
+<!-- Mécanismes du Scale-To-Zero KEDA -->
+## Scale-To-Zero avec KEDA : Comment ça fonctionne réellement
 
-![bg left:20%](./img/aurora.png)
+La mise à l'échelle à zéro nécessite une coordination spécifique car un HPA natif de Kubernetes ne peut techniquement pas évaluer un workload à `0` réplica.
 
-| Paramètre | Valeur |
-|-----------|--------|
-| Version KEDA | 2.20.2 (dernière stable) |
-| Espace de noms | keda-system |
-| Metrics Server | Activé (requis) |
-| Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
-
-<br>
-
-<blockquote>
-KEDA est le moyen natif de la plateforme pour mettre à l'échelle les réplicas selon les signaux de demande réels.
-</blockquote>
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">1. La phase d'inactivité</div>
+    <div class="plate">Workload à `0`. L'HPA natif est dormant.</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">2. La surveillance active par l'opérateur</div>
+    <div class="plate">L'opérateur interroge le déclencheur toutes les `pollingInterval` secondes</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">3. Le démarrage (0 → 1)</div>
+    <div class="plate">L'opérateur applique un patch sur le champ replicas du déploiement pour passer de 0 à 1</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">4. Passage de relais (1 → N)</div>
+    <div class="plate">Le Metrics Server alimente l'HPA pour la mise à l'échelle forte charge</div>
+  </div>
+</div>
 
 ---
 
-<!-- KEDA manual -->
-## KEDA : ScaledObject manuel
+<!-- Exemple de ScaledObject de production avancé -->
+## KEDA : Exemple de Spec pour la Production (Enterprise-Grade)
 
-![bg left:20%](./img/aurora.png)
-
-Pour événements, files, ou descente à zéro (hors prod).
+Un `ScaledObject` de production doit contrôler les comportements de l'HPA en aval, les seuils de secours (fallback) et les mécaniques d'authentification.
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
+metadata:
+  name: billing-processor-scaler
 spec:
   scaleTargetRef:
-    name: my-app-deployment
-  minReplicaCount: 0            # descente à zéro (hors prod seulement)
-  maxReplicaCount: 5
-  cooldownPeriod: 300
+    name: billing-processor-deployment
+  pollingInterval: 15           # Fréquence d'interrogation du flux d'événements externe
+  cooldownPeriod:  600          # Attend 10m avant d'exécuter la descente à 0
+  minReplicaCount: 1            # Ligne de base en prod (Garantit l'absence de cold-start)
+  maxReplicaCount: 50           # Plafond limite strict
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:                 # Profils de stabilisation natifs de l'HPA
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 10           # Descente progressive (max 10% de réduction par étape)
+            periodSeconds: 60
   triggers:
-    - type: cron
+    - type: kafka
       metadata:
-        timezone: America/Toronto
-        start: "0 6 * * 1-5"
-        end: "0 20 * * 1-5"
-        desiredReplicas: "3"
+        bootstrapServers: kafka.aurora.svc:9092
+        topic: payment-events
+        consumerGroup: billing-group
+        lagThreshold: "10"      # Cible : 1 réplica par tranche de 10 messages non lus
 ```
 
 ---
 
-<!-- KEDA limitations -->
-## KEDA : garde-fous en production
+<!-- Portfolio de déclencheurs de production -->
+## Portfolio de déclencheurs de production sur Aurora
 
-![bg left:20%](./img/aurora.png)
+Ne limitez pas KEDA aux simples files d'attente de messages. Tirez parti des scalers alternatifs à l'échelle de l'entreprise.
 
-### NE PAS :
-- **Utiliser KEDA alongside votre propre HPA** - KEDA crée et gère l'HPA ; vous configurez seulement le ScaledObject
-- **Rely on short cooldowns for isolation** - `cooldownPeriod` (par défaut 300s) n'affecte que la descente finale à zéro, pas la réduction générale (c'est la fenêtre `behavior` de HPA)
-
-### FAIRE :
-- Gardez `minReplicaCount: 1`+ en production (pas de descente à zéro)
-- Ajoutez `terminationGracePeriodSeconds` pour les consommateurs longue durée
-- Utilisez `ScaledJob` pour le traitement batch événementiel
-- Validez sur un cycle complet de 24 heures en hors prod
-
-> **Astuce :** Pensez à KEDA comme le service HPA - vous configurez ce qui doit être mis à l'échelle (ScaledObject), KEDA gère le contrôleur HPA réel en coulisses.
-
-> **C'est l'axe 'combien'.** Ensuite : Karpenter provisionne *quelle capacité* pour les pods.
+- **Scaler Prometheus / Thanos :** Mettez à l'échelle vos microservices en fonction des taux d'erreur HTTP, de la vitesse des requêtes entrantes (RPS), ou des durées d'exécution des requêtes
+- **Scaler Cron / Calendrier :** Préchauffez les clusters avant les heures de bureau. Combine avec `desiredReplicas` pour forcer des augmentations de charge avant la connexion des équipes le matin
+- **Fallback CPU/Mémoire :** Oui, KEDA peut s'aligner sur les métriques de ressources système standard s'il est configuré comme déclencheur secondaire, offrant une sécurité si votre flux d'événements principal devenait inaccessible ou dégradé
 
 ---
 
+<!-- Règles de sécurité et bonnes pratiques de production -->
+## Règle Aurora : Authentification sécurisée de KEDA
+
+N'authentifiez jamais les scalers via des chaînes de caractères en texte clair dans la spec. Liez toujours les déclencheurs à des cibles externes en utilisant les CRD `TriggerAuthentication` ou `ClusterTriggerAuthentication` connectés à des `SecretProviderClasses`.
+
+---
+
+<!-- Gardes-fous et rayon d'action KEDA -->
+## Gardes-fous de production pour KEDA
+
+### ⚠️ Le piège du Scale-To-Zero en production
+- **Le risque :** Réduire les API orientées client ou les consommateurs de messages critiques à 0 réplica garantit des pénalités de démarrage à froid (cold-start) (souvent 1 à 3 minutes si Karpenter doit provisionner un serveur physique pour gérer le pic soudain)
+- **L'atténuation :** Imposez `minReplicaCount: 1` sur toutes les infrastructures de Tier-1. Réservez l'exécution du scale-to-zero exclusivement aux environnements de non-production ou aux workers de traitement par lots asynchrones découplés
+
+### ⚖️ Ajustement de la fenêtre de stabilisation
+- **N'essayez pas** de contrôler les activités de réduction de charge à haute vélocité en utilisant uniquement le `cooldownPeriod` standard de KEDA
+- **La correction :** Utilisez le bloc de configuration `advanced.horizontalPodAutoscalerConfig.behavior` pour injecter des règles de stabilisation HPA natives. Cela empêche votre plateforme de réduire la voilure prématurément lors de micro-fluctuations des flux d'événements
+
+### 🛡️ Télémétrie & Observabilité
+- Surveillez le compteur Prometheus `keda_metrics_adapter_scaler_errors`. Si les identifiants réseau d'un courtier expirent, KEDA ne peut plus lire la profondeur de la file d'attente, ce qui provoque une panne silencieuse du scaler pendant que votre file d'attente réelle s'accumule
+
+---
 <!-- ============================ PARTIE 3: Karpenter ============================ -->
 <!-- Karpenter section divider -->
 # Partie 3 : Karpenter
@@ -465,6 +484,8 @@ spec:
     <div class="plate">Respecte les budgets de disruption de pod</div>
   </div>
 </div>
+
+<br>
 
 > **Le grand changement :** Karpenter contourne les groupes de nœuds. Il parle directement à l'API du fournisseur avec une intelligence de bin-packing.
 

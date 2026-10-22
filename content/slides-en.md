@@ -232,131 +232,169 @@ spec:
 <!-- ============================ PART 2: KEDA ============================ -->
 <!-- KEDA section divider -->
 # Part 2: KEDA
-## Event- and schedule-driven replica scaling
+## Event-driven scale-to-zero and high-throughput replication
 
 ![bg left:30%](./img/aurora.png)
 
 ---
 
-<!-- What is KEDA -->
+<!-- What is KEDA: Deep Architectural Definition -->
 ## What is KEDA?
 
-**Kubernetes Event-Driven Autoscaler:** scales replica count based on events, queues, or cron schedules
+**Kubernetes Event-Driven Autoscaler:** An advanced metrics broker that unifies external event telemetry with native Kubernetes horizontal scaling.
 
 ![bg left:20%](./img/aurora.png)
 
-- Scales on external signals: Kafka lag, queue depth, cron schedules, or HTTP traffic
-- Acts as a broker: translates external metrics into native HPA targets
-- Enables scale-to-zero: safely unloads idle workloads down to 0 replicas
-- Config via `ScaledObject` (long-running) or `ScaledJob` (batch)
+- **The Metric Broker:** Bridges cloud/on-prem event streams directly to your workloads without complex custom adapters
+- **Decoupled Metric Lifecycle:** Frees your autoscaling loops from standard infrastructure metrics (CPU/Memory)
+- **True Down-Scaling:** Provides the only reliable framework within Kubernetes to scale a standard workload all the way to absolute zero replicas
+- **CRD-Driven Orchestration:** Managed natively via `ScaledObject` (for Deployments/StatefulSets) and `ScaledJob` (for ephemeral batch loops)
 
 <br>
 
 <blockquote>
-HPA reacts to CPU. KEDA reacts to what actually drives your load.
+Standard HPA watches the consequence of load (CPU). KEDA watches the origin of load (Events).
 </blockquote>
 
 ---
 
-<!-- How KEDA works -->
-## How KEDA Works
+<!-- KEDA Architecture Deep Dive -->
+## KEDA Architecture: The Dual-Controller Engine
 
-![bg left:20%](./img/aurora.png)
+KEDA splits its responsibilities into two independent sub-systems to maintain high performance without blocking your cluster control plane.
 
 <div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">ScaledObject</div>
-    <div class="plate">You define:</div>
-    <div class="plate">Events, triggers, scaling rules</div>
+  <div class="flow-box" style="width: 30%;">
+    <div class="plate plate-head">External Scaler</div>
+    <div class="plate">Kafka, RabbitMQ, Prometheus, etc.</div>
+    <div class="plate">Telemetry source</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 30%;">
     <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate">Creates & manages:</div>
-    <div class="plate">Standard HPA behind the scenes</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">HPA</div>
-    <div class="plate">Controls replica count</div>
-    <div class="plate">for your deployment</div>
+    <div class="plate">Manages ScaledObject lifecycle</div>
   </div>
 </div>
 
-<br>
-
-> **You only configure the ScaledObject.** KEDA owns the HPA and ensures it stays in sync with your event-based scaling rules.
-
----
-
-<!-- Why KEDA matters -->
-## Why KEDA Matters
-
-![bg left:20%](./img/aurora.png)
-
-### The Replica Scaling Problem:
-- **HPA on CPU/memory:** Scales too late - by the time CPU is high, it's already too late
-- **Static replicas:** Either over-provision (wasted capacity) or under-provision (bad UX)
-- **Manual scaling:** Reactive, error-prone, exhausting
-
-### KEDA Solves This:
-- **Event-driven scale-up:** Start scaling *before* CPU rises - Kafka lag, queue depth, or Prometheus alerts
-- **Scale-to-zero:** When there's nothing to do, run 0 replicas. When traffic arrives, scale to N
-- **HPA integration:** KEDA creates and owns the HPA; you just configure the ScaledObject
-
-<br>
+<div style="display: flex; justify-content: space-between; margin-top: 20px;">
+  <div style="width: 48%;">
+    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
+    <div class="plate">HPA v2 External Metrics provider</div>
+    <div class="plate">HPA polls every 15s</div>
+    <div class="plate">Handles 1 → N scaling</div>
+  </div>
+  <div style="width: 48%;">
+    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
+    <div class="plate">Bypasses HPA</div>
+    <div class="plate">Directly patches spec.replicas</div>
+    <div class="plate">Handles 0 ↔ 1 scaling</div>
+  </div>
+</div>
 
 <blockquote>
-Scale on what drives your load, not on what it looks like after the fact.
+Metrics Server (for scale-up) + Operator (for scale-from-zero) = True zero-to-N scaling.
 </blockquote>
 
 ---
 
-<!-- KEDA manual -->
-## KEDA: Manual ScaledObject
+<!-- KEDA Scale-To-Zero Mechanics -->
+## KEDA Scale-To-Zero: How It Actually Works
 
-![bg left:20%](./img/aurora.png)
+Scaling to zero requires a distinct coordination dance because a native Kubernetes HPA cannot technically evaluate a workload at `0` replicas.
 
-For events, queues, or scale-to-zero (non-prod).
+<div class="flow">
+  <div class="flow-box">
+    <div class="plate plate-head">1. The Idle Phase</div>
+    <div class="plate">Workload at `0`. Native HPA dormant.</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">2. Active Operator Probe</div>
+    <div class="plate">Operator polls trigger every `pollingInterval` seconds</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">3. Kickstart (0 → 1)</div>
+    <div class="plate">Operator patches deployment replicas from 0 to 1</div>
+  </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box">
+    <div class="plate plate-head">4. Hand-Off (1 → N)</div>
+    <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
+  </div>
+</div>
+
+---
+
+<!-- Advanced Production ScaledObject Example -->
+## KEDA: Enterprise-Grade Production Spec
+
+A production `ScaledObject` must control downstream HPA behaviors, fallback thresholds, and authentication semantics.
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
+metadata:
+  name: billing-processor-scaler
 spec:
   scaleTargetRef:
-    name: my-app-deployment
-  minReplicaCount: 0            # scale to zero (non-prod only)
-  maxReplicaCount: 5
-  cooldownPeriod: 300
+    name: billing-processor-deployment
+  pollingInterval: 15           # Frequency to poll the external event stream
+  cooldownPeriod:  600          # Wait 10m before executing scale-down to 0
+  minReplicaCount: 1            # Production baseline (Guarantees zero cold-starts)
+  maxReplicaCount: 50           # Hard boundary ceiling
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:                 # Native HPA stabilization profiles
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 10           # Smooth downscaling (max 10% reduction per step)
+            periodSeconds: 60
   triggers:
-    - type: cron
+    - type: kafka
       metadata:
-        timezone: America/Toronto
-        start: "0 6 * * 1-5"
-        end: "0 20 * * 1-5"
-        desiredReplicas: "3"
+        bootstrapServers: kafka.aurora.svc:9092
+        topic: payment-events
+        consumerGroup: billing-group
+        lagThreshold: "10"      # Target: 1 replica per 10 unread messages
 ```
 
 ---
 
-<!-- KEDA limitations -->
-## KEDA: Production Guardrails
+<!-- Production Trigger Portfolio -->
+## Production Trigger Portfolio on Aurora
 
-![bg left:20%](./img/aurora.png)
+Don't limit KEDA to basic message queues. Leverage alternative scalers across the enterprise topology.
 
-### DO NOT:
-- **Use KEDA alongside your own HPA** - KEDA creates and manages the HPA; you configure only the ScaledObject
-- **Rely on short cooldowns for isolation** - `cooldownPeriod` (default 300s) only affects the final scale-from-zero, not general scale-down (that's HPA's `behavior` window)
+- **Prometheus / Thanos Scaler:** Scale microservices based on HTTP Error Rates, Inbound Request Velocity (RPS), or query execution durations
+- **Cron / Calendar Scaler:** Pre-warm clusters before business hours. Combine with `desiredReplicas` to force scale-ups before morning shifts log in
+- **CPU/Memory Fallback:** KEDA can scale on standard system resource metrics if configured as a secondary trigger, providing a safe backup if your primary event stream becomes degraded
 
-### DO:
-- Keep `minReplicaCount: 1`+ in production (no scale-to-zero)
-- Add `terminationGracePeriodSeconds` for long-running consumers
-- Use `ScaledJob` for event-processing batch work
-- Validate across a full 24-hour cycle in non-prod
+---
 
-> **Tip:** Think of KEDA as the "HPA service" - you configure what to scale (ScaledObject), KEDA manages the actual HPA controller behind the scenes.
+<!-- Security & Production Best Practices -->
+## Aurora Rule: Secure KEDA Authentication
 
-> **That's the 'how many' axis.** Next: Karpenter provisions *what capacity* to fit the pods.
+Never authenticate scalers via plaintext strings inside the spec. Always bind triggers to external targets using the `TriggerAuthentication` or `ClusterTriggerAuthentication` CRDs linked to `SecretProviderClasses`.
+
+---
+
+<!-- KEDA Production Guardrails -->
+## KEDA Production Guardrails
+
+### ⚠️ The Scale-To-Zero Production Trap
+- **The Risk:** Scaling customer-facing APIs or critical message consumers to 0 replicas guarantees cold-start penalties (often 1-3 minutes if Karpenter needs to provision bare metal)
+- **The Mitigation:** Enforce `minReplicaCount: 1` on all Tier-1 infrastructure. Reserve scale-to-zero execution exclusively for non-production environments or decoupled asynchronous batch workers
+
+### ⚖️ Tuning the Stabilization Window
+- **Do not** attempt to control high-velocity scale-down activities using KEDA's standard `cooldownPeriod`
+- **The Correction:** Use `advanced.horizontalPodAutoscalerConfig.behavior` to inject native HPA stabilization rules. This stops premature scale-down during minor event stream blips
+
+### 🛡️ Telemetry & Observability
+- Monitor the `keda_metrics_adapter_scaler_errors` Prometheus counter. If a broker's network credentials expire, KEDA cannot read the queue depth, causing the scaler to fail silently while your real queue backs up
 
 ---
 
