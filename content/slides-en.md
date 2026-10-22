@@ -613,11 +613,9 @@ Right-size the pods, scale on real demand, provision only what fits.
 ---
 
 <!-- Afterword: FAQs -->
-## Appendix: Advanced Questions & Answers
+## Appendix: FAQs
 
 ![bg left:20%](./img/aurora.png)
-
-> **Note:** These are detailed answers you may not present live. Keep them as reference material for follow-up discussions or deeper technical discussions.
 
 ---
 
