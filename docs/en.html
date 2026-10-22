@@ -824,22 +824,22 @@ table { font-size: 22px; }
 <p>Scaling to zero requires a distinct coordination dance because a native Kubernetes HPA cannot technically evaluate a workload at <code>0</code> replicas.</p>
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">1. The Idle Phase</div>
+    <div class="plate plate-head">The Idle Phase</div>
     <div class="plate">Workload at `0`. Native HPA dormant.</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">2. Active Operator Probe</div>
+    <div class="plate plate-head">Active Operator Probe</div>
     <div class="plate">Operator polls trigger every `pollingInterval` seconds</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">3. Kickstart (0 → 1)</div>
+    <div class="plate plate-head">Kickstart (0 → 1)</div>
     <div class="plate">Operator patches deployment replicas from 0 to 1</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">4. Hand-Off (1 → N)</div>
+    <div class="plate plate-head">Hand-Off (1 → N)</div>
     <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
   </div>
 </div>
@@ -956,20 +956,15 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="keda-production-guardrails">KEDA Production Guardrails</h2>
-<h3 id="%E2%9A%A0%EF%B8%8F-the-scale-to-zero-production-trap"><img class="emoji" draggable="false" alt="⚠️" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.3/assets/svg/26a0.svg" data-marp-twemoji=""/> The Scale-To-Zero Production Trap</h3>
-<ul>
-<li><strong>The Risk:</strong> Scaling customer-facing APIs or critical message consumers to 0 replicas guarantees cold-start penalties (often 1-3 minutes if Karpenter needs to provision bare metal)</li>
-<li><strong>The Mitigation:</strong> Enforce <code>minReplicaCount: 1</code> on all Tier-1 infrastructure. Reserve scale-to-zero execution exclusively for non-production environments or decoupled asynchronous batch workers</li>
-</ul>
-<h3 id="%E2%9A%96%EF%B8%8F-tuning-the-stabilization-window"><img class="emoji" draggable="false" alt="⚖️" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.3/assets/svg/2696.svg" data-marp-twemoji=""/> Tuning the Stabilization Window</h3>
-<ul>
-<li><strong>Do not</strong> attempt to control high-velocity scale-down activities using KEDA's standard <code>cooldownPeriod</code></li>
-<li><strong>The Correction:</strong> Use <code>advanced.horizontalPodAutoscalerConfig.behavior</code> to inject native HPA stabilization rules. This stops premature scale-down during minor event stream blips</li>
-</ul>
+<h3 id="%E2%9A%A0%EF%B8%8F-scale-to-zero-production-trap"><img class="emoji" draggable="false" alt="⚠️" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.3/assets/svg/26a0.svg" data-marp-twemoji=""/> Scale-To-Zero Production Trap</h3>
+<p><strong>Risk:</strong> Scaling APIs or critical consumers to 0 replicas guarantees 1-3 minute cold-start penalties<br />
+<strong>Mitigation:</strong> <code>minReplicaCount: 1</code> for Tier-1; reserve scale-to-zero for non-prod or async batch workers</p>
+<h3 id="%E2%9A%96%EF%B8%8F-stabilization-window-tuning"><img class="emoji" draggable="false" alt="⚖️" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.3/assets/svg/2696.svg" data-marp-twemoji=""/> Stabilization Window Tuning</h3>
+<p><strong>Do not:</strong> Control high-velocity scale-down with <code>cooldownPeriod</code><br />
+<strong>Do:</strong> Use <code>advanced.horizontalPodAutoscalerConfig.behavior</code> for native HPA rules</p>
 <h3 id="%F0%9F%9B%A1%EF%B8%8F-telemetry--observability"><img class="emoji" draggable="false" alt="🛡️" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.3/assets/svg/1f6e1.svg" data-marp-twemoji=""/> Telemetry &amp; Observability</h3>
-<ul>
-<li>Monitor the <code>keda_metrics_adapter_scaler_errors</code> Prometheus counter. If a broker's network credentials expire, KEDA cannot read the queue depth, causing the scaler to fail silently while your real queue backs up</li>
-</ul>
+<p><strong>Monitor:</strong> <code>keda_metrics_adapter_scaler_errors</code> Prometheus counter<br />
+<strong>Alert:</strong> Broker credential expiration causes silent scaler failure</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }

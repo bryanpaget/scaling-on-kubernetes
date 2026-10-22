@@ -356,22 +356,22 @@ La mise à l'échelle à zéro nécessite une coordination spécifique car un HP
 
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">1. La phase d'inactivité</div>
+    <div class="plate plate-head">La phase d'inactivité</div>
     <div class="plate">Workload à `0`. L'HPA natif est dormant.</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">2. La surveillance active par l'opérateur</div>
+    <div class="plate plate-head">La surveillance active par l'opérateur</div>
     <div class="plate">L'opérateur interroge le déclencheur toutes les `pollingInterval` secondes</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">3. Le démarrage (0 → 1)</div>
+    <div class="plate plate-head">Le démarrage (0 → 1)</div>
     <div class="plate">L'opérateur applique un patch sur le champ replicas du déploiement pour passer de 0 à 1</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">4. Passage de relais (1 → N)</div>
+    <div class="plate plate-head">Passage de relais (1 → N)</div>
     <div class="plate">Le Metrics Server alimente l'HPA pour la mise à l'échelle forte charge</div>
   </div>
 </div>
@@ -437,20 +437,19 @@ N'authentifiez jamais les scalers via des chaînes de caractères en texte clair
 <!-- Gardes-fous et rayon d'action KEDA -->
 ## Gardes-fous de production pour KEDA
 
-### ⚠️ Le piège du Scale-To-Zero en production
-- **Le risque :** Réduire les API orientées client ou les consommateurs de messages critiques à 0 réplica garantit des pénalités de démarrage à froid (cold-start) (souvent 1 à 3 minutes si Karpenter doit provisionner un serveur physique pour gérer le pic soudain)
-- **L'atténuation :** Imposez `minReplicaCount: 1` sur toutes les infrastructures de Tier-1. Réservez l'exécution du scale-to-zero exclusivement aux environnements de non-production ou aux workers de traitement par lots asynchrones découplés
+### ⚠️ Scale-To-Zero en production
+**Risque:** Réduire les API ou consommateurs critiques à 0 garantit 1-3 minutes de cold-start
+**Atténuation:** `minReplicaCount: 1` pour Tier-1; réserver au non-prod ou workers async
 
-### ⚖️ Ajustement de la fenêtre de stabilisation
-- **N'essayez pas** de contrôler les activités de réduction de charge à haute vélocité en utilisant uniquement le `cooldownPeriod` standard de KEDA
-- **La correction :** Utilisez le bloc de configuration `advanced.horizontalPodAutoscalerConfig.behavior` pour injecter des règles de stabilisation HPA natives. Cela empêche votre plateforme de réduire la voilure prématurément lors de micro-fluctuations des flux d'événements
+### ⚖️ Ajustement fenêtre stabilisation
+**Ne pas:** Contrôler scale-down avec `cooldownPeriod`
+**Faire:** Utiliser `advanced.horizontalPodAutoscalerConfig.behavior` pour règles HPA
 
 ### 🛡️ Télémétrie & Observabilité
-- Surveillez le compteur Prometheus `keda_metrics_adapter_scaler_errors`. Si les identifiants réseau d'un courtier expirent, KEDA ne peut plus lire la profondeur de la file d'attente, ce qui provoque une panne silencieuse du scaler pendant que votre file d'attente réelle s'accumule
+**Surveiller:** `keda_metrics_adapter_scaler_errors` Prometheus
+**Alerte:** Expired broker credentials → panne silencieuse
 
 ---
-<!-- ============================ PARTIE 3: Karpenter ============================ -->
-<!-- Karpenter section divider -->
 # Partie 3 : Karpenter
 ## Provisionnement de nœuds juste-à-temps
 

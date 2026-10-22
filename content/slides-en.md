@@ -385,16 +385,17 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
 <!-- KEDA Production Guardrails -->
 ## KEDA Production Guardrails
 
-### ⚠️ The Scale-To-Zero Production Trap
-- **The Risk:** Scaling customer-facing APIs or critical message consumers to 0 replicas guarantees cold-start penalties (often 1-3 minutes if Karpenter needs to provision bare metal)
-- **The Mitigation:** Enforce `minReplicaCount: 1` on all Tier-1 infrastructure. Reserve scale-to-zero execution exclusively for non-production environments or decoupled asynchronous batch workers
+### ⚠️ Scale-To-Zero Production Trap
+**Risk:** Scaling APIs or critical consumers to 0 replicas guarantees 1-3 minute cold-start penalties
+**Mitigation:** `minReplicaCount: 1` for Tier-1; reserve scale-to-zero for non-prod or async batch workers
 
-### ⚖️ Tuning the Stabilization Window
-- **Do not** attempt to control high-velocity scale-down activities using KEDA's standard `cooldownPeriod`
-- **The Correction:** Use `advanced.horizontalPodAutoscalerConfig.behavior` to inject native HPA stabilization rules. This stops premature scale-down during minor event stream blips
+### ⚖️ Stabilization Window Tuning
+**Do not:** Control high-velocity scale-down with `cooldownPeriod`
+**Do:** Use `advanced.horizontalPodAutoscalerConfig.behavior` for native HPA rules
 
 ### 🛡️ Telemetry & Observability
-- Monitor the `keda_metrics_adapter_scaler_errors` Prometheus counter. If a broker's network credentials expire, KEDA cannot read the queue depth, causing the scaler to fail silently while your real queue backs up
+**Monitor:** `keda_metrics_adapter_scaler_errors` Prometheus counter
+**Alert:** Broker credential expiration causes silent scaler failure
 
 ---
 
