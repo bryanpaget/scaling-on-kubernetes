@@ -610,17 +610,28 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 
 ---
 
-<!-- Good vs bad interactions -->
-## Bonnes vs mauvaises interactions
+<!-- Anti-patterns -->
+## Anti-patrons communs
 
-| Scénario de workload | État idéal (Bon) | Catastrophe en production (Mauvais) |
-|---------------------|-----------------|-----------------------------------|
-| **IoT / Événements haute volume** (ex: télemetry de partage de vélos) | KEDA met à l'échelle les réplicas sur la vitesse des événements tandis que VPA borde la mémoire. Karpenter packe les nœuds étroitement. | HPA et KEDA se battent sur la même métrique CPU. Le nombre de pods oscille sauvagement, causant des pertes de données utilisateurs pendant le pic de trafic du matin. |
-| **Traitement lourd** (ex: suivi ML drone swarm) | KEDA surveille les files de travail tandis que Karpenter provisionne dynamiquement des nœuds GPU spécialisés et exactement adaptés. | Aucune limite budgétaire sur Karpenter. Une boucle de code application non gérée déclenche une hausse massive imprévue des coûts cloud overnight. |
-| **API critique en latence** (ex: défense cyber) | KEDA met à l'échelle les réplicas selon les anomalies réseau; VPA est configuré en mode Initial pour éviter les redémarrages en vol. Descente à zéro est activée. Une menace cyber imprévue subit un délai de cold-start de 2 minutes pendant que les nœuds bruts bootent. | Descente à zéro en prod → latence de détection |
-| **Apps multi-tiers standard** (Services Web généraux) | VPA gère le dimensionnement vertical de la mémoire tandis que KEDA ou HPA gère les pics de trafic horizontal. Les deux outils regardent le CPU. Les boucles de scaling se chevauchent, déclenchant des cycles d'éviction de pods rapides et infinis appelés flapping de déploiement. | — |
+| Scénario de workload | L'anti-pattern | Le résultat |
+|---------------------|----------------|-------------|
+| **IoT / Événements haute volume** | HPA et KEDA se battent sur CPU | Oscillation des pods, pertes de données en pic de trafic |
+| **Traitement lourd** | Aucune limite budgétaire sur Karpenter | Hausse massive des coûts cloud overnight |
+| **API critique en latence** | Descente à zéro en prod | Délai de cold-start de 2 min sur événements imprévus |
+| **Apps multi-tiers standard** | VPA+HPA tous deux sur CPU | Éviction de pods rapide et infinie (deployment flapping) |
 
-> **Astuce :** KEDA crée et possède un HPA en coulisses. Ne créez pas votre propre HPA pour le même workload.
+> **Astuce :** KEDA crée et possède l'HPA. Ne créez pas votre propre HPA pour le même workload.
+
+---
+
+<!-- Anti-patterns continued -->
+## Anti-patrons communs (suite)
+
+| Scénario de workload | L'anti-pattern | Le résultat |
+|---------------------|----------------|-------------|
+| **Workloads GPU** | Aucun nodeSelector pour GPU | Karpenter choisit le mauvais type d'instance |
+| **Workloads sensibles aux évictions** | Mode `Recreate` de VPA | Redémarrage de pod en vol |
+| **Consommateurs longue durée** | `terminationGracePeriodSeconds` manquant | Terminaison du workload avant complétion |
 
 ---
 
