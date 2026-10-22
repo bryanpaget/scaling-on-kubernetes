@@ -134,29 +134,6 @@ Profils plutôt que prédictions. Verrouillez l'empreinte optimale dès le jour 
 ---
 
 <!-- Why VPA Matters -->
-## Pourquoi VPA est important
-
-![bg left:20%](./img/aurora.png)
-
-### Le problème des demandes de ressources :
-- Sur-provisionnement : 500m CPU quand 100m suffisent, capacité gaspillée
-- Sous-provisionnement : 100m CPU quand 500m nécessaires, throttling
-- Les demandes statiques ne s'ajustent jamais après le déploiement
-
-### VPA résout cela :
-- **Dimensionnement à la création de pods :** le mode Initial applique les recommandations uniquement aux nouveaux pods
-- **Surveillance continue :** le Recommandeur analyse l'utilisation au fil du temps
-- **Mises à jour contrôlées :** l'Updateur peut progressivement déployer des changements via les mises à jour InPlace (si disponibles)
-
-<br>
-
-<blockquote>
-Cessez de deviner, dimensionnez avec des données.
-</blockquote>
-
----
-
-<!-- How VPA Works -->
 ## Comment VPA fonctionne : trois composants
 
 ![bg left:20%](./img/aurora.png)
@@ -649,25 +626,26 @@ Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mi
 | **KEDA 0 + Karpenter** | Descente à zéro + consolidation vide et retire les nœuds. Attention au cold start |
 
 <!-- What could go wrong -->
-## Qu'est-ce qui pourrait mal tourner
-
-![bg left:20%](./img/aurora.png)
-
-**La mise à l'échelle automatique est comme un moteur de jet haute performance.** Si les systèmes de contrôle sont décalés, les ailes commencent à vibrer violemment—ce qu'on appelle le *flapping*—jusqu'à ce que la friction déchire votre disponibilité.
-
-| Mode d'échec | Ce qui se passe | Le coût |
-|--------------|----------------|---------|
-| **Spirale mortelle** | HPA et VPA se battent sur CPU. Pods montent, shring, CPU remonte, montent encore. | Surcharge API server. Latence utilisateurs. |
-| **Whiplash Karpenter** | Burst file → 100 pods → nœud $1000. Burst finit → 1 pod → nœud détruit. Répétition. | Coût cloud massif. Instabilité nœuds. |
-| **Cascade OOM** | Fuite mémoire → VPA augmente mémoire → fuite consomme plus → nœud OOM → kernel tue tous pods. | Single app prend tout le monde sur le nœud. |
-| **Capacité fantôme** | KEDA monte à 200, Karpenter commande nœuds Spot. Spot indisponible → KEDA passe à 400. | 500 pods bootés pour une demande de 200. |
-
-> **Souvenez-vous :** Gardez les métriques découplées. VPA (mémoire), KEDA (CPU/traffic), Karpenter (pods en attente).
-
 ---
 
-<!-- Conclusion -->
-## Conclusion
+<!-- Modes d'échec : quand l'automatisation entre en collision -->
+## Modes d'échec : quand l'automatisation entre en collision
+
+![bg: clear](./img/aurora.png)
+
+| Scénario / Profil système | La condition déclencheuse | La catastrophe en production |
+|---------------------------|--------------------------|------------------------------|
+| **IoT / Événements à haut volume** | **HPA et KEDA se battent pour le CPU** | Les réplicas oscillent, données perdues pendant les pics |
+| **Traitement calcul intensif** | **Pas de limites budgétaires sur Karpenter** | Pic massif de dépenses cloud overnight |
+| **API critiques latence** | **Scale-to-zero en prod** | Délai cold-start de 2 minutes sur événements inattendus |
+| **Apps multi-niveaux standard** | **VPA+HPA tous deux sur CPU** | Eviction infinie de pods (deployment flapping) |
+| **Spirale mortelle** | **HPA et VPA se battent pour CPU** | Pods montent, shring, CPU remonte → surcharge API server |
+| **Whiplash Karpenter** | **Burst file → 100 pods → nœud $1000** | Burst finit → 1 pod → nœud détruit → répétition |
+| **Cascade OOM** | **Fuite mémoire → VPA augmente mémoire** | Fuite consomme plus → nœud OOM → kernel tue tous pods |
+| **Capacité fantôme** | **Spot indisponible après KEDA saute à 400** | 500 pods bootés pour demande de 200 |
+
+> **Souvenez-vous :** Gardez les métriques découplées. **VPA (mémoire)**, **KEDA (CPU/traffic)**, **Karpenter (pods en attente)**.
+
 
 ![bg left:20%](./img/aurora.png)
 
@@ -685,7 +663,7 @@ Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez
 ---
 
 <!-- Afterword: FAQs -->
-## Appendix: FAQs
+## Afterword: FAQs
 
 ![bg left:20%](./img/aurora.png)
 

@@ -121,7 +121,7 @@ Profiles over predictions. Lock in optimal footprint on day zero, with zero runt
     <div class="plate plate-head">Updater</div>
     <div class="plate">Checks recommendations</div>
     <div class="plate">Decides when to update</div>
-    <div class="plate">Respects Pod Distribution Budgets/rollout</div>
+    <div class="plate">Respects Pod Disruption Budgets/rollout</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
@@ -430,7 +430,7 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
   <div class="flow-box">
     <div class="plate plate-head">Consolidate</div>
     <div class="plate">Repack & remove idle</div>
-    <div class="plate">Respects Pod Distribution Budgets</div>
+    <div class="plate">Respects Pod Disruption Budgets</div>
   </div>
 </div>
 
@@ -454,7 +454,7 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
 **Key capabilities:**
 - **Direct API access:** No Auto Scaling Groups - spins up one perfect node per demand
 - **Bin-packing:** Aggregates all pending pods, finds optimal layout
-- **Respects Pod Distribution Budgets:** Will wait to drain nodes until PDBs allow; never force-terminates pods during consolidation
+- **Respects Pod Disruption Budgets:** Will wait to drain nodes until PDBs allow; never force-terminates pods during consolidation
 - **Node attributes:** Reads nodeSelector, affinity, tolerations, GPU requirements
 
 <br>
@@ -601,24 +601,25 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 
 ---
 
-<!-- Common Anti-Patterns -->
-## Common Anti-Patterns
-
-| Workload Scenario | The Anti-Pattern | The Result |
-|-------------------|------------------|------------|
-| **High-Volume IoT / Events** | HPA and KEDA fight over CPU | Pod counts oscillate, data dropped during peak traffic |
-| **Heavy Compute Processing** | No budget limits on Karpenter | Massive cloud spending spike overnight |
-| **Latency-Critical APIs** | Scale-to-zero in prod | 2-minute cold-start delay on unexpected events |
-| **Standard Multi-Tier Apps** | VPA+HPA both on CPU | Rapid endless pod eviction (deployment flapping) |
-
-> **Tip:** KEDA creates and owns the HPA. Don't create your own HPA for the same workload.
-
 ---
 
-<!-- What Could Go Wrong -->
-## What Could Go Wrong
+<!-- Failure Modes: When Automation Collides -->
+## Failure Modes: When Automation Collides
 
-![bg left:20%](./img/aurora.png)
+![bg: clear](./img/aurora.png)
+
+| Scenario / System Profile | The Trigger Condition | The Production Catastrophe |
+|---------------------------|----------------------|----------------------------|
+| **High-Volume IoT / Events** | **HPA and KEDA fight over CPU** | Pod counts oscillate, data dropped during peak traffic |
+| **Heavy Compute Processing** | **No budget limits on Karpenter** | Massive cloud spending spike overnight |
+| **Latency-Critical APIs** | **Scale-to-zero in prod** | 2-minute cold-start delay on unexpected events |
+| **Standard Multi-Tier Apps** | **VPA+HPA both on CPU** | Rapid endless pod eviction (deployment flapping) |
+| **Death Spiral** | **HPA and VPA fight over CPU** | Pods spin up, shrink, spike CPU, spin up again → API server overload |
+| **Karpenter Whiplash** | **Queue burst → 100 pods → $1000 node** | Burst ends → 1 pod → node terminated → repeat → massive spend |
+| **OOM Cascade** | **Memory leak → VPA raises memory** | Leak consumes more → node OOM → kernel kills all pods |
+| **Phantom Capacity** | **Spot unavailable after KEDA jumps to 400** | 500 pods booted for 200 of demand |
+
+> **Remember:** Keep metrics decoupled. **VPA (memory)**, **KEDA (CPU/traffic)**, **Karpenter (pending pods)**.
 
 **Autoscaling is like a high-performance jet engine.** If the control systems are out of sync, the wings start to vibrate violently—called *flapping*—until the sheer friction tears your availability apart.
 
@@ -682,7 +683,7 @@ A: It's a safe blue-green migration. Karpenter can run simultaneously alongside 
 
 **Q: Karpenter consolidation + my PodDisruptionBudgets + spot interruptions — what actually happens to my availability?**
 
-A: Kubernetes native controls always win. Karpenter strictly respects Pod Distribution Budgets. If a consolidation or spot replacement violates your Pod Distribution Budget, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
+A: Kubernetes native controls always win. Karpenter strictly respects Pod Disruption Budgets. If a consolidation or spot replacement violates your Pod Distribution Budget, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
 
 ---
 
