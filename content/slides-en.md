@@ -442,8 +442,6 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 <!-- Karpenter deep dive -->
 ## How Karpenter Works: Three Steps
 
-![bg left:20%](./img/aurora.png)
-
 | Step | What Happens | Why It Matters |
 |------|-------------|----------------|
 | **1. Watch** | Event-driven: Watches unschedulable pods *millisecond-by-millisecond* | No polling delay → ~45s scale-up |
@@ -543,8 +541,6 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 <!-- Karpenter limitations -->
 ## Karpenter: Risks and Caveats
 
-![bg left:20%](./img/aurora.png)
-
 - **GCP provider is community-maintained:** the [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) is pre-1.0; breaking changes happen. Pin versions, scan, and keep GKE Workload Autoscaler as fallback
 - **Node churn:** aggressive consolidation disrupts pods; tune `consolidateAfter` and use PodDisruptionBudgets
 - **Azure NAP (managed Karpenter):** simpler now, but [github.com/Azure/karpenter-provider-azure/issues/1351](https://github.com/Azure/karpenter-provider-azure/issues/1351) indicates current limitations; consider self-hosted for full control
@@ -560,6 +556,7 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 <!-- Interactions divider -->
 # Part 4: Putting It Together
 ## Interactions and anti-patterns
+### Tips and Tricks
 
 ![bg left:30%](./img/aurora.png)
 
@@ -585,8 +582,6 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 
 <!-- Conflict rules -->
 ## The Rules That Keep Them From Fighting
-
-![bg left:20%](./img/aurora.png)
 
 | Pair | Rule |
 |------|------|
@@ -617,8 +612,6 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 <!-- What Could Go Wrong -->
 ## What Could Go Wrong
 
-![bg left:20%](./img/aurora.png)
-
 **Autoscaling is like a high-performance jet engine.** If the control systems are out of sync, the wings start to vibrate violently—called *flapping*—until the sheer friction tears your availability apart.
 
 | Failure Mode | What Happens | The Cost |
@@ -647,10 +640,3 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 <blockquote>
 Right-size the pods, scale on real demand, provision only what fits.
 </blockquote>
-
----
-
-<!-- Afterword: FAQs -->
----
-
-<!-- FAQ Section moved to faq-en.md -->
