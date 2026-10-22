@@ -204,9 +204,9 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
 <div class="flow" style="font-size: 0.85em; gap: 12px;">
 
-  <!-- Mode 1: Off - Blue -->
+  <!-- Mode 1: Off - Blue gradient -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #2979ff;">Off</div>
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);">Off</div>
     <div class="plate">Analysis Only</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -215,9 +215,9 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <div class="flow-arrow">&rarr;</div>
 
-  <!-- Mode 2: Initial - Teal -->
+  <!-- Mode 2: Initial - Teal gradient -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #26a69a;">Initial</div>
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%);">Initial</div>
     <div class="plate">Sized at Birth</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -226,9 +226,9 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <div class="flow-arrow">&rarr;</div>
 
-  <!-- Mode 3: InPlace - Orange -->
+  <!-- Mode 3: InPlace - Orange gradient -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #f57c00;">InPlace</div>
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #f57c00 0%, #ffca28 100%);">InPlace</div>
     <div class="plate">Live Flexing</div>
     <div class="plate">No Evictions*</div>
     <div class="plate">Yes Updates</div>
@@ -237,9 +237,9 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <div class="flow-arrow">&rarr;</div>
 
-  <!-- Mode 4: Recreate - Red -->
+  <!-- Mode 4: Recreate - Red gradient -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #e53935;">Recreate</div>
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #e53935 0%, #ff7043 100%);">Recreate</div>
     <div class="plate">Hard Eviction</div>
     <div class="plate">Yes Evictions</div>
     <div class="plate">Yes Updates</div>
