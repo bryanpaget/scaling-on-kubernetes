@@ -139,9 +139,22 @@ Profiles over predictions. Lock in optimal footprint on day zero, with zero runt
 
 The foundational "brain" of VPA. It only **proposes** metrics—it never modifies running pods.
 
-1. **Continuous Monitoring** - Pulls utilization from Metrics Server/Prometheus
-2. **Historical Analysis** - Decaying moving average, peaks matter most (no OOMs!)
-3. **Target Generation** - Calculates and writes four target zones to VPA Status
+1. **Continuous Monitoring**
+   Pulls real-time resource utilization from Metrics Server/Prometheus.
+2. **Historical Analysis**
+   Applies a decaying moving average where peaks matter most to eliminate OOMs.
+3. **Target Generation**
+   Calculates and writes a **4-zone boundary profile** to the VPA Status field:
+   * **Target:** The optimal resource sweet spot injected into your pods.
+   * **Lower Bound:** The under-provisioned warning track; triggers an upscale if breached.
+   * **Upper Bound:** The over-provisioned waste ceiling; triggers a downscale if idling.
+   * **Uncapped Target:** True raw application demand ignoring your YAML safety caps.
+
+<br>
+
+<blockquote>
+The Recommender establishes the safety rails; the Updater and Admission Controller enforce them.
+</blockquote>
 
 ---
 
