@@ -356,25 +356,21 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="how-the-recommender-works">How the Recommender Works</h2>
-<p>The foundational &quot;brain&quot; of VPA. It only <strong>proposes</strong> metrics—it never modifies running pods.</p>
+<p>The <strong>Recommender</strong> calculates resource metrics but <strong>never modifies running pods</strong>.</p>
 <ol>
-<li><strong>Continuous Monitoring</strong><br />
-Pulls real-time resource utilization from Metrics Server/Prometheus.</li>
-<li><strong>Historical Analysis</strong><br />
-Applies a decaying moving average where peaks matter most to eliminate OOMs.</li>
-<li><strong>Target Generation</strong><br />
-Calculates and writes a <strong>4-zone boundary profile</strong> to the VPA Status field:
+<li><strong>Monitor:</strong> Pulls utilization data continuously from Prometheus / Metrics Server.</li>
+<li><strong>Analyze:</strong> Applies a decaying moving average heavily weighted toward usage peaks.</li>
+<li><strong>Spit out 4 boundary targets to VPA Status:</strong>
 <ul>
-<li data-marpit-fragment="1"><strong>Target:</strong> The optimal resource sweet spot injected into your pods.</li>
-<li data-marpit-fragment="2"><strong>Lower Bound:</strong> The under-provisioned warning track; triggers an upscale if breached.</li>
-<li data-marpit-fragment="3"><strong>Upper Bound:</strong> The over-provisioned waste ceiling; triggers a downscale if idling.</li>
-<li data-marpit-fragment="4"><strong>Uncapped Target:</strong> True raw application demand ignoring your YAML safety caps.</li>
+<li data-marpit-fragment="1"><strong>Target:</strong> Optimal sweet spot injected into pods.</li>
+<li data-marpit-fragment="2"><strong>Lower Bound:</strong> Under-provisioned floor; triggers an upscale if breached.</li>
+<li data-marpit-fragment="3"><strong>Upper Bound:</strong> Over-provisioned ceiling; triggers a downscale if idling.</li>
+<li data-marpit-fragment="4"><strong>Uncapped Target:</strong> True raw application demand, ignoring your YAML safety caps.</li>
 </ul>
 </li>
 </ol>
-<br />
 <blockquote>
-The Recommender establishes the safety rails; the Updater and Admission Controller enforce them.
+<b>Target</b> is what the platform allows; <b>Uncapped Target</b> is what the code actually asked for. A massive gap means your safety rails are actively throttling performance.
 </blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
