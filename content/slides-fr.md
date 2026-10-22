@@ -133,17 +133,22 @@ Profils plutôt que prédictions. Verrouillez l'empreinte optimale dès le jour 
 <!-- How the Recommender works -->
 ## Comment le Recommandeur fonctionne
 
-![bg left:25%](./img/aurora.png)
+Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il ne modifie jamais les pods en cours d'exécution.
+<!-- Comment le Recommandeur fonctionne -->
+## Comment le Recommandeur fonctionne
 
 Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il ne modifie jamais les pods en cours d'exécution.
 
-1. **Surveillance continue** - Extrait l'utilisation du Metrics Server/Prometheus
-2. **Analyse historique** - Moyenne mobile décroissante, les pics comptent le plus (pas d'OOM !)
-3. **Génération des cibles** - Calcule et écrit quatre zones cibles dans le statut VPA
+1. **Surveillance continue** - Extrait la consommation réelle des ressources du Metrics Server/Prometheus
+2. **Analyse historique** - Moyenne mobile décroissante où les pics comptent le plus pour éliminer les OOM
+3. **Génération des cibles** - Calcule et écrit un **profil de zone 4** dans le champ Status VPA :
+   * **Cible :** L'optimum ressource parfait injecté dans vos pods
+   * **Limite inférieure :** La piste d'alerte sous-provisionnée ; déclenche une montée en charge si dépassée
+   * **Limite supérieure :** Le plafond gaspillage ; déclenche une descente si idle
+   * **Cible uncapped :** La vraie demande brute de l'application sans vos bornes YAML de sécurité
 
----
+<br>
 
-<!-- In-Place Resizing -->
 ## Redimensionnement en place : right-sizing sans interruption
 
 Modifie l'allocation CPU et mémoire à la volée sans éviction ni redémarrage des pods en cours d'exécution.
@@ -256,42 +261,34 @@ L'HPA standard surveille la conséquence de la charge (le CPU). KEDA surveille l
 KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des performances élevées sans bloquer le plan de contrôle de votre cluster.
 
 <div style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
-
-  <!-- Column 1: Ingestion -->
-  <div style="width: 30%; border: 1px dashed #777; padding: 10px; border-radius: 6px;">
-    <div class="plate plate-head" style="background: #4A5568;">Sources de télémétrie</div>
+<div class="flow">
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">Sources de télémétrie</div>
     <div class="plate">Lag Kafka</div>
     <div class="plate">Profondeur RabbitMQ</div>
     <div class="plate">Requêtes Prometheus</div>
   </div>
-
-  <div style="display: flex; align-items: center; font-size: 1.5em; color: #2d7d9a;">&rarr;</div>
-
-  <!-- Column 2: 1 to N Engine -->
-  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
-    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
-    <div class="plate"><b>gestion de la montée 1 &rarr; N</b></div>
-    <div class="plate">Agit comme fournisseur HPA v2</div>
-    <div class="plate">HPA natif interroge toutes les 15s</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">KEDA Metrics Server</div>
+    <div class="plate"><b>Gestion 1 → N</b></div>
+    <div class="plate">Fournisseur HPA v2</div>
+    <div class="plate">Interroge toutes les 15s</div>
   </div>
-
-  <!-- Column 3: 0 to 1 Engine -->
-  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
-    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
-    <div class="plate"><b>gestion de la descente 0 &harr; 1</b></div>
-    <div class="plate">Contourne les limites HPA native</div>
-    <div class="plate">Modifie directement les réplicas pod</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">KEDA Operator</div>
+    <div class="plate"><b>Gestion 0 ↔ 1</b></div>
+    <div class="plate">Contourne HPA</div>
+    <div class="plate">Modifie spec.replicas</div>
   </div>
-
 </div>
 
 <br>
 
 <blockquote>
-Ingestion de télémétrie &rarr; Metrics Server (montée) + Operator (ravivage depuis zéro).
+Ingestion de télémétrie → Metrics Server (montée) + Operator (descente à zéro).
 </blockquote>
-
-</div>
 
 <blockquote>
 Metrics Server (pour la montée en charge) + Operator (pour la descente à zéro) = Mise à l'échelle zéro à N complète.
@@ -344,14 +341,6 @@ La mise à l'échelle à zéro nécessite une coordination approfondie car un HP
 <br>
 
 <blockquote>
-L'opérateur réveille le workload ; le Metrics Server le met à l'échelle.
-</blockquote>
-
-    <div class="plate plate-head">Passage de relais (1 → N)</div>
-    <div class="plate">Le Metrics Server alimente l'HPA pour la mise à l'échelle forte charge</div>
-  </div>
-</div>
-
 ---
 
 <!-- Exemple de ScaledObject de production avancé -->

@@ -89,7 +89,8 @@ Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- ============================ PART 1: VPA ============================ -->
 <!-- VPA section divider -->
 # Part 1: VPA
-## Right-sizing pod resources
+## Vertical Pod Autoscaling
+### Right-sizing pod resources
 
 ![bg left:30%](./img/aurora.png)
 
@@ -165,8 +166,6 @@ Profiles over predictions. Lock in optimal footprint on day zero, with zero runt
 
 <!-- How the Recommender works -->
 ## How the Recommender Works
-
-![bg left:25%](./img/aurora.png)
 
 The foundational "brain" of VPA. It only **proposes** metrics—it never modifies running pods.
 
@@ -302,30 +301,35 @@ Standard HPA watches the consequence of load (CPU). KEDA watches the origin of l
 KEDA splits its responsibilities into two sub-systems to maintain high performance without blocking your cluster control plane.
 
 <div style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
-  
-  <!-- Column 1: Ingestion -->
-  <div style="width: 30%; border: 1px dashed #777; padding: 10px; border-radius: 6px;">
-    <div class="plate plate-head" style="background: #4A5568;">Telemetry Sources</div>
+<div class="flow">
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">Telemetry Sources</div>
     <div class="plate">Kafka Lag</div>
     <div class="plate">RabbitMQ Depth</div>
     <div class="plate">Prometheus Queries</div>
   </div>
-
-  <div style="display: flex; align-items: center; font-size: 1.5em; color: #2d7d9a;">&rarr;</div>
-
-  <!-- Column 2: 1 to N Engine -->
-  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
-    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Metrics Server</div>
-    <div class="plate"><b>Handles 1 &rarr; N Scaling</b></div>
-    <div class="plate">Acts as an HPA v2 provider</div>
-    <div class="plate">Native HPA polls every 15s</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">KEDA Metrics Server</div>
+    <div class="plate"><b>Handles 1 → N Scaling</b></div>
+    <div class="plate">HPA v2 provider</div>
+    <div class="plate">Polls every 15s</div>
   </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 32%;">
+    <div class="plate plate-head">KEDA Operator</div>
+    <div class="plate"><b>Handles 0 ↔ 1 Scaling</b></div>
+    <div class="plate">Bypasses HPA</div>
+    <div class="plate">Patches spec.replicas</div>
+  </div>
+</div>
 
-  <!-- Column 3: 0 to 1 Engine -->
-  <div style="width: 32%; background: rgba(45, 125, 154, 0.1); padding: 10px; border-radius: 6px;">
-    <div class="plate plate-head" style="background: #2d7d9a;">KEDA Operator</div>
-    <div class="plate"><b>Handles 0 &harr; 1 Scaling</b></div>
-    <div class="plate">Bypasses native HPA limits</div>
+<br>
+
+<blockquote>
+Telemetry Ingestion → Metrics Server (scale-up) + Operator (scale-from-zero).
+</blockquote>
+
     <div class="plate">Directly patches pod replicas</div>
   </div>
 
@@ -449,15 +453,15 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
 <!-- KEDA Production Guardrails -->
 ## KEDA Production Guardrails
 
-### ⚠️ Scale-To-Zero Production Trap
+### Scale-To-Zero Production Trap
 **Risk:** Scaling APIs or critical consumers to 0 replicas guarantees 1-3 minute cold-start penalties
 **Mitigation:** `minReplicaCount: 1` for Tier-1; reserve scale-to-zero for non-prod or async batch workers
 
-### ⚖️ Stabilization Window Tuning
+### Stabilization Window Tuning
 **Do not:** Control high-velocity scale-down with `cooldownPeriod`
 **Do:** Use `advanced.horizontalPodAutoscalerConfig.behavior` for native HPA rules
 
-### 🛡️ Telemetry & Observability
+### Telemetry & Observability
 **Monitor:** `keda_metrics_adapter_scaler_errors` Prometheus counter
 **Alert:** Broker credential expiration causes silent scaler failure
 
@@ -466,7 +470,8 @@ Never authenticate scalers via plaintext strings inside the spec. Always bind tr
 <!-- ============================ PART 3: Karpenter ============================ -->
 <!-- Karpenter section divider -->
 # Part 3: Karpenter
-## Just-in-time node provisioning
+## Open source, cloud-agnostic node autoscaler
+### Just-in-time node provisioning
 
 ![bg left:30%](./img/aurora.png)
 
