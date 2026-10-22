@@ -218,10 +218,6 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
 </div>
 
-<br>
-
-<sub>* Note: <b>Auto Mode</b> is officially deprecated. <b>InPlace</b> requires cluster feature flags; if the host node runs out of physical capacity, updates remain pending or drop back to standard rollouts.</sub>
-
 ---
 
 <!-- VPA example -->
@@ -272,7 +268,7 @@ spec:
 # Part 2: KEDA
 ## Kubernetes Event-Driven Autoscaling
 
-![bg left:50%](./img/aurora.png)
+![bg left:30%](./img/aurora.png)
 
 ### Scaling Replicas on Real-World Demand
 
