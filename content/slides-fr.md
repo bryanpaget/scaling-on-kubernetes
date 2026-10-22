@@ -102,29 +102,6 @@ Profils plutôt que prédictions. Verrouillez l'empreinte optimale dès le jour 
 
 ---
 
-<!-- Why VPA Matters -->
-## Pourquoi VPA est important
-
-![bg left:20%](./img/aurora.png)
-
-### Le problème des demandes de ressources :
-- Sur-provisionnement : 500m CPU quand 100m suffisent, capacité gaspillée
-- Sous-provisionnement : 100m CPU quand 500m nécessaires, throttling
-- Les demandes statiques ne s'ajustent jamais après le déploiement
-
-### VPA résout cela :
-- **Dimensionnement à la création de pods :** le mode Initial applique les recommandations uniquement aux nouveaux pods
-- **Surveillance continue :** le Recommandeur analyse l'utilisation au fil du temps
-- **Mises à jour contrôlées :** l'Updateur peut progressivement déployer des changements via les mises à jour InPlace (si disponibles)
-
-<br>
-
-<blockquote>
-Cessez de deviner, dimensionnez avec des données.
-</blockquote>
-
----
-
 <!-- How VPA Works -->
 ## Comment VPA fonctionne : trois composants
 
@@ -253,22 +230,21 @@ spec:
 <!-- ============================ PARTIE 2 : KEDA ============================ -->
 <!-- Diviseur de section KEDA -->
 # Partie 2 : KEDA
-## Mise à l'échelle pilotée par les événements et réplication à haut débit
+## Mise à l'échelle événementielle Kubernetes
 
 ![bg left:30%](./img/aurora.png)
 
----
+### Mise à l'échelle des réplicas selon la demande réelle
 
-<!-- Qu'est-ce que KEDA : Définition architecturale approfondie -->
-## Qu'est-ce que KEDA ?
+KEDA intercepte l'**origine de la charge**—comme la profondeur de file ou les horaires cron—plutôt que d'attendre que vos serveurs surchauffent.
 
-**Kubernetes Event-Driven Autoscaler :** Un courtier de métriques (metrics broker) avancé qui unifie la télémétrie des événements externes avec la mise à l'échelle horizontale native de Kubernetes.
+- **Descente à zéro :** Arrête en toute sécurité les apps inactives pour éviter de gaspiller le budget.
+- **Hooks directs vers événements :** Intégration transparente avec Kafka, RabbitMQ et métriques.
 
-![bg left:20%](./img/aurora.png)
+<blockquote>
+L'HPA standard surveille la conséquence de la charge (le CPU). KEDA surveille l'origine de la charge (les Événements).
+</blockquote>
 
-- **Le courtier de métriques :** Connecte directement les flux d'événements cloud ou sur site (on-prem) à vos workloads, sans adaptateurs personnalisés complexes
-- **Cycle de vie des métriques découplé :** Libère vos boucles d'autoscaling des métriques d'infrastructure standard (CPU/Mémoire)
-- **Mise à l'échelle à zéro (Scale-to-Zero) effective :** Fournit le seul framework fiable dans Kubernetes pour réduire un workload standard à strictement 0 réplica
 - **Orchestration pilotée par CRD :** Géré nativement via `ScaledObject` (pour les Deployments/StatefulSets) et `ScaledJob` (pour les boucles de traitement par lots éphémères)
 
 <br>
@@ -634,6 +610,7 @@ Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez
 
 <!-- Afterword: FAQs -->
 
+
 ---
 
 <!-- Qu'est-ce qui pourrait mal tourner -->
@@ -652,59 +629,26 @@ Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez
 
 > **Souvenez-vous :** Gardez les métriques découplées. VPA (mémoire), KEDA (CPU/traffic), Karpenter (pods en attente).
 
-## Appendix: FAQs
+---
+
+<!-- Conclusion -->
+## Conclusion
 
 ![bg left:20%](./img/aurora.png)
 
----
+- **VPA** dimensionne les pods (quelle taille)
+- **KEDA** met à l'échelle les réplicas selon la demande réelle, jusqu'à zéro (combien)
+- **Karpenter** provisionne et consolide les nœuds (quelle capacité)
+- **Ensemble, ils forment un moteur de mise à l'échelle unique :** gardez leurs métriques découplées et leur efficacité se multiplie.
 
-### Groupe 1 : Questions architecturales et d'outillage
+<br>
 
-**Q: Pourquoi KEDA plutôt qu'un HPA classique avec métriques personnalisées ? HPA v2 les supporte déjà.**
-
-A: Bien qu'HPA v2 supporte les métriques personnalisées, cela nécessite de déployer et maintenir une infrastructure complexe Prometheus Adapter. KEDA est entièrement "plug-and-play" avec 60+ sources d'événements intégrées. Plus important encore, HPA natif ne peut pas descendre à zéro — il ne peut que descendre à 1. KEDA est le seul mécanisme qui permet une consommation de ressources véritablement nulle quand inactif.
-
----
-
-**Q: VPA et HPA ne peuvent pas tous les deux toucher au CPU — comment mettre à l'échelle une app web sur le CPU tout en la dimensionnant correctement ?**
-
-A: Nous découplons les métriques. Pour les apps web typiques, nous assignons HPA à gérer le CPU (gérant les pics de trafic imprévisibles par le scaling horizontal) et VPA à gérer la mémoire (right-sizing de l'empreinte de base dans le temps). Si nous devons dimensionner le CPU, nous utilisons le mode Initial de VPA — il évalue les demandes CPU seulement à la naissance du pod, puis passe le contrôle total au HPA.
+<blockquote>
+Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez seulement ce qui convient.
+</blockquote>
 
 ---
 
-**Q: Si le choix de l'autoscaler est fixé à la création du cluster, quel est le chemin de migration depuis Cluster Autoscaler vers Karpenter ?**
-
-A: C'est une migration bleu-verte sécurisée. Karpenter peut fonctionner simultanément avec Cluster Autoscaler. Nous déployons Karpenter, introduisons un nouveau NodePool, puis taintons ou réduisons progressivement les anciens Managed Node Groups. Les workloads drainent naturellement de CAS et atterrissent sur le matériel provisionné par Karpenter sans recréation du cluster.
-
 ---
 
-### Groupe 2 : Stabilité, rayon d'explosion et disponibilité
-
-**Q: Consolidation Karpenter + mes PodDisruptionBudgets + interruptions spot — que devient ma disponibilité ?**
-
-A: Les contrôles natifs Kubernetes toujours gagnent. Karpenter respecte strictement les budgets de disruption de pod. Si une consolidation ou une remplacement spot viole votre budget de disruption de pod, Karpenter annule le mouvement. Pour les workloads critiques, nous pouvons injecter `karpenter.sh/do-not-disrupt: "true"` pour verrouiller les pods à leur nœud actuel de façon permanente.
-
----
-
-**Q: Quel est le rayon d'explosion / le scénario de rollback si VPA recommande une chose terrible en mode Initial ou InPlace ?**
-
-A: Le rayon d'explosion est strictement contrôlé. Nous imposons des garde-fous avec les limites `minAllowed` et `maxAllowed` de VPA pour que les recommandations folles ne puissent jamais affamer ou gonfler un pod. Si une mauvaise mise à jour sort, le rollback est instantané : supprimez l'objet VPA ou changez son mode en Off, et encodez manuellement les dernières demandes de ressources stables dans votre manifeste de déploiement.
-
----
-
-**Q: Latence cold start à zéro — combien c'est grave, et comment l'atténuer (keep-warm, min replicas) ?**
-
-A: Le cold start est réel — typiquement 1-3 minutes si Karpenter doit provisionner un nœud brut à partir de zéro. Nous atténuons selon le niveau d'application : Les apps Tier-1 accédées par les clients sont interdites de descente à zéro (`minReplicas: 1`). Pour les workers async, nous acceptons le délai ou utilisons la marge de Karpenter pour garder de petits buffers de capacité pré-chauffée prête.
-
----
-
-
-### Amont :
-1. <a href="https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md">VPA (kubernetes/autoscaler)</a>
-2. <a href="https://keda.sh/docs/">Documentation KEDA</a>
-3. <a href="https://karpenter.sh/">Documentation Karpenter</a>
-
-### Plateforme Aurora :
-4. <a href="https://github.com/gccloudone-aurora/aurora-platform-charts">Aurora Platform Charts</a>
-5. <a href="https://github.com/Azure/karpenter-provider-azure/issues/1351">Issue Azure NAP #1351</a>
-6. Guides d'utilisation VPA / KEDA et la proposition d'autoscaling Karpenter (docs-main)
+<!-- Section FAQ déplacée vers faq-fr.md -->
