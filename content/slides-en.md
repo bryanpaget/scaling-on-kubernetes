@@ -351,9 +351,7 @@ The Operator wakes the workload up; the Metrics Server scales it up.
 ---
 
 <!-- Advanced Production ScaledObject Example -->
-## KEDA: Enterprise-Grade Production Spec
-
-A production `ScaledObject` must control downstream HPA behaviors, fallback thresholds, and authentication semantics.
+## KEDA: ScaledObject Example
 
 ```yaml
 apiVersion: keda.sh/v1alpha1

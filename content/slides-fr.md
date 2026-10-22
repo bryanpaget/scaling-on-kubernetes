@@ -357,9 +357,7 @@ L'opérateur réveille le workload ; le Metrics Server le met à l'échelle.
 ---
 
 <!-- Exemple de ScaledObject de production avancé -->
-## KEDA : Exemple de Spec pour la Production (Enterprise-Grade)
-
-Un `ScaledObject` de production doit contrôler les comportements de l'HPA en aval, les seuils de secours (fallback) et les mécaniques d'authentification.
+## KEDA : Exemple de ScaledObject
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
