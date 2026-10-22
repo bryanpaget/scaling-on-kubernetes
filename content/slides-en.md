@@ -27,25 +27,27 @@ Different tools, different axes. The value is in how they combine.
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Decides replica count</div>
-    <div class="plate">Events, queues, schedules</div>
-    <div class="plate">*(How many pods)*</div>
+    <div class="plate">Scales replica count</div>
+    <div class="plate">Driven by events & queues</div>
+    <div class="plate"><i>(How many pods)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
-    <div class="plate">Sets resource bounds</div>
-    <div class="plate">CPU/memory requests+limits</div>
-    <div class="plate">*(CPU / memory)*</div>
+    <div class="plate">Sizes pod resources</div>
+    <div class="plate">Adjusts requests & limits</div>
+    <div class="plate"><i>(How big of a pod)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
-    <div class="plate">Provisions bare nodes</div>
-    <div class="plate">Pending pods → nodes</div>
-    <div class="plate">*(Fits the pods)*</div>
+    <div class="plate">Provisions right-sized nodes</div>
+    <div class="plate">Binds pending pods to compute</div>
+    <div class="plate"><i>(Where the pods fit)</i></div>
   </div>
 </div>
+
+<br>
 
 <blockquote>
 Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
@@ -119,7 +121,7 @@ Profiles over predictions. Lock in optimal footprint on day zero, with zero runt
     <div class="plate plate-head">Updater</div>
     <div class="plate">Checks recommendations</div>
     <div class="plate">Decides when to update</div>
-    <div class="plate">Respects PDB/rollout</div>
+    <div class="plate">Respects Pod Distribution Budgets/rollout</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
@@ -408,7 +410,7 @@ spec:
   <div class="flow-box">
     <div class="plate plate-head">Consolidate</div>
     <div class="plate">Repack & remove idle</div>
-    <div class="plate">Respects PDBs</div>
+    <div class="plate">Respects Pod Distribution Budgets</div>
   </div>
 </div>
 
@@ -430,7 +432,7 @@ spec:
 **Key capabilities:**
 - **Direct API access:** No Auto Scaling Groups - spins up one perfect node per demand
 - **Bin-packing:** Aggregates all pending pods, finds optimal layout
-- **Respects PDBs:** Will never violate your disruption budgets
+- **Respects Pod Distribution Budgets:** Will wait to drain nodes until PDBs allow; never force-terminates pods during consolidation
 - **Node attributes:** Reads nodeSelector, affinity, tolerations, GPU requirements
 
 <br>
@@ -658,7 +660,7 @@ A: It's a safe blue-green migration. Karpenter can run simultaneously alongside 
 
 **Q: Karpenter consolidation + my PodDisruptionBudgets + spot interruptions — what actually happens to my availability?**
 
-A: Kubernetes native controls always win. Karpenter strictly respects PodDisruptionBudgets. If a consolidation or spot replacement violates your PDB, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
+A: Kubernetes native controls always win. Karpenter strictly respects Pod Distribution Budgets. If a consolidation or spot replacement violates your Pod Distribution Budget, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
 
 ---
 

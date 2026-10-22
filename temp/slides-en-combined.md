@@ -58,25 +58,27 @@ Different tools, different axes. The value is in how they combine.
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Decides replica count</div>
-    <div class="plate">Events, queues, schedules</div>
-    <div class="plate">*(How many pods)*</div>
+    <div class="plate">Scales replica count</div>
+    <div class="plate">Driven by events & queues</div>
+    <div class="plate"><i>(How many pods)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
-    <div class="plate">Sets resource bounds</div>
-    <div class="plate">CPU/memory requests+limits</div>
-    <div class="plate">*(CPU / memory)*</div>
+    <div class="plate">Sizes pod resources</div>
+    <div class="plate">Adjusts requests & limits</div>
+    <div class="plate"><i>(How big of a pod)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
-    <div class="plate">Provisions bare nodes</div>
-    <div class="plate">Pending pods → nodes</div>
-    <div class="plate">*(Fits the pods)*</div>
+    <div class="plate">Provisions right-sized nodes</div>
+    <div class="plate">Binds pending pods to compute</div>
+    <div class="plate"><i>(Where the pods fit)</i></div>
   </div>
 </div>
+
+<br>
 
 <blockquote>
 Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
@@ -112,25 +114,23 @@ HPA scales how many, VPA scales how much.
 
 ---
 
-<!-- Why VPA Matters -->
-## Why VPA Matters
+<!-- Why VPA Matters: Initial Mode Focus -->
+## VPA in Production: Day-Zero Right-Sizing
 
-![bg left:20%](./img/aurora.png)
+The biggest barrier to resource efficiency is the **Static Baseline Trap**—engineers hardcode generic resource values during deployment and never modify them. 
 
-### The Resource Request Problem:
-- Over-provisioning: 500m CPU when 100m needed, wasted capacity
-- Under-provisioning: 100m CPU when 500m needed, throttling
-- Static requests never adjust after deployment
+### Enter `Initial` Mode: Sizing at Pod Creation
+Instead of dynamically altering live infrastructure, VPA can act as a **smart template injector** at the exact moment a pod is born.
 
-### VPA Solves This:
-- **Right-sizing at pod creation:** Initial mode applies recommendations only to new pods
-- **Continuous monitoring:** Recommender analyzes usage over time
-- **Controlled updates:** Updater can gradually roll out changes via InPlace updates (where available)
+* **Historical Ingestion:** The Recommender continuously tracks your application's true production footprint in the background.
+* **Mutating at Birth:** When a deployment triggers a rollout or a pod restarts, the Admission Controller intercepts the request *before* it schedules.
+* **Telemetry over Guesstimates:** VPA strips out the developer's hardcoded numbers and injects an exact, data-driven resource target.
+* **Zero Production Churn:** Once the pod is running, VPA locks the settings. It will **never evict or restart** a live container mid-flight.
 
 <br>
 
 <blockquote>
-Stop guessing, start sizing with data.
+Profiles over predictions. Lock in optimal footprint on day zero, with zero runtime risk.
 </blockquote>
 
 ---
@@ -152,7 +152,7 @@ Stop guessing, start sizing with data.
     <div class="plate plate-head">Updater</div>
     <div class="plate">Checks recommendations</div>
     <div class="plate">Decides when to update</div>
-    <div class="plate">Respects PDB/rollout</div>
+    <div class="plate">Respects Pod Distribution Budgets/rollout</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
@@ -441,7 +441,7 @@ spec:
   <div class="flow-box">
     <div class="plate plate-head">Consolidate</div>
     <div class="plate">Repack & remove idle</div>
-    <div class="plate">Respects PDBs</div>
+    <div class="plate">Respects Pod Distribution Budgets</div>
   </div>
 </div>
 
@@ -463,7 +463,7 @@ spec:
 **Key capabilities:**
 - **Direct API access:** No Auto Scaling Groups - spins up one perfect node per demand
 - **Bin-packing:** Aggregates all pending pods, finds optimal layout
-- **Respects PDBs:** Will never violate your disruption budgets
+- **Respects Pod Distribution Budgets:** Will wait to drain nodes until PDBs allow; never force-terminates pods during consolidation
 - **Node attributes:** Reads nodeSelector, affinity, tolerations, GPU requirements
 
 <br>
@@ -691,7 +691,7 @@ A: It's a safe blue-green migration. Karpenter can run simultaneously alongside 
 
 **Q: Karpenter consolidation + my PodDisruptionBudgets + spot interruptions — what actually happens to my availability?**
 
-A: Kubernetes native controls always win. Karpenter strictly respects PodDisruptionBudgets. If a consolidation or spot replacement violates your PDB, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
+A: Kubernetes native controls always win. Karpenter strictly respects Pod Distribution Budgets. If a consolidation or spot replacement violates your Pod Distribution Budget, Karpenter aborts the move. For critical workloads, we can inject `karpenter.sh/do-not-disrupt: "true"` to lock pods to their current node permanently.
 
 ---
 

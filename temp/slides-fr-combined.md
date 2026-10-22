@@ -42,7 +42,11 @@ Mise à l'échelle sur Aurora : comprendre comment les autoscalers s'articulent
 - **KEDA** - mise à l'échelle des réplicas pilotée par événements et horaires (jusqu'à zéro)
 - **Karpenter** - provisionnement de nœuds juste-à-temps et consolidation
 
-> **Note :** Aurora développe activement ces outils en tant que fonctionnalités de plateforme. KEDA est le plus avancé mais n'est pas encore activé par défaut.
+<br>
+
+<blockquote>
+Des outils différents, des axes différents. La valeur est dans leur combinaison.
+</blockquote>
 
 ---
 
@@ -52,25 +56,27 @@ Mise à l'échelle sur Aurora : comprendre comment les autoscalers s'articulent
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Décide du nombre de réplicas</div>
-    <div class="plate">Événements, files, horaires</div>
-    <div class="plate">*(Combien de pods)*</div>
+    <div class="plate">Met à l'échelle les réplicas</div>
+    <div class="plate">Piloté par événements & files</div>
+    <div class="plate"><i>(Combien de pods)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
-    <div class="plate">Définit les bornes</div>
-    <div class="plate">Demandes+limites CPU/mémoire</div>
-    <div class="plate">*(CPU / mémoire)*</div>
+    <div class="plate">Dimensionne les ressources des pods</div>
+    <div class="plate">Ajuste les demandes & limites</div>
+    <div class="plate"><i>(Quelle taille de pod)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
-    <div class="plate">Provisionne les nœuds bruts</div>
-    <div class="plate">Pods en attente → nœuds</div>
-    <div class="plate">*(S'adapte aux pods)*</div>
+    <div class="plate">Provisionne les nœuds dimensionnés</div>
+    <div class="plate">Lie les pods en attente au calcul</div>
+    <div class="plate"><i>(Où les pods s'adaptent)</i></div>
   </div>
 </div>
+
+<br>
 
 <blockquote>
 Nombre de réplicas × taille par pod = la demande de pods que Karpenter satisfait.
@@ -102,6 +108,27 @@ Nombre de réplicas × taille par pod = la demande de pods que Karpenter satisfa
 
 <blockquote>
 HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
+</blockquote>
+
+---
+
+<!-- Why VPA Matters: Initial Mode Focus -->
+## VPA en production : Dimensionnement à Day-Zero
+
+La plus grande barrière à l'efficacité des ressources est le **piège de la base statique**—les ingénieurs codent en dur des valeurs génériques de ressources lors du déploiement et ne les modifient jamais.
+
+### Entrée en jeu du mode `Initial` : Le dimensionnement à la naissance du pod
+Au lieu de modifier dynamiquement l'infrastructure en cours d'exécution, VPA peut agir comme un **injecteur intelligent de template** au moment exact où un pod naît.
+
+* **Ingestion historique :** Le Recommandeur suit en continu l'empreinte réelle de votre application en production en arrière-plan.
+* **Mutation à la naissance :** Lorsqu'un déploiement déclenche un rollout ou qu'un pod redémarre, le Contrôleur d'admission intercepte la requête *avant* son planification.
+* **Télémétrie plutôt que devinettes :** VPA supprime les chiffres codés en dur par le développeur et injecte une cible de ressources exacte et pilotée par les données.
+* **Zéro churn en production :** Une fois le pod en cours d'exécution, VPA verrouille les paramètres. Il n'**éjectera ni ne redémarrera jamais** un conteneur en vol.
+
+<br>
+
+<blockquote>
+Profils plutôt que prédictions. Verrouillez l'empreinte optimale dès le jour zéro, sans risque runtime.
 </blockquote>
 
 ---
@@ -146,7 +173,7 @@ Cessez de deviner, dimensionnez avec des données.
     <div class="plate plate-head">Updateur</div>
     <div class="plate">Vérifie les recommandations</div>
     <div class="plate">Décide quand mettre à jour</div>
-    <div class="plate">Respecte PDB/rollout</div>
+    <div class="plate">Respecte les budgets de disruption de pod/rollout</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
@@ -273,17 +300,6 @@ spec:
 - Met à l'échelle sur des signaux externes : lag Kafka, profondeur de file, horaires cron, ou trafic HTTP
 - Fonctionne comme un broker : traduit les métriques externes en cibles HPA natives
 - Permet la descente à zéro : décharge en toute sécurité les workloads inactifs jusqu'à 0 réplicas
-- Config via `ScaledObject` (longue durée) ou `ScaledJob` (batch)
-
-<br>
-
-<blockquote>
-HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
-</blockquote>
-
-- Réagit à des signaux externes : lag Kafka, profondeur de file, cron, métriques personnalisées
-- Peut **descendre à zéro** quand il n'y a rien à faire
-- Pilote un HPA standard en interne (vous ne créez pas le HPA vous-même)
 - Config via `ScaledObject` (longue durée) ou `ScaledJob` (batch)
 
 <br>
@@ -446,7 +462,7 @@ spec:
   <div class="flow-box">
     <div class="plate plate-head">Consolider</div>
     <div class="plate">Repack et retire les nœuds</div>
-    <div class="plate">Respects les PDBs</div>
+    <div class="plate">Respecte les budgets de disruption de pod</div>
   </div>
 </div>
 
@@ -468,7 +484,7 @@ spec:
 **Capacités clés :**
 - **Accès direct à l'API :** Pas de Auto Scaling Groups - crée un nœud parfait par demande
 - **Bin-packing :** Agrège tous les pods, trouve le placement optimal
-- **Respects les PDBs :** Ne violera jamais vos budgets de disruption
+- **Respects les budgets de disruption de pod :** Attendra pour drainer les nœuds tant que les PDB le permettent ; ne terminera jamais de force les pods pendant la consolidation
 - **Attributs de nœuds :** Lit nodeSelector, affinités, tolerations, GPUs
 
 <br>
@@ -611,54 +627,6 @@ Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mi
 | **VPA + Karpenter** | Complémentaires : VPA change les demandes, Karpenter repack. Définissez `maxAllowed` et `limits` |
 | **KEDA 0 + Karpenter** | Descente à zéro + consolidation vide et retire les nœuds. Attention au cold start |
 
-> **Ce que "votre propre HPA" signifie :** Créer un manifeste HorizontalPodAutoscaler Kubernetes qui cible le même déploiement qu'un ScaledObject KEDA. Les deux autoscalers se battront sur le nombre de réplicas, causant des oscillations et des échafaudages d'API.
-
----
-
-<!-- Anti-patterns -->
-## Anti-patrons à éviter
-
-![bg left:20%](./img/aurora.png)
-
-- **VPA et KEDA sur la même métrique** - ils se disputent la même ressource et oscillent
-- **VPA `Recreate` sur des workloads sensibles aux évictions** - préférez Initial/InPlace
-- **Descente à zéro en production** sans planifier la latence du cold start
-- **Pas de `maxAllowed` sur VPA / pas de `limits` sur NodePool** - une recommandation excessive peut épingler un nœud
-- **Consolidation agressive sans PodDisruptionBudgets** - le churn de nœuds perturbe ; utilisez `consolidateAfter` et PDB
-
----
-
-<!-- Real-world interactions -->
-## Interactions réelles : Pièges et solutions
-
-![bg left:20%](./img/aurora.png)
-
-| Interaction | Problème réel | Solution |
-|-------------|--------------|----------|
-| **VPA + HPA sur la même métrique** | 🚨 Boucle infinie : HPA met à l'échelle, VPA dimensionne, HPA diminue, répétition | Utilisez `controlledResources` : HPA=CPU, VPA=Mémoire |
-| **VPA + KEDA** | 🚨 Course : VPA redimensionne les pods pendant que KEDA les met à l'échelle | Utilisez VPA seulement sur les métriques que KEDA n'utilise pas |
-| **KEDA + votre propre HPA** | 🚨 Deux capitaines : Les deux se battent pour les réplicas, flapping constant | KEDA possède l'HPA - définissez les déclencheurs dans ScaledObject |
-| **VPA + Karpenter** | 💡 Boucle efficace : VPA réduit les pods, Karpenter réduit les nœuds | Définissez `maxAllowed` sur VPA, `limits` sur NodePool Karpenter |
-| **KEDA 0 + Karpenter** | 🚨 Cold-start : Queue à 0, Karpenter détruit le nœud, 2-min de recovery | Définissez `minReplicaCount: 1` ou utilisez des warm pools |
-
-> **Le motif :** VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace s'ils restent sur des axes différents.
-
----
-
-<!-- Anti-patterns -->
-## Anti-patrons communs
-
-| Scénario de workload | L'anti-pattern | Le résultat |
-|---------------------|----------------|-------------|
-| **IoT / Événements haute volume** | HPA et KEDA se battent sur CPU | Oscillation des pods, pertes de données en pic de trafic |
-| **Traitement lourd** | Aucune limite budgétaire sur Karpenter | Hausse massive des coûts cloud overnight |
-| **API critique en latence** | Descente à zéro en prod | Délai de cold-start de 2 min sur événements imprévus |
-| **Apps multi-tiers standard** | VPA+HPA tous deux sur CPU | Éviction de pods rapide et infinie (deployment flapping) |
-
-> **Astuce :** KEDA crée et possède l'HPA. Ne créez pas votre propre HPA pour le même workload.
-
----
-
 <!-- What could go wrong -->
 ## Qu'est-ce qui pourrait mal tourner
 
@@ -696,11 +664,9 @@ Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez
 ---
 
 <!-- Afterword: FAQs -->
-## Appendice : Questions avancées et réponses
+## Appendix: FAQs
 
 ![bg left:20%](./img/aurora.png)
-
-> **Note :** Ce sont des réponses détaillées que vous ne présenterez peut-être pas en direct. Gardez-les comme matériel de référence pour les discussions ultérieures ou les discussions techniques plus profondes.
 
 ---
 
@@ -728,7 +694,7 @@ A: C'est une migration bleu-verte sécurisée. Karpenter peut fonctionner simult
 
 **Q: Consolidation Karpenter + mes PodDisruptionBudgets + interruptions spot — que devient ma disponibilité ?**
 
-A: Les contrôles natifs Kubernetes toujours gagnent. Karpenter respecte strictement les PodDisruptionBudgets. Si une consolidation ou une remplacement spot viole votre PDB, Karpenter annule le mouvement. Pour les workloads critiques, nous pouvons injecter `karpenter.sh/do-not-disrupt: "true"` pour verrouiller les pods à leur nœud actuel de façon permanente.
+A: Les contrôles natifs Kubernetes toujours gagnent. Karpenter respecte strictement les budgets de disruption de pod. Si une consolidation ou une remplacement spot viole votre budget de disruption de pod, Karpenter annule le mouvement. Pour les workloads critiques, nous pouvons injecter `karpenter.sh/do-not-disrupt: "true"` pour verrouiller les pods à leur nœud actuel de façon permanente.
 
 ---
 
