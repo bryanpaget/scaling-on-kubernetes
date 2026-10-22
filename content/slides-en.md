@@ -622,6 +622,24 @@ All three feed one pipeline. Keep them off each other's axes and they compound.
 
 ---
 
+<!-- What could go wrong -->
+## What Could Go Wrong
+
+![bg left:20%](./img/aurora.png)
+
+**Autoscaling is like a high-performance jet engine.** If the control systems are out of sync, the wings start to vibrate violently—called *flapping*—until the sheer friction tears your availability apart.
+
+| Failure Mode | What Happens | The Cost |
+|--------------|--------------|----------|
+| **Death Spiral** | HPA and VPA fight over CPU. Pods spin up, shrink, spike CPU, spin up again. | API server overload. User latency waves. |
+| **Karpenter Whiplash** | Queue burst → 100 pods → $1000 node. Burst ends → 1 pod → node terminated. Repeat. | Massive cloud spend. Node instability. |
+| **OOM Cascade** | Memory leak → VPA raises memory → leak consumes more → node OOM → kernel kills all pods. | Single app takes down everything on the node. |
+| **Phantom Capacity** | KEDA scales to 200, Karpenter orders Spot nodes. Spot unavailable → KEDA jumps to 400. | 500 pods booted for 200 of demand. |
+
+> **Remember:** Keep metrics decoupled. VPA (memory), HPA/KEDA (CPU/traffic), Karpenter (pending pods).
+
+---
+
 <!-- Conclusion -->
 ## Conclusion
 

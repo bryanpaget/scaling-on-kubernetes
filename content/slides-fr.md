@@ -635,6 +635,24 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 
 ---
 
+<!-- What could go wrong -->
+## Qu'est-ce qui pourrait mal tourner
+
+![bg left:20%](./img/aurora.png)
+
+**La mise à l'échelle automatique est comme un moteur de jet haute performance.** Si les systèmes de contrôle sont décalés, les ailes commencent à vibrer violemment—ce qu'on appelle le *flapping*—jusqu'à ce que la friction déchire votre disponibilité.
+
+| Mode d'échec | Ce qui se passe | Le coût |
+|--------------|----------------|---------|
+| **Spirale mortelle** | HPA et VPA se battent sur CPU. Pods montent, shring, CPU remonte, montent encore. | Surcharge API server. Latence utilisateurs. |
+| **Whiplash Karpenter** | Burst file → 100 pods → nœud $1000. Burst finit → 1 pod → nœud détruit. Répétition. | Coût cloud massif. Instabilité nœuds. |
+| **Cascade OOM** | Fuite mémoire → VPA augmente mémoire → fuite consomme plus → nœud OOM → kernel tue tous pods. | Single app prend tout le monde sur le nœud. |
+| **Capacité fantôme** | KEDA monte à 200, Karpenter commande nœuds Spot. Spot indisponible → KEDA passe à 400. | 500 pods bootés pour une demande de 200. |
+
+> **Souvenez-vous :** Gardez les métriques découplées. VPA (mémoire), HPA/KEDA (CPU/traffic), Karpenter (pods en attente).
+
+---
+
 <!-- Conclusion -->
 ## Conclusion
 
