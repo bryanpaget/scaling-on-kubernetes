@@ -153,16 +153,46 @@ The **Recommender** calculates resource metrics but **never modifies running pod
 
 Modifies resource boundaries **on the fly with zero restarts or evictions**.
 
-### The Alignment Challenge: True Zero-Interruption
-Dynamic resizing works natively, but it requires four production layers to align flawlessly:
+<div class="flow" style="font-size: 0.85em; gap: 12px; margin-top: 20px;">
 
-* **The Code Runtime:** CPU scales naturally. Memory requires an elastic runtime (e.g., JVM configured with dynamic cgroup heap bounds).
-* **The Node Headroom:** The underlying physical host must have spare capacity immediately available to grant the increase.
-* **The Downscale Trap:** Shrinking memory too aggressively will trigger instant Linux kernel **OOM kills** on the container.
-* **The Platform Engine:** Orchestrated entirely by Aurora via the `InPlacePodVerticalScaling` feature gate (K8s 1.27+).
+  <!-- Layer 1 -->
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Code Runtime</div>
+    <div class="plate">Elastic Sizing</div>
+    <div class="plate">CPU Scales Freely</div>
+    <div class="plate" style="font-size:16px; padding:8px;">Memory requires dynamic cgroup tracking (e.g., configuring dynamic JVM heap bounds).</div>
+  </div>
+
+  <!-- Layer 2 -->
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Node Headroom</div>
+    <div class="plate">Physical Space</div>
+    <div class="plate">Immediate Resource</div>
+    <div class="plate" style="font-size:16px; padding:8px;">The underlying physical host must possess spare capacity to grant an upward resize request.</div>
+  </div>
+
+  <!-- Layer 3 -->
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Downscale Trap</div>
+    <div class="plate">Risk Management</div>
+    <div class="plate">OOM Killer Target</div>
+    <div class="plate" style="font-size:16px; padding:8px;">Shrinking memory footprints too aggressively will trigger instant Linux kernel OOM kills.</div>
+  </div>
+
+  <!-- Layer 4 -->
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Platform Engine</div>
+    <div class="plate">Core Provisioning</div>
+    <div class="plate">Feature Gate Active</div>
+    <div class="plate" style="font-size:16px; padding:8px;">Orchestrated natively by the Aurora control plane via Kubernetes v1.27+ configurations.</div>
+  </div>
+
+</div>
+
+<br>
 
 <blockquote>
-<b>Safety Net:</b> <code>InPlaceOrRecreate</code> acts as a fallback policy. If a node is full or the runtime fails to flex, it safely drops back to a standard rolling eviction.
+<b>Safety Net:</b> <code>InPlaceOrRecreate</code> acts as a fallback policy. If a node is completely full or a runtime fails to flex, the platform safely drops back to a standard rolling eviction.
 </blockquote>
 
 ---
@@ -176,7 +206,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 1: Off -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">1. Off</div>
+    <div class="plate plate-head">Off</div>
     <div class="plate">Analysis Only</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -187,7 +217,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 2: Initial -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">2. Initial</div>
+    <div class="plate plate-head">Initial</div>
     <div class="plate">Sized at Birth</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -198,7 +228,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 3: InPlace -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">3. InPlace</div>
+    <div class="plate plate-head">InPlace</div>
     <div class="plate">Live Flexing</div>
     <div class="plate">No Evictions*</div>
     <div class="plate">Yes Updates</div>
@@ -209,7 +239,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 4: Recreate -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">4. Recreate</div>
+    <div class="plate plate-head">Recreate</div>
     <div class="plate">Hard Eviction</div>
     <div class="plate">Yes Evictions</div>
     <div class="plate">Yes Updates</div>
