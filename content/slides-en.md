@@ -312,26 +312,6 @@ Scale on what drives your load, not on what it looks like after the fact.
 
 ---
 
-<!-- KEDA Aurora defaults -->
-## KEDA on Aurora
-
-![bg left:20%](./img/aurora.png)
-
-| Setting | Value |
-|---------|-------|
-| KEDA Version | 2.20.2 (latest stable) |
-| Namespace | keda-system |
-| Metrics Server | Enabled (required) |
-| Prometheus/ServiceMonitor | Disabled (opt-in per workload) |
-
-<br>
-
-<blockquote>
-KEDA is the platform-native way to scale replicas based on real demand signals.
-</blockquote>
-
----
-
 <!-- KEDA manual -->
 ## KEDA: Manual ScaledObject
 
