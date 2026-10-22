@@ -432,13 +432,6 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 
 ---
 
-<!-- Security & Production Best Practices -->
-## Aurora Rule: Secure KEDA Authentication
-
-Never authenticate scalers via plaintext strings inside the spec. Always bind triggers to external targets using the `TriggerAuthentication` or `ClusterTriggerAuthentication` CRDs linked to `SecretProviderClasses`.
-
----
-
 <!-- KEDA Production Guardrails -->
 ## KEDA Production Guardrails
 

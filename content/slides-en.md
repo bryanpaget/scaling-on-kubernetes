@@ -401,30 +401,6 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 
 ---
 
-<!-- Security & Production Best Practices -->
-## Aurora Rule: Secure KEDA Authentication
-
-Never authenticate scalers via plaintext strings inside the spec. Always bind triggers to external targets using the `TriggerAuthentication` or `ClusterTriggerAuthentication` CRDs linked to `SecretProviderClasses`.
-
----
-
-<!-- KEDA Production Guardrails -->
-## KEDA Production Guardrails
-
-### Scale-To-Zero Production Trap
-**Risk:** Scaling APIs or critical consumers to 0 replicas guarantees 1-3 minute cold-start penalties
-**Mitigation:** `minReplicaCount: 1` for Tier-1; reserve scale-to-zero for non-prod or async batch workers
-
-### Stabilization Window Tuning
-**Do not:** Control high-velocity scale-down with `cooldownPeriod`
-**Do:** Use `advanced.horizontalPodAutoscalerConfig.behavior` for native HPA rules
-
-### Telemetry & Observability
-**Monitor:** `keda_metrics_adapter_scaler_errors` Prometheus counter
-**Alert:** Broker credential expiration causes silent scaler failure
-
----
-
 <!-- ============================ PART 3: Karpenter ============================ -->
 <!-- Karpenter section divider -->
 # Part 3: Karpenter
