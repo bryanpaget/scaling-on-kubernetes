@@ -7,9 +7,9 @@
 
 Scaling on Aurora: understanding how autoscalers fit together
 
-- **VPA** - right-sizes pod CPU/memory requests
-- **KEDA** - event- and schedule-driven replica scaling (including scale-to-zero)
-- **Karpenter** - just-in-time node provisioning and consolidation
+- **VPA** Vertical Pod Autoscaling: right-sizes pod CPU/memory requests
+- **KEDA** Kubernetes Event-Driven Autoscaling: event- and schedule-driven replica scaling (including scale-to-zero)
+- **Karpenter**: cloud agnostic, just-in-time node provisioning and consolidation
 
 <br>
 
