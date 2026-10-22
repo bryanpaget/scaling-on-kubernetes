@@ -325,9 +325,8 @@ KEDA splits its responsibilities into two sub-systems to maintain high performan
 
 <br>
 
----
-
-<!-- KEDA Scale-To-Zero Mechanics -->
+<blockquote>
+Telemetry Ingestion → Metrics Server (scale-up) + Operator (scale-from-zero).
 </blockquote>
 
 ---
@@ -373,16 +372,14 @@ Scaling to zero requires deep coordination because a native Kubernetes HPA canno
 
 </div>
 
+<br>
+
+<blockquote>
+The Operator wakes the workload up; the Metrics Server scales it up.
+</blockquote>
+
 ---
 
-<!-- Advanced Production ScaledObject Example -->
-
----
-
-<!-- Advanced Production ScaledObject Example -->
-## KEDA: ScaledObject Example
-
-```yaml
 <!-- Advanced Production ScaledObject Example -->
 ## KEDA: ScaledObject Example
 
