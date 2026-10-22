@@ -44,6 +44,8 @@ Mise à l'échelle sur Aurora : comprendre comment les autoscalers s'articulent
 
 > **Note :** Aurora développe activement ces outils en tant que fonctionnalités de plateforme. KEDA est le plus avancé mais n'est pas encore activé par défaut.
 
+<br>
+
 <blockquote>
 Des outils différents, des axes différents. La valeur est dans leur combinaison.
 </blockquote>
@@ -79,6 +81,8 @@ Des outils différents, des axes différents. La valeur est dans leur combinaiso
   </div>
 </div>
 
+<br>
+
 <blockquote>
 Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
 </blockquote>
@@ -105,6 +109,8 @@ Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfai
 * **Natifs :** Mis en œuvre via les CRDs standards
 * **Configuration :** Utilisez `controlledValues: RequestsOnly` pour protéger les limites personnalisées
 
+<br>
+
 <blockquote>
 HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
 </blockquote>
@@ -125,6 +131,8 @@ HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
 - **Dimensionnement à la création de pods :** le mode Initial applique les recommandations uniquement aux nouveaux pods
 - **Surveillance continue :** le Recommandeur analyse l'utilisation au fil du temps
 - **Mises à jour contrôlées :** l'Updateur peut progressivement déployer des changements via les mises à jour InPlace (si disponibles)
+
+<br>
 
 <blockquote>
 Cessez de deviner, dimensionnez avec des données.
@@ -187,6 +195,8 @@ Modifie les bornes CPU et mémoire **sans éviction de vos pods**.
 * **Marge du nœud :** Le nœud physique doit avoir de la capacité de rechange pour monter
 * **Protection downscale :** Réduire la mémoire trop agressivement peut déclencher des OOM
 * **Exigence K8s :** Gérée dynamiquement par Aurora via le feature gate `InPlacePodVerticalScaling` (v1.27+).
+
+<br>
 
 <blockquote>
 Fallback : <b>InPlaceOrRecreate</b> retourne à l'éviction si l'espace nœud ou la compatibilité runtime est verrouillée.
@@ -276,6 +286,8 @@ spec:
 - Permet la descente à zéro : décharge en toute sécurité les workloads inactifs jusqu'à 0 réplicas
 - Config via `ScaledObject` (longue durée) ou `ScaledJob` (batch)
 
+<br>
+
 <blockquote>
 HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 </blockquote>
@@ -284,6 +296,8 @@ HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 - Peut **descendre à zéro** quand il n'y a rien à faire
 - Pilote un HPA standard en interne (vous ne créez pas le HPA vous-même)
 - Config via `ScaledObject` (longue durée) ou `ScaledJob` (batch)
+
+<br>
 
 <blockquote>
 HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
@@ -335,6 +349,8 @@ HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 - **Descente à zéro :** quand il n'y a rien à faire, exécutez 0 réplicas. Quand le trafic arrive, scalez vers N
 - **Intégration HPA :** KEDA crée et possède l'HPA ; vous configurez seulement le ScaledObject
 
+<br>
+
 <blockquote>
 Scalez sur ce qui pilote votre charge, pas sur ce qu'il semble après le fait.
 </blockquote>
@@ -352,6 +368,8 @@ Scalez sur ce qui pilote votre charge, pas sur ce qu'il semble après le fait.
 | Espace de noms | keda-system |
 | Metrics Server | Activé (requis) |
 | Prometheus/ServiceMonitor | Désactivé (opt-in par workload) |
+
+<br>
 
 <blockquote>
 KEDA est le moyen natif de la plateforme pour mettre à l'échelle les réplicas selon les signaux de demande réels.
@@ -464,6 +482,8 @@ spec:
 - **Respects les PDBs :** Ne violera jamais vos budgets de disruption
 - **Attributs de nœuds :** Lit nodeSelector, affinités, tolerations, GPUs
 
+<br>
+
 <blockquote>
 Le Cluster Autoscaler ajoute aux pools prédéfinis. Karpenter construit le nœud parfait par demande de pod.
 </blockquote>
@@ -538,6 +558,8 @@ spec:
 - Évite la manipulation des coûts par le CSP
 - Liberté de migration si une solution CSP ne répond pas aux objectifs
 
+<br>
+
 <blockquote>
 Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébergé si des contraintes émergeaient.
 </blockquote>
@@ -578,6 +600,8 @@ Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébe
 2. **VPA** dimensionne chaque pod selon l'historique d'utilisation
 3. **Combiné :** Nombre de réplicas × taille par pod = demande totale de pods
 4. **Karpenter** surveille les pods non ordonnançables et provisionne les nœuds
+
+<br>
 
 <blockquote>
 Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mise à l'échelle optimale et correctement dimensionnée.
@@ -673,6 +697,8 @@ Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mi
 - **KEDA** met à l'échelle les réplicas selon la demande réelle, jusqu'à zéro (combien)
 - **Karpenter** provisionne et consolide les nœuds (quelle capacité)
 - **Ensemble, ils forment un moteur de mise à l'échelle unique :** gardez leurs métriques découplées et leur efficacité se multiplie.
+
+<br>
 
 <blockquote>
 Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez seulement ce qui convient.

@@ -116,9 +116,13 @@ table { font-size: 22px; }
 <li><strong>KEDA</strong> - event- and schedule-driven replica scaling (including scale-to-zero)</li>
 <li><strong>Karpenter</strong> - just-in-time node provisioning and consolidation</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>Note:</strong> Aurora is actively developing these tools as platform features. KEDA is the most mature but not yet enabled by default.</p>
 </blockquote>
+<br>
+
 <blockquote>
 Different tools, different axes. The value is in how they combine.
 </blockquote>
@@ -216,6 +220,8 @@ table { font-size: 22px; }
     <div class="plate">*(Fits the pods)*</div>
   </div>
 </div>
+<br>
+
 <blockquote>
 Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
@@ -294,6 +300,8 @@ table { font-size: 22px; }
 <li data-marpit-fragment="4"><strong>Native:</strong> Implemented via standard CRDs</li>
 <li data-marpit-fragment="5"><strong>Config:</strong> Use <code>controlledValues: RequestsOnly</code> to protect custom limits</li>
 </ul>
+<br>
+
 <blockquote>
 HPA scales how many, VPA scales how much.
 </blockquote>
@@ -343,6 +351,8 @@ table { font-size: 22px; }
 <li><strong>Continuous monitoring:</strong> Recommender analyzes usage over time</li>
 <li><strong>Controlled updates:</strong> Updater can gradually roll out changes via InPlace updates (where available)</li>
 </ul>
+<br>
+
 <blockquote>
 Stop guessing, start sizing with data.
 </blockquote>
@@ -504,6 +514,8 @@ table { font-size: 22px; }
 <li data-marpit-fragment="4"><strong>Downscale Protection:</strong> Shrinking memory too aggressively can trigger OOM kills</li>
 <li data-marpit-fragment="5"><strong>K8s Requirement:</strong> Managed dynamically by Aurora via the <code>InPlacePodVerticalScaling</code> feature gate (v1.27+).</li>
 </ul>
+<br>
+
 <blockquote>
 Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
 </blockquote>
@@ -705,6 +717,8 @@ table { font-size: 22px; }
 <li><strong>Same resource as KEDA:</strong> never let two controllers fight over the same resource (see Part 4)</li>
 <li><strong>Very short-lived processes:</strong> VPA needs time to collect and analyze usage data</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>That's the 'how much' axis.</strong> Next: KEDA decides <em>how many</em> replicas you need.</p>
 </blockquote>
@@ -797,6 +811,8 @@ table { font-size: 22px; }
 <li>Enables scale-to-zero: safely unloads idle workloads down to 0 replicas</li>
 <li>Config via <code>ScaledObject</code> (long-running) or <code>ScaledJob</code> (batch)</li>
 </ul>
+<br>
+
 <blockquote>
 HPA reacts to CPU. KEDA reacts to what actually drives your load.
 </blockquote>
@@ -859,6 +875,8 @@ table { font-size: 22px; }
     <div class="plate">for your deployment</div>
   </div>
 </div>
+<br>
+
 <blockquote>
 <p><strong>You only configure the ScaledObject.</strong> KEDA owns the HPA and ensures it stays in sync with your event-based scaling rules.</p>
 </blockquote>
@@ -915,6 +933,8 @@ table { font-size: 22px; }
 <li><strong>Scale-to-zero:</strong> When there's nothing to do, run 0 replicas. When traffic arrives, scale to N</li>
 <li><strong>HPA integration:</strong> KEDA creates and owns the HPA; you just configure the ScaledObject</li>
 </ul>
+<br>
+
 <blockquote>
 Scale on what drives your load, not on what it looks like after the fact.
 </blockquote>
@@ -985,6 +1005,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 KEDA is the platform-native way to scale replicas based on real demand signals.
 </blockquote>
@@ -1099,9 +1121,13 @@ table { font-size: 22px; }
 <li>Use <code>ScaledJob</code> for event-processing batch work</li>
 <li>Validate across a full 24-hour cycle in non-prod</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>Tip:</strong> Think of KEDA as the &quot;HPA service&quot; - you configure what to scale (ScaledObject), KEDA manages the actual HPA controller behind the scenes.</p>
 </blockquote>
+<br>
+
 <blockquote>
 <p><strong>That's the 'how many' axis.</strong> Next: Karpenter provisions <em>what capacity</em> to fit the pods.</p>
 </blockquote>
@@ -1206,6 +1232,8 @@ table { font-size: 22px; }
     <div class="plate">Respects PDBs</div>
   </div>
 </div>
+<br>
+
 <blockquote>
 <p><strong>The Big Shift:</strong> Karpenter bypasses Node Groups entirely. It talks directly to the cloud API with bin-packing intelligence.</p>
 </blockquote>
@@ -1283,6 +1311,8 @@ table { font-size: 22px; }
 <li><strong>Respects PDBs:</strong> Will never violate your disruption budgets</li>
 <li><strong>Node attributes:</strong> Reads nodeSelector, affinity, tolerations, GPU requirements</li>
 </ul>
+<br>
+
 <blockquote>
 Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node per pod demand.
 </blockquote>
@@ -1363,6 +1393,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p>Estimated 20-40% cost reduction vs Cluster Autoscaler (<a href="https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter">AWS case study</a>) - validate in a pilot.</p>
 </blockquote>
@@ -1485,6 +1517,8 @@ table { font-size: 22px; }
 <li>Avoids vendor cost manipulation</li>
 <li>Freedom to migrate if a CSP solution doesn't meet Aurora's goals</li>
 </ul>
+<br>
+
 <blockquote>
 Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constraints emerge.
 </blockquote>
@@ -1537,6 +1571,8 @@ table { font-size: 22px; }
 <li><strong>Set <code>limits</code></strong> on NodePool to prevent runaway provisioning</li>
 <li><strong>Learn Karpenter first:</strong> understand the open-source project before choosing a managed variant</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>That's the infrastructure axis.</strong> You now have: VPA (how much) + KEDA (how many) + Karpenter (what capacity) = a complete pipeline.</p>
 </blockquote>
@@ -1628,6 +1664,8 @@ table { font-size: 22px; }
 <li><strong>Combined:</strong> Replica count × per-pod size = total pending-pod demand</li>
 <li><strong>Karpenter</strong> watches for unschedulable pods and provisions nodes</li>
 </ol>
+<br>
+
 <blockquote>
 All three feed one pipeline. Keep their axes decoupled to achieve optimal, right-sized scaling.
 </blockquote>
@@ -1702,6 +1740,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>What &quot;your own HPA&quot; means:</strong> Creating a Kubernetes HorizontalPodAutoscaler manifest that targets the same deployment as a KEDA ScaledObject. Both autoscalers will fight over replica count, causing flapping and API thrashing.</p>
 </blockquote>
@@ -1762,6 +1802,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>Tip:</strong> KEDA creates and owns the HPA. Don't create your own HPA for the same workload.</p>
 </blockquote>
@@ -1831,6 +1873,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>Remember:</strong> Keep metrics decoupled. VPA (memory), KEDA (CPU/traffic), Karpenter (pending pods).</p>
 </blockquote>
@@ -1881,6 +1925,8 @@ table { font-size: 22px; }
 <li><strong>Karpenter</strong> provisions and consolidates nodes (what capacity)</li>
 <li><strong>Together, they form a single scaling engine:</strong> keep their metrics decoupled and their efficiency multiplies.</li>
 </ul>
+<br>
+
 <blockquote>
 Right-size the pods, scale on real demand, provision only what fits.
 </blockquote>
@@ -1924,6 +1970,8 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="appendix-advanced-questions--answers">Appendix: Advanced Questions &amp; Answers</h2>
+
+<br>
 
 <blockquote>
 <p><strong>Note:</strong> These are detailed answers you may not present live. Keep them as reference material for follow-up discussions or deeper technical discussions.</p>

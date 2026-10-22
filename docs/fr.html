@@ -116,9 +116,13 @@ table { font-size: 22px; }
 <li><strong>KEDA</strong> - mise à l'échelle des réplicas pilotée par événements et horaires (jusqu'à zéro)</li>
 <li><strong>Karpenter</strong> - provisionnement de nœuds juste-à-temps et consolidation</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>Note :</strong> Aurora développe activement ces outils en tant que fonctionnalités de plateforme. KEDA est le plus avancé mais n'est pas encore activé par défaut.</p>
 </blockquote>
+<br>
+
 <blockquote>
 Des outils différents, des axes différents. La valeur est dans leur combinaison.
 </blockquote>
@@ -201,6 +205,8 @@ table { font-size: 22px; }
     <div class="plate">*(S'adapte aux pods)*</div>
   </div>
 </div>
+<br>
+
 <blockquote>
 Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
 </blockquote>
@@ -272,6 +278,8 @@ table { font-size: 22px; }
 <li data-marpit-fragment="4"><strong>Natifs :</strong> Mis en œuvre via les CRDs standards</li>
 <li data-marpit-fragment="5"><strong>Configuration :</strong> Utilisez <code>controlledValues: RequestsOnly</code> pour protéger les limites personnalisées</li>
 </ul>
+<br>
+
 <blockquote>
 HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
 </blockquote>
@@ -321,6 +329,8 @@ table { font-size: 22px; }
 <li><strong>Surveillance continue :</strong> le Recommandeur analyse l'utilisation au fil du temps</li>
 <li><strong>Mises à jour contrôlées :</strong> l'Updateur peut progressivement déployer des changements via les mises à jour InPlace (si disponibles)</li>
 </ul>
+<br>
+
 <blockquote>
 Cessez de deviner, dimensionnez avec des données.
 </blockquote>
@@ -482,6 +492,8 @@ table { font-size: 22px; }
 <li data-marpit-fragment="4"><strong>Protection downscale :</strong> Réduire la mémoire trop agressivement peut déclencher des OOM</li>
 <li data-marpit-fragment="5"><strong>Exigence K8s :</strong> Gérée dynamiquement par Aurora via le feature gate <code>InPlacePodVerticalScaling</code> (v1.27+).</li>
 </ul>
+<br>
+
 <blockquote>
 Fallback : <b>InPlaceOrRecreate</b> retourne à l'éviction si l'espace nœud ou la compatibilité runtime est verrouillée.
 </blockquote>
@@ -683,6 +695,8 @@ table { font-size: 22px; }
 <li><strong>Même ressource que KEDA :</strong> ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)</li>
 <li><strong>Processus très éphémères :</strong> VPA a besoin de temps pour collecter et analyser les données d'utilisation</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>C'est l'axe 'quelle taille'.</strong> Ensuite : KEDA décide <em>combien</em> de réplicas vous avez besoin.</p>
 </blockquote>
@@ -775,6 +789,8 @@ table { font-size: 22px; }
 <li>Permet la descente à zéro : décharge en toute sécurité les workloads inactifs jusqu'à 0 réplicas</li>
 <li>Config via <code>ScaledObject</code> (longue durée) ou <code>ScaledJob</code> (batch)</li>
 </ul>
+<br>
+
 <blockquote>
 HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 </blockquote>
@@ -784,6 +800,8 @@ HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 <li>Pilote un HPA standard en interne (vous ne créez pas le HPA vous-même)</li>
 <li>Config via <code>ScaledObject</code> (longue durée) ou <code>ScaledJob</code> (batch)</li>
 </ul>
+<br>
+
 <blockquote>
 HPA réagit au CPU. KEDA réagit à ce qui pilote réellement votre charge.
 </blockquote>
@@ -846,6 +864,8 @@ table { font-size: 22px; }
     <div class="plate">de votre déploiement</div>
   </div>
 </div>
+<br>
+
 <blockquote>
 <p><strong>Vous configurez seulement le ScaledObject.</strong> KEDA possède l'HPA et le maintient synchronisé avec vos règles de scaling pilotées par les événements.</p>
 </blockquote>
@@ -902,6 +922,8 @@ table { font-size: 22px; }
 <li><strong>Descente à zéro :</strong> quand il n'y a rien à faire, exécutez 0 réplicas. Quand le trafic arrive, scalez vers N</li>
 <li><strong>Intégration HPA :</strong> KEDA crée et possède l'HPA ; vous configurez seulement le ScaledObject</li>
 </ul>
+<br>
+
 <blockquote>
 Scalez sur ce qui pilote votre charge, pas sur ce qu'il semble après le fait.
 </blockquote>
@@ -972,6 +994,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 KEDA est le moyen natif de la plateforme pour mettre à l'échelle les réplicas selon les signaux de demande réels.
 </blockquote>
@@ -1086,9 +1110,13 @@ table { font-size: 22px; }
 <li>Utilisez <code>ScaledJob</code> pour le traitement batch événementiel</li>
 <li>Validez sur un cycle complet de 24 heures en hors prod</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>Astuce :</strong> Pensez à KEDA comme le service HPA - vous configurez ce qui doit être mis à l'échelle (ScaledObject), KEDA gère le contrôleur HPA réel en coulisses.</p>
 </blockquote>
+<br>
+
 <blockquote>
 <p><strong>C'est l'axe 'combien'.</strong> Ensuite : Karpenter provisionne <em>quelle capacité</em> pour les pods.</p>
 </blockquote>
@@ -1193,6 +1221,8 @@ table { font-size: 22px; }
     <div class="plate">Respects les PDBs</div>
   </div>
 </div>
+<br>
+
 <blockquote>
 <p><strong>Le grand changement :</strong> Karpenter contourne les groupes de nœuds. Il parle directement à l'API du fournisseur avec une intelligence de bin-packing.</p>
 </blockquote>
@@ -1270,6 +1300,8 @@ table { font-size: 22px; }
 <li><strong>Respects les PDBs :</strong> Ne violera jamais vos budgets de disruption</li>
 <li><strong>Attributs de nœuds :</strong> Lit nodeSelector, affinités, tolerations, GPUs</li>
 </ul>
+<br>
+
 <blockquote>
 Le Cluster Autoscaler ajoute aux pools prédéfinis. Karpenter construit le nœud parfait par demande de pod.
 </blockquote>
@@ -1350,6 +1382,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p>Réduction de coûts estimée de 20-40 % vs Cluster Autoscaler (<a href="https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter">étude de cas AWS</a>) - à valider en pilote.</p>
 </blockquote>
@@ -1472,6 +1506,8 @@ table { font-size: 22px; }
 <li>Évite la manipulation des coûts par le CSP</li>
 <li>Liberté de migration si une solution CSP ne répond pas aux objectifs</li>
 </ul>
+<br>
+
 <blockquote>
 Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébergé si des contraintes émergeaient.
 </blockquote>
@@ -1524,6 +1560,8 @@ table { font-size: 22px; }
 <li><strong>Définissez <code>limits</code></strong> sur NodePool pour prévenir le provisionnement incontrôlé</li>
 <li><strong>Apprenez Karpenter d'abord :</strong> comprenez le projet open-source avant de choisir une variante gérée</li>
 </ul>
+<br>
+
 <blockquote>
 <p><strong>C'est l'axe infrastructure.</strong> Vous avez maintenant : VPA (quelle taille) + KEDA (combien) + Karpenter (quelle capacité) = un pipeline complet.</p>
 </blockquote>
@@ -1615,6 +1653,8 @@ table { font-size: 22px; }
 <li><strong>Combiné :</strong> Nombre de réplicas × taille par pod = demande totale de pods</li>
 <li><strong>Karpenter</strong> surveille les pods non ordonnançables et provisionne les nœuds</li>
 </ol>
+<br>
+
 <blockquote>
 Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mise à l'échelle optimale et correctement dimensionnée.
 </blockquote>
@@ -1689,6 +1729,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>Ce que &quot;votre propre HPA&quot; signifie :</strong> Créer un manifeste HorizontalPodAutoscaler Kubernetes qui cible le même déploiement qu'un ScaledObject KEDA. Les deux autoscalers se battront sur le nombre de réplicas, causant des oscillations et des échafaudages d'API.</p>
 </blockquote>
@@ -1817,6 +1859,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>Le motif :</strong> VPA (ressources) + KEDA (réplicas) + Karpenter (nœuds) = pipeline efficace s'ils restent sur des axes différents.</p>
 </blockquote>
@@ -1877,6 +1921,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>Astuce :</strong> KEDA crée et possède l'HPA. Ne créez pas votre propre HPA pour le même workload.</p>
 </blockquote>
@@ -1946,6 +1992,8 @@ table { font-size: 22px; }
 </tr>
 </tbody>
 </table>
+<br>
+
 <blockquote>
 <p><strong>Souvenez-vous :</strong> Gardez les métriques découplées. VPA (mémoire), KEDA (CPU/traffic), Karpenter (pods en attente).</p>
 </blockquote>
@@ -1996,6 +2044,8 @@ table { font-size: 22px; }
 <li><strong>Karpenter</strong> provisionne et consolide les nœuds (quelle capacité)</li>
 <li><strong>Ensemble, ils forment un moteur de mise à l'échelle unique :</strong> gardez leurs métriques découplées et leur efficacité se multiplie.</li>
 </ul>
+<br>
+
 <blockquote>
 Dimensionnez les pods, mettez à l'échelle sur la demande réelle, provisionnez seulement ce qui convient.
 </blockquote>
@@ -2039,6 +2089,8 @@ table { font-size: 22px; }
 <header>Mise à l'échelle sur Kubernetes - Plateforme Aurora</header>
 
 <h2 id="appendice--questions-avanc%C3%A9es-et-r%C3%A9ponses">Appendice : Questions avancées et réponses</h2>
+
+<br>
 
 <blockquote>
 <p><strong>Note :</strong> Ce sont des réponses détaillées que vous ne présenterez peut-être pas en direct. Gardez-les comme matériel de référence pour les discussions ultérieures ou les discussions techniques plus profondes.</p>
