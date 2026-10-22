@@ -204,13 +204,13 @@ Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il
 
 ![bg left:25%](./img/aurora.png)
 
-Modifie les bornes CPU et mémoire **sans éviction de vos pods**.
+Modifie l'allocation CPU et mémoire à la volée sans éviction ni redémarrage des pods en cours d'exécution.
 
-* **CPU élastique :** Les runtimes absorbent sans heurts les allocations CPU modifiées
-* **Limites mémoire :** Les runtimes (comme JVM) doivent supporter le suivi dynamique des cgroups
-* **Marge du nœud :** Le nœud physique doit avoir de la capacité de rechange pour monter
-* **Protection downscale :** Réduire la mémoire trop agressivement peut déclencher des OOM
-* **Exigence K8s :** Gérée dynamiquement par Aurora via le feature gate `InPlacePodVerticalScaling` (v1.27+).
+Pour obtenir une mise à l'échelle à interruption nulle, quatre couches doivent s'aligner :
+- **Runtime de l'application :** Les runtimes absorbent sans heurts la CPU supplémentaire, mais la mise à l'échelle mémoire exige le suivi dynamique des cgroups (ex: configurer les bornes du tas JVM)
+- **Capacité nœud :** Le nœud physique sous-jacent doit avoir immédiatement de la marge (capacité de rechange) pour accueillir une demande de montée en charge
+- **Gestion des risques :** Le downscaling exige des garde-fous ; réduire trop agressivement l'allocation mémoire déclenchera instantanément des tués OOM (Out-Of-Memory)
+- **Moteur plateforme :** Géré automatiquement par Aurora sur Kubernetes 1.27+ via le feature gate `InPlacePodVerticalScaling`
 
 <br>
 

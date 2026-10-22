@@ -152,13 +152,13 @@ The foundational "brain" of VPA. It only **proposes** metrics—it never modifie
 
 ![bg left:25%](./img/aurora.png)
 
-Modifies CPU and memory boundaries **without evicting your pods**.
+Modifies CPU and memory allocation on the fly without evicting or restarting running pods.
 
-* **Elastic CPU:** Runtimes seamlessly absorb altered CPU allocations
-* **Memory Limits:** Runtimes (like JVM) must support dynamic cgroup tracking
-* **Node Headroom:** Physical node must possess spare capacity to scale up
-* **Downscale Protection:** Shrinking memory too aggressively can trigger OOM kills
-* **K8s Requirement:** Managed dynamically by Aurora via the `InPlacePodVerticalScaling` feature gate (v1.27+).
+To achieve true zero-interruption scaling, four layers must align:
+- **Application Runtime:** Runtimes effortlessly absorb extra CPU, but memory scaling requires dynamic cgroup tracking (e.g., configuring JVM heap bounds)
+- **Node Capacity:** The underlying physical node must have immediate headroom (spare capacity) to accommodate a scale-up request
+- **Risk Management:** Downscaling requires guardrails; shrinking memory allocation too aggressively will trigger instant Out-Of-Memory (OOM) kills
+- **Platform Engine:** Managed automatically by Aurora on Kubernetes 1.27+ via the `InPlacePodVerticalScaling` feature gate
 
 <br>
 
@@ -282,6 +282,8 @@ HPA reacts to CPU. KEDA reacts to what actually drives your load.
     <div class="plate">for your deployment</div>
   </div>
 </div>
+
+<br>
 
 > **You only configure the ScaledObject.** KEDA owns the HPA and ensures it stays in sync with your event-based scaling rules.
 
