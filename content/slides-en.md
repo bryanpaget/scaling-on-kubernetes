@@ -13,8 +13,6 @@ Scaling on Aurora: understanding how autoscalers fit together
 
 <br>
 
-<br>
-
 <blockquote>
 Different tools, different axes. The value is in how they combine.
 </blockquote>
