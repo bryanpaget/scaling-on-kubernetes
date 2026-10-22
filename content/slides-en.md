@@ -176,7 +176,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 1: Off -->
   <div class="flow-box" style="width: 24%; border-top: 4px solid #718096; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #718096; margin-bottom: 5px;">1. Off</div>
+    <div class="plate plate-head" style="background: #718096; margin-bottom: 5px;">Off</div>
     <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Analysis Only</div>
     <div>• Evicts Pods: <b>No</b></div>
     <div>• Live Updates: <b>No</b></div>
@@ -187,7 +187,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 2: Initial -->
   <div class="flow-box" style="width: 24%; border-top: 4px solid #2b6cb0; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #2b6cb0; margin-bottom: 5px;">2. Initial</div>
+    <div class="plate plate-head" style="background: #2b6cb0; margin-bottom: 5px;">Initial</div>
     <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Sized at Birth</div>
     <div>• Evicts Pods: <b>No</b></div>
     <div>• Live Updates: <b>No</b></div>
@@ -198,7 +198,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 3: InPlace -->
   <div class="flow-box" style="width: 24%; border-top: 4px solid #2f855a; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #2f855a; margin-bottom: 5px;">3. InPlace</div>
+    <div class="plate plate-head" style="background: #2f855a; margin-bottom: 5px;">InPlace</div>
     <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Live Flexing</div>
     <div>• Evicts Pods: <b>No*</b></div>
     <div>• Live Updates: <b>Yes</b></div>
@@ -209,7 +209,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 4: Recreate -->
   <div class="flow-box" style="width: 24%; border-top: 4px solid #c53030; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #c53030; margin-bottom: 5px;">4. Recreate</div>
+    <div class="plate plate-head" style="background: #c53030; margin-bottom: 5px;">Recreate</div>
     <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Hard Eviction</div>
     <div>• Evicts Pods: <b>Yes</b></div>
     <div>• Live Updates: <b>Yes</b></div>
