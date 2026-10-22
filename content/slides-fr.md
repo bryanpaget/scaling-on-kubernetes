@@ -293,45 +293,38 @@ Ingestion de télémétrie → Metrics Server (montée) + Operator (descente à 
 
 La mise à l'échelle à zéro nécessite une coordination approfondie car un HPA natif de Kubernetes ne peut pas évaluer un workload à `0` réplica.
 
-<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; font-size: 0.85em;">
-
-  <!-- Étape 1 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #718096;">
-    <div style="font-weight: bold; color: #4A5568; margin-bottom: 5px;">1. Phase d'inactivité</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      Le workload est à <b>0 réplicas</b>. Sans pods actifs, l'HPA natif n'a plus de métriques et devient complètement inactif.
-    </div>
+<div class="flow">
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Phase d'inactivité</div>
+    <div class="plate">Workload à <b>0 réplicas</b></div>
+    <div class="plate">HPA natif inactif</div>
   </div>
-
-  <!-- Étape 2 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
-    <div style="font-weight: bold; color: #2d7d9a; margin-bottom: 5px;">2. Surveillance active</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      L' <b>opérateur KEDA</b> surveille. Il interroge indépendamment votre flux d'événements (ex: Kafka) toutes les <code>pollingInterval</code> secondes.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Surveillance active</div>
+    <div class="plate"><b>Opérateur KEDA</b> surveille</div>
+    <div class="plate">Interroge flux événements toutes les <code>pollingInterval</code></div>
   </div>
-
-  <!-- Étape 3 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
-    <div style="font-weight: bold; color: #2b6cb0; margin-bottom: 5px;">3. Démarrage (kickstart)</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      Des événements arrivent ! L'opérateur réveille le workload, contourne l'HPA et patche directement <code>spec.replicas</code> de <b>0 à 1</b>.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Démarrage (kickstart)</div>
+    <div class="plate">Événements arrivent !</div>
+    <div class="plate">Patche <code>spec.replicas</code> de <b>0 à 1</b></div>
   </div>
-
-  <!-- Étape 4 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
-    <div style="font-weight: bold; color: #2f855a; margin-bottom: 5px;">4. Passerelle des moteurs</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      Avec 1 pod actif, l'HPA s'active. Le <b>Metrics Server KEDA</b> gère la télémétrie et alimente l'HPA pour la montée en charge <b>1 &rarr; N</b>.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Passerelle des moteurs</div>
+    <div class="plate">HPA s'active avec 1 pod</div>
+    <div class="plate"><b>Metrics Server KEDA</b> gère 1 → N</div>
   </div>
-
 </div>
 
 <br>
 
 <blockquote>
+L'opérateur réveille le workload; le Metrics Server le met à l'échelle.
+</blockquote>
+
 ---
 
 <!-- Exemple de ScaledObject de production avancé -->

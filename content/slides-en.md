@@ -403,14 +403,57 @@ spec:
 
 ---
 
-<!-- Production Trigger Portfolio -->
+<!-- Production Trigger Portfolio on Aurora -->
 ## Production Trigger Portfolio on Aurora
 
 Don't limit KEDA to basic message queues. Leverage alternative scalers across the enterprise topology.
 
-- **Prometheus / Thanos Scaler:** Scale microservices based on HTTP Error Rates, Inbound Request Velocity (RPS), or query execution durations
-- **Cron / Calendar Scaler:** Pre-warm clusters before business hours. Combine with `desiredReplicas` to force scale-ups before morning shifts log in
-- **CPU/Memory Fallback:** KEDA can scale on standard system resource metrics if configured as a secondary trigger, providing a safe backup if your primary event stream becomes degraded
+<div class="flow" style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
+
+  <!-- Trigger Box 1 -->
+  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
+    <div class="plate plate-head" style="background: #2d7d9a;">Telemetry Trigger</div>
+    <div class="plate"><b>Prometheus / Thanos Scaler</b></div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Scale applications based on live traffic dynamics.</div>
+    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
+      • Inbound Request Velocity (RPS)<br>
+      • HTTP Error Rate Spike thresholds<br>
+      • Database query execution delays
+    </div>
+  </div>
+
+  <!-- Trigger Box 2 -->
+  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
+    <div class="plate plate-head" style="background: #2b6cb0;">Predictive Trigger</div>
+    <div class="plate"><b>Cron / Calendar Scaler</b></div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Pre-warm infrastructure based on known schedules.</div>
+    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
+      • Spin up capacity before shifts log in<br>
+      • Force scale-down during quiet windows<br>
+      • Overrides slow raw cold-starts
+    </div>
+  </div>
+
+  <!-- Trigger Box 3 -->
+  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
+    <div class="plate plate-head" style="background: #2f855a;">Safety Backup Trigger</div>
+    <div class="plate"><b>CPU / Memory Fallback</b></div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Protect capacity if event loops degrade.</div>
+    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
+      • Configured as a secondary layer<br>
+      • Triggers if message queue stalls<br>
+      • Prevents underlying app exhaustion
+    </div>
+  </div>
+
+</div>
+
+<br>
+
+<blockquote>
+<b>Design Rule:</b> Bind triggers to business logic targets using the platform's <code>TriggerAuthentication</code> CRDs to keep credentials out of code repositories.
+</blockquote>
+
 
 ---
 
