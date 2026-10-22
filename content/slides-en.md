@@ -167,19 +167,60 @@ Dynamic resizing works natively, but it requires four production layers to align
 
 ---
 
-<!-- VPA Modes -->
+<!-- VPA Modes: Choose Your Risk Profile -->
 ## VPA Modes: Choose Your Risk Profile
 
-![bg left:20%](./img/aurora.png)
+Instead of a generic feature list, think of VPA modes as a spectrum balancing **Runtime Stability** against **Resource Efficiency**.
 
-| Mode | Updates Existing Pods | Evicts Pods | Production Use |
-|------|----------------------|-------------|----------------|
-| **Off** | No | No | Analysis only |
-| **Initial** | No | No | Recommended for prod |
-| **InPlace** | Yes (in-place, no eviction) | No* | Recommended for prod |
-| **InPlaceOrRecreate** | Yes (in-place first, then recreate) | Yes (if InPlace fails) | Balanced, dev/test |
-| **Recreate** | Yes (only via eviction) | Yes | Use rarely |
-| **Auto** | Deprecated | Deprecated | Do not use |
+<div class="flow" style="font-size: 0.8em; align-items: stretch; gap: 8px;">
+
+  <!-- Mode 1: Off -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #718096; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #718096; margin-bottom: 5px;">1. Off</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Analysis Only</div>
+    <div>• Evicts Pods: <b>No</b></div>
+    <div>• Live Updates: <b>No</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Generates target logs inside Status without altering your cluster.</div>
+  </div>
+
+  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+
+  <!-- Mode 2: Initial -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #2b6cb0; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #2b6cb0; margin-bottom: 5px;">2. Initial</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Sized at Birth</div>
+    <div>• Evicts Pods: <b>No</b></div>
+    <div>• Live Updates: <b>No</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Recommended for Prod.</b> Inject targets only at pod creation; zero flight restarts.</div>
+  </div>
+
+  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+
+  <!-- Mode 3: InPlace -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #2f855a; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #2f855a; margin-bottom: 5px;">3. InPlace</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Live Flexing</div>
+    <div>• Evicts Pods: <b>No*</b></div>
+    <div>• Live Updates: <b>Yes</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Dynamically resizes containers inside cgroups without dropping the process.</div>
+  </div>
+
+  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+
+  <!-- Mode 4: Recreate -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #c53030; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #c53030; margin-bottom: 5px;">4. Recreate</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Hard Eviction</div>
+    <div>• Evicts Pods: <b>Yes</b></div>
+    <div>• Live Updates: <b>Yes</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
+  </div>
+
+</div>
+
+<br>
+
+<sub>* Note: <b>Auto Mode</b> is officially deprecated. <b>InPlace</b> requires cluster feature flags; if the host node runs out of physical capacity, updates remain pending or drop back to standard rollouts.</sub>
 
 ---
 
