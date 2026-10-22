@@ -118,20 +118,17 @@ HPA scales how many, VPA scales how much.
 <!-- Why VPA Matters: Initial Mode Focus -->
 ## VPA in Production: Day-Zero Right-Sizing
 
-The biggest barrier to resource efficiency is the **Static Baseline Trap**—engineers hardcode generic resource values during deployment and never modify them. 
+The **Static Baseline Trap**—engineers hardcode generic resource values at deployment and never change them.
 
-### Enter `Initial` Mode: Sizing at Pod Creation
-Instead of dynamically altering live infrastructure, VPA can act as a **smart template injector** at the exact moment a pod is born.
+### `Initial` Mode: Sizing at Pod Creation
+VPA acts as a **smart template injector** at birth, completely removing production restart risks.
 
-* **Historical Ingestion:** The Recommender continuously tracks your application's true production footprint in the background.
-* **Mutating at Birth:** When a deployment triggers a rollout or a pod restarts, the Admission Controller intercepts the request *before* it schedules.
-* **Telemetry over Guesstimates:** VPA strips out the developer's hardcoded numbers and injects an exact, data-driven resource target.
-* **Zero Production Churn:** Once the pod is running, VPA locks the settings. It will **never evict or restart** a live container mid-flight.
-
-<br>
+* **Mutating at Birth:** The Admission Controller intercepts pod creation requests *before* scheduling.
+* **Telemetry over Guesses:** VPA strips hardcoded numbers and injects an exact, data-driven target based on background usage history.
+* **Zero Production Churn:** Once a pod is running, resource settings are locked. VPA will **never evict or restart** a live container mid-flight.
 
 <blockquote>
-Profiles over predictions. Lock in optimal footprint on day zero, with zero runtime risk.
+Profiles over predictions. Lock in optimal footprints at birth with zero runtime risk.
 </blockquote>
 
 ---
@@ -167,59 +164,90 @@ Profiles over predictions. Lock in optimal footprint on day zero, with zero runt
 <!-- How the Recommender works -->
 ## How the Recommender Works
 
-The foundational "brain" of VPA. It only **proposes** metrics—it never modifies running pods.
+The **Recommender** calculates resource metrics but **never modifies running pods**.
 
-1. **Continuous Monitoring**
-   Pulls real-time resource utilization from Metrics Server/Prometheus.
-2. **Historical Analysis**
-   Applies a decaying moving average where peaks matter most to eliminate OOMs.
-3. **Target Generation**
-   Calculates and writes a **4-zone boundary profile** to the VPA Status field:
-   * **Target:** The optimal resource sweet spot injected into your pods.
-   * **Lower Bound:** The under-provisioned warning track; triggers an upscale if breached.
-   * **Upper Bound:** The over-provisioned waste ceiling; triggers a downscale if idling.
-   * **Uncapped Target:** True raw application demand ignoring your YAML safety caps.
-
-<br>
+1. **Monitor:** Pulls utilization data continuously from Prometheus / Metrics Server.
+2. **Analyze:** Applies a decaying moving average heavily weighted toward usage peaks.
+3. **Spit out 4 boundary targets to VPA Status:**
+   * **Target:** Optimal sweet spot injected into pods.
+   * **Lower Bound:** Under-provisioned floor; triggers an upscale if breached.
+   * **Upper Bound:** Over-provisioned ceiling; triggers a downscale if idling.
+   * **Uncapped Target:** True raw application demand, ignoring your YAML safety caps.
 
 <blockquote>
-The Recommender establishes the safety rails; the Updater and Admission Controller enforce them.
+<b>Target</b> is what the platform allows; <b>Uncapped Target</b> is what the code actually asked for. A massive gap means your safety rails are actively throttling performance.
 </blockquote>
 
 ---
-
 <!-- In-Place Resizing -->
-## In-Place Resizing: Zero-Interruption Right-Sizing
+## In-Place Resizing: Live Right-Sizing
 
-Modifies CPU and memory allocation on the fly without evicting or restarting running pods.
+Modifies resource boundaries **on the fly with zero restarts or evictions**.
 
-To achieve true zero-interruption scaling, four layers must align:
-- **Application Runtime:** Runtimes effortlessly absorb extra CPU, but memory scaling requires dynamic cgroup tracking (e.g., configuring JVM heap bounds)
-- **Node Capacity:** The underlying physical node must have immediate headroom (spare capacity) to accommodate a scale-up request
-- **Risk Management:** Downscaling requires guardrails; shrinking memory allocation too aggressively will trigger instant Out-Of-Memory (OOM) kills
-- **Platform Engine:** Managed automatically by Aurora on Kubernetes 1.27+ via the `InPlacePodVerticalScaling` feature gate
+### The Alignment Challenge: True Zero-Interruption
+Dynamic resizing works natively, but it requires four production layers to align flawlessly:
 
-<br>
+* **The Code Runtime:** CPU scales naturally. Memory requires an elastic runtime (e.g., JVM configured with dynamic cgroup heap bounds).
+* **The Node Headroom:** The underlying physical host must have spare capacity immediately available to grant the increase.
+* **The Downscale Trap:** Shrinking memory too aggressively will trigger instant Linux kernel **OOM kills** on the container.
+* **The Platform Engine:** Orchestrated entirely by Aurora via the `InPlacePodVerticalScaling` feature gate (K8s 1.27+).
 
 <blockquote>
-Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
+<b>Safety Net:</b> <code>InPlaceOrRecreate</code> acts as a fallback policy. If a node is full or the runtime fails to flex, it safely drops back to a standard rolling eviction.
 </blockquote>
 
 ---
 
-<!-- VPA Modes -->
+<!-- VPA Modes: Choose Your Risk Profile -->
 ## VPA Modes: Choose Your Risk Profile
 
-![bg left:20%](./img/aurora.png)
+Instead of a generic feature list, think of VPA modes as a spectrum balancing **Runtime Stability** against **Resource Efficiency**.
 
-| Mode | Updates Existing Pods | Evicts Pods | Production Use |
-|------|----------------------|-------------|----------------|
-| **Off** | No | No | Analysis only |
-| **Initial** | No | No | Recommended for prod |
-| **InPlace** | Yes (in-place, no eviction) | No* | Recommended for prod |
-| **InPlaceOrRecreate** | Yes (in-place first, then recreate) | Yes (if InPlace fails) | Balanced, dev/test |
-| **Recreate** | Yes (only via eviction) | Yes | Use rarely |
-| **Auto** | Deprecated | Deprecated | Do not use |
+<div class="flow" style="font-size: 0.8em; align-items: stretch; gap: 8px;">
+
+  <!-- Mode 1: Off -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #718096; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #718096; margin-bottom: 5px;">1. Off</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Analysis Only</div>
+    <div>• Evicts Pods: <b>No</b></div>
+    <div>• Live Updates: <b>No</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Generates target logs inside Status without altering your cluster.</div>
+  </div>
+
+  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+
+  <!-- Mode 2: Initial -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #2b6cb0; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #2b6cb0; margin-bottom: 5px;">2. Initial</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Sized at Birth</div>
+    <div>• Evicts Pods: <b>No</b></div>
+    <div>• Live Updates: <b>No</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Recommended for Prod.</b> Inject targets only at pod creation; zero flight restarts.</div>
+  </div>
+
+  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+
+  <!-- Mode 3: InPlace -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #2f855a; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #2f855a; margin-bottom: 5px;">3. InPlace</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Live Flexing</div>
+    <div>• Evicts Pods: <b>No*</b></div>
+    <div>• Live Updates: <b>Yes</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Dynamically resizes containers inside cgroups without dropping the process.</div>
+  </div>
+
+  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+
+  <!-- Mode 4: Recreate -->
+  <div class="flow-box" style="width: 24%; border-top: 4px solid #c53030; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
+    <div class="plate plate-head" style="background: #c53030; margin-bottom: 5px;">4. Recreate</div>
+    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Hard Eviction</div>
+    <div>• Evicts Pods: <b>Yes</b></div>
+    <div>• Live Updates: <b>Yes</b></div>
+    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
+  </div>
+
+</div>
 
 ---
 
@@ -271,7 +299,7 @@ spec:
 # Part 2: KEDA
 ## Kubernetes Event-Driven Autoscaling
 
-![bg left:50%](./img/aurora.png)
+![bg left:30%](./img/aurora.png)
 
 ### Scaling Replicas on Real-World Demand
 
@@ -336,40 +364,30 @@ Telemetry Ingestion → Metrics Server (scale-up) + Operator (scale-from-zero).
 
 Scaling to zero requires deep coordination because a native Kubernetes HPA cannot evaluate a workload sitting at `0` replicas.
 
-<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; font-size: 0.85em;">
-
-  <!-- Step 1 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #718096;">
-    <div style="font-weight: bold; color: #4A5568; margin-bottom: 5px;">1. The Idle Phase</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      The workload sits at <b>0 replicas</b>. Because there are no pods running, the native HPA has no active metrics to pull and falls completely dormant.
-    </div>
+<div class="flow">
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">The Idle Phase</div>
+    <div class="plate">Workload at <b>0 replicas</b></div>
+    <div class="plate">Native HPA dormant</div>
   </div>
-
-  <!-- Step 2 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
-    <div style="font-weight: bold; color: #2d7d9a; margin-bottom: 5px;">2. Active Probing</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      The <b>KEDA Operator</b> keeps watch. It independently polls your external event stream (e.g., Kafka) every <code>pollingInterval</code> seconds.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Active Probing</div>
+    <div class="plate"><b>KEDA Operator</b> keeps watch</div>
+    <div class="plate">Polls event stream every <code>pollingInterval</code></div>
   </div>
-
-  <!-- Step 3 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
-    <div style="font-weight: bold; color: #2b6cb0; margin-bottom: 5px;">3. The Kickstart</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      Events arrive! The Operator wakes up, bypasses the HPA entirely, and directly patches the deployment's <code>spec.replicas</code> from <b>0 to 1</b>.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">The Kickstart</div>
+    <div class="plate">Events arrive!</div>
+    <div class="plate">Patches <code>spec.replicas</code> from <b>0 to 1</b></div>
   </div>
-
-  <!-- Step 4 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
-    <div style="font-weight: bold; color: #2f855a; margin-bottom: 5px;">4. Engine Hand-Off</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      With 1 pod alive, the HPA activates. The <b>KEDA Metrics Server</b> takes over telemetry routing, feeding the HPA to handle heavy <b>1 &rarr; N scaling</b>.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Engine Hand-Off</div>
+    <div class="plate">HPA activates with 1 pod</div>
+    <div class="plate"><b>KEDA Metrics Server</b> handles 1 → N</div>
   </div>
-
 </div>
 
 <br>
@@ -473,8 +491,6 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 <!-- Karpenter deep dive -->
 ## How Karpenter Works: Three Steps
 
-![bg left:20%](./img/aurora.png)
-
 | Step | What Happens | Why It Matters |
 |------|-------------|----------------|
 | **1. Watch** | Event-driven: Watches unschedulable pods *millisecond-by-millisecond* | No polling delay → ~45s scale-up |
@@ -574,8 +590,6 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 <!-- Karpenter limitations -->
 ## Karpenter: Risks and Caveats
 
-![bg left:20%](./img/aurora.png)
-
 - **GCP provider is community-maintained:** the [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) is pre-1.0; breaking changes happen. Pin versions, scan, and keep GKE Workload Autoscaler as fallback
 - **Node churn:** aggressive consolidation disrupts pods; tune `consolidateAfter` and use PodDisruptionBudgets
 - **Azure NAP (managed Karpenter):** simpler now, but [github.com/Azure/karpenter-provider-azure/issues/1351](https://github.com/Azure/karpenter-provider-azure/issues/1351) indicates current limitations; consider self-hosted for full control
@@ -591,6 +605,7 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 <!-- Interactions divider -->
 # Part 4: Putting It Together
 ## Interactions and anti-patterns
+### Tips and Tricks
 
 ![bg left:30%](./img/aurora.png)
 
@@ -616,8 +631,6 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 
 <!-- Conflict rules -->
 ## The Rules That Keep Them From Fighting
-
-![bg left:20%](./img/aurora.png)
 
 | Pair | Rule |
 |------|------|
@@ -648,8 +661,6 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 <!-- What Could Go Wrong -->
 ## What Could Go Wrong
 
-![bg left:20%](./img/aurora.png)
-
 **Autoscaling is like a high-performance jet engine.** If the control systems are out of sync, the wings start to vibrate violently—called *flapping*—until the sheer friction tears your availability apart.
 
 | Failure Mode | What Happens | The Cost |
@@ -678,10 +689,3 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 <blockquote>
 Right-size the pods, scale on real demand, provision only what fits.
 </blockquote>
-
----
-
-<!-- Afterword: FAQs -->
----
-
-<!-- FAQ Section moved to faq-en.md -->

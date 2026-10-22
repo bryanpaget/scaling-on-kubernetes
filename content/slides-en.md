@@ -333,40 +333,30 @@ Telemetry Ingestion → Metrics Server (scale-up) + Operator (scale-from-zero).
 
 Scaling to zero requires deep coordination because a native Kubernetes HPA cannot evaluate a workload sitting at `0` replicas.
 
-<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; font-size: 0.85em;">
-
-  <!-- Step 1 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #718096;">
-    <div style="font-weight: bold; color: #4A5568; margin-bottom: 5px;">1. The Idle Phase</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      The workload sits at <b>0 replicas</b>. Because there are no pods running, the native HPA has no active metrics to pull and falls completely dormant.
-    </div>
+<div class="flow">
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">The Idle Phase</div>
+    <div class="plate">Workload at <b>0 replicas</b></div>
+    <div class="plate">Native HPA dormant</div>
   </div>
-
-  <!-- Step 2 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
-    <div style="font-weight: bold; color: #2d7d9a; margin-bottom: 5px;">2. Active Probing</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      The <b>KEDA Operator</b> keeps watch. It independently polls your external event stream (e.g., Kafka) every <code>pollingInterval</code> seconds.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Active Probing</div>
+    <div class="plate"><b>KEDA Operator</b> keeps watch</div>
+    <div class="plate">Polls event stream every <code>pollingInterval</code></div>
   </div>
-
-  <!-- Step 3 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
-    <div style="font-weight: bold; color: #2b6cb0; margin-bottom: 5px;">3. The Kickstart</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      Events arrive! The Operator wakes up, bypasses the HPA entirely, and directly patches the deployment's <code>spec.replicas</code> from <b>0 to 1</b>.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">The Kickstart</div>
+    <div class="plate">Events arrive!</div>
+    <div class="plate">Patches <code>spec.replicas</code> from <b>0 to 1</b></div>
   </div>
-
-  <!-- Step 4 -->
-  <div style="width: 23%; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
-    <div style="font-weight: bold; color: #2f855a; margin-bottom: 5px;">4. Engine Hand-Off</div>
-    <div style="font-size: 0.9em; line-height: 1.3;">
-      With 1 pod alive, the HPA activates. The <b>KEDA Metrics Server</b> takes over telemetry routing, feeding the HPA to handle heavy <b>1 &rarr; N scaling</b>.
-    </div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">Engine Hand-Off</div>
+    <div class="plate">HPA activates with 1 pod</div>
+    <div class="plate"><b>KEDA Metrics Server</b> handles 1 → N</div>
   </div>
-
 </div>
 
 <br>
