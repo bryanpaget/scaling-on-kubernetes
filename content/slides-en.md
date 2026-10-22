@@ -304,22 +304,22 @@ Scaling to zero requires a distinct coordination dance because a native Kubernet
 
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">1. The Idle Phase</div>
+    <div class="plate plate-head">The Idle Phase</div>
     <div class="plate">Workload at `0`. Native HPA dormant.</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">2. Active Operator Probe</div>
+    <div class="plate plate-head">Active Operator Probe</div>
     <div class="plate">Operator polls trigger every `pollingInterval` seconds</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">3. Kickstart (0 → 1)</div>
+    <div class="plate plate-head">Kickstart (0 → 1)</div>
     <div class="plate">Operator patches deployment replicas from 0 to 1</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
-    <div class="plate plate-head">4. Hand-Off (1 → N)</div>
+    <div class="plate plate-head">Hand-Off (1 → N)</div>
     <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
   </div>
 </div>
