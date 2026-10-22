@@ -184,7 +184,7 @@ table { font-size: 22px; }
 </table>
 <div class="flow">
   <div class="flow-box">
-    <div class="plate plate-head">HPA / KEDA</div>
+    <div class="plate plate-head">KEDA</div>
     <div class="plate">Décident du nombre</div>
     <div class="plate">*(Combien de pods)*</div>
   </div>
@@ -680,7 +680,7 @@ table { font-size: 22px; }
 <li><strong>Charges en pics :</strong> VPA réagit à l'historique ; les pics soudains peuvent être sous-provisionnés</li>
 <li><strong>Applications JVM / réglées sur le tas :</strong> changer la mémoire ne change pas <code>-Xmx</code> ; dimensionnez le runtime</li>
 <li><strong>Charges sensibles aux évictions :</strong> évitez <code>Recreate</code> quand les redémarrages coûtent cher</li>
-<li><strong>Même ressource que HPA/KEDA :</strong> ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)</li>
+<li><strong>Même ressource que KEDA :</strong> ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)</li>
 <li><strong>Processus très éphémères :</strong> VPA a besoin de temps pour collecter et analyser les données d'utilisation</li>
 </ul>
 <blockquote>
@@ -1734,7 +1734,7 @@ table { font-size: 22px; }
 <h2 id="anti-patrons-%C3%A0-%C3%A9viter">Anti-patrons à éviter</h2>
 
 <ul>
-<li><strong>VPA et HPA/KEDA sur la même métrique</strong> - ils se disputent la même ressource et oscillent</li>
+<li><strong>VPA et KEDA sur la même métrique</strong> - ils se disputent la même ressource et oscillent</li>
 <li><strong>VPA <code>Recreate</code> sur des workloads sensibles aux évictions</strong> - préférez Initial/InPlace</li>
 <li><strong>Descente à zéro en production</strong> sans planifier la latence du cold start</li>
 <li><strong>Pas de <code>maxAllowed</code> sur VPA / pas de <code>limits</code> sur NodePool</strong> - une recommandation excessive peut épingler un nœud</li>
@@ -1947,7 +1947,7 @@ table { font-size: 22px; }
 </tbody>
 </table>
 <blockquote>
-<p><strong>Souvenez-vous :</strong> Gardez les métriques découplées. VPA (mémoire), HPA/KEDA (CPU/traffic), Karpenter (pods en attente).</p>
+<p><strong>Souvenez-vous :</strong> Gardez les métriques découplées. VPA (mémoire), KEDA (CPU/traffic), Karpenter (pods en attente).</p>
 </blockquote>
 </section>
 </foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Mise à l'échelle sur Kubernetes - Plateforme Aurora" data-theme="default" data-style="section { font-size: 26px; }
