@@ -804,13 +804,6 @@ blockquote { font-size: 24px; }
 table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;" data-marpit-pagination-total="35" data-size="16:9">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
-
-<p>The Operator wakes the workload up; the Metrics Server scales it up.</p>
-</blockquote>
-    <div class="plate plate-head">Hand-Off (1 → N)</div>
-    <div class="plate">Metrics Server feeds HPA for heavy volume scaling</div>
-  </div>
-</div>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="19" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
@@ -830,7 +823,11 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="keda-scaledobject-example">KEDA: ScaledObject Example</h2>
-<pre is="marp-pre" data-auto-scaling="downscale-only" class="code-xl"><code class="language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">keda.sh/v1alpha1</span>
+<pre is="marp-pre" data-auto-scaling="downscale-only" class="code-xl"><code class="language-yaml"><span class="hljs-string">&lt;!--</span> <span class="hljs-string">Advanced</span> <span class="hljs-string">Production</span> <span class="hljs-string">ScaledObject</span> <span class="hljs-string">Example</span> <span class="hljs-string">--&gt;</span>
+<span class="hljs-comment">## KEDA: ScaledObject Example</span>
+
+<span class="hljs-string">```yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">keda.sh/v1alpha1</span>
 <span class="hljs-attr">kind:</span> <span class="hljs-string">ScaledObject</span>
 <span class="hljs-attr">metadata:</span>
   <span class="hljs-attr">name:</span> <span class="hljs-string">billing-processor-scaler</span>
