@@ -22,20 +22,11 @@ Des outils différents, des axes différents. La valeur est dans leur combinaiso
 <!-- Scaling axes map -->
 ## La carte de mise à l'échelle : trois axes
 
-![bg left:20%](./img/aurora.png)
-
 | Axe | Outil | Échelle | Niveau | Déclencheur |
 |-----|-------|---------|--------|-------------|
 | **Nombre de réplicas** | KEDA | Réplicas | Pod | Événements, files, horaires |
 | **Taille des ressources** | VPA | Demandes+limites CPU/mémoire | Pod | Historique d'utilisation |
 | **Capacité des nœuds** | Karpenter | Nœuds | Infrastructure | Pods en attente |
-
----
-
-<!-- How they layer -->
-## Comment ils s'empilent
-
-![bg left:20%](./img/aurora.png)
 
 <div class="flow">
   <div class="flow-box">
@@ -621,17 +612,6 @@ Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et il
 | **Apps multi-tiers standard** | VPA+HPA tous deux sur CPU | Éviction de pods rapide et infinie (deployment flapping) |
 
 > **Astuce :** KEDA crée et possède l'HPA. Ne créez pas votre propre HPA pour le même workload.
-
----
-
-<!-- Anti-patterns continued -->
-## Anti-patrons communs (suite)
-
-| Scénario de workload | L'anti-pattern | Le résultat |
-|---------------------|----------------|-------------|
-| **Workloads GPU** | Aucun nodeSelector pour GPU | Karpenter choisit le mauvais type d'instance |
-| **Workloads sensibles aux évictions** | Mode `Recreate` de VPA | Redémarrage de pod en vol |
-| **Consommateurs longue durée** | `terminationGracePeriodSeconds` manquant | Terminaison du workload avant complétion |
 
 ---
 

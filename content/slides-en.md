@@ -22,16 +22,13 @@ Different tools, different axes. The value is in how they combine.
 <!-- Scaling axes map -->
 ## The Scaling Stack: Three Axes
 
+![bg left:20%](./img/aurora.png)
+
 | Axis | Tool | Scales | Level | Trigger |
 |------|------|--------|-------|---------|
 | **Pod replica count** | KEDA | Replicas | Pod | Events, queues, schedules |
 | **Pod resource size** | VPA | CPU/memory requests+limits | Pod | Usage history |
 | **Node capacity** | Karpenter | Nodes | Infra | Pending pods |
-
----
-
-<!-- How they layer -->
-## How They Layer
 
 <div class="flow">
   <div class="flow-box">
@@ -567,37 +564,7 @@ All three feed one pipeline. Keep them off each other's axes and they compound.
 
 ---
 
-<!-- Anti-patterns -->
-## Anti-Patterns to Avoid
-
-![bg left:20%](./img/aurora.png)
-
-- **VPA and HPA/KEDA on the same metric** - they compete for the same resource and oscillate
-- **VPA `Recreate` on eviction-sensitive workloads** - prefer Initial/InPlace
-- **Scale-to-zero in production** without planning for cold-start latency
-- **No `maxAllowed` on VPA / no `limits` on NodePool** - a runaway recommendation can pin a node
-- **Aggressive consolidation without PodDisruptionBudgets** - node churn disrupts workloads; use `consolidateAfter` and PDBs
-
----
-
-<!-- Real-world interactions -->
-## Real-World Interactions: Pitfalls & Solutions
-
-![bg left:20%](./img/aurora.png)
-
-| Interaction | Real-World Problem | Solution |
-|-------------|-------------------|----------|
-| **VPA + HPA on same metric** | 🚨 Infinite loop: HPA scales out, VPA sizes up, HPA scales back in, repeat | Use `controlledResources`: HPA=CPU, VPA=Memory |
-| **VPA + KEDA** | 🚨 Race condition: VPA resizes pods while KEDA scales them out | Use VPA only on metrics KEDA doesn't use (e.g., VPA=Memory) |
-| **KEDA + own HPA** | 🚨 Two captains: Both fight over replicas, constant flapping | KEDA owns the HPA - configure triggers inside ScaledObject |
-| **VPA + Karpenter** | 💡 Efficient loop: VPA shrinks pods, Karpenter downsizes nodes | Set `maxAllowed` on VPA, `limits` on Karpenter NodePool |
-| **KEDA 0 + Karpenter** | 🚨 Cold-start: Queue hits 0, Karpenter terminates node, 2-min recovery at peak | Set `minReplicaCount: 1` or use warm pools |
-
-> **The pattern:** VPA (resources) + KEDA (replicas) + Karpenter (nodes) = efficient pipeline when they stay off each other's axes.
-
----
-
-<!-- Anti-patterns -->
+<!-- Common Anti-Patterns -->
 ## Common Anti-Patterns
 
 | Workload Scenario | The Anti-Pattern | The Result |
@@ -611,18 +578,7 @@ All three feed one pipeline. Keep them off each other's axes and they compound.
 
 ---
 
-<!-- Anti-patterns continued -->
-## Common Anti-Patterns (continued)
-
-| Workload Scenario | The Anti-Pattern | The Result |
-|-------------------|------------------|------------|
-| **GPU workloads** | No nodeSelector for GPUs | Karpenter picks wrong instance type |
-| **Eviction-sensitive workloads** | VPA `Recreate` mode | Mid-flight pod restarts |
-| **Long-running consumers** | Missing `terminationGracePeriodSeconds` | Workload termination before completion |
-
----
-
-<!-- What could go wrong -->
+<!-- What Could Go Wrong -->
 ## What Could Go Wrong
 
 ![bg left:20%](./img/aurora.png)
