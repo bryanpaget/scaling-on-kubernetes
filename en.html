@@ -373,7 +373,7 @@ table { font-size: 22px; }
 <b>Target</b> is what the platform allows; <b>Uncapped Target</b> is what the code actually asked for. A massive gap means your safety rails are actively throttling performance.
 </blockquote>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-marpit-fragments="4" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -390,18 +390,18 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;" data-marpit-pagination-total="31" data-size="16:9">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="in-place-resizing-zero-interruption-right-sizing">In-Place Resizing: Zero-Interruption Right-Sizing</h2>
-<p>Modifies CPU and memory allocation on the fly without evicting or restarting running pods.</p>
-<p>To achieve true zero-interruption scaling, four layers must align:</p>
+<h2 id="in-place-resizing-live-right-sizing">In-Place Resizing: Live Right-Sizing</h2>
+<p>Modifies resource boundaries <strong>on the fly with zero restarts or evictions</strong>.</p>
+<h3 id="the-alignment-challenge-true-zero-interruption">The Alignment Challenge: True Zero-Interruption</h3>
+<p>Dynamic resizing works natively, but it requires four production layers to align flawlessly:</p>
 <ul>
-<li><strong>Application Runtime:</strong> Runtimes effortlessly absorb extra CPU, but memory scaling requires dynamic cgroup tracking (e.g., configuring JVM heap bounds)</li>
-<li><strong>Node Capacity:</strong> The underlying physical node must have immediate headroom (spare capacity) to accommodate a scale-up request</li>
-<li><strong>Risk Management:</strong> Downscaling requires guardrails; shrinking memory allocation too aggressively will trigger instant Out-Of-Memory (OOM) kills</li>
-<li><strong>Platform Engine:</strong> Managed automatically by Aurora on Kubernetes 1.27+ via the <code>InPlacePodVerticalScaling</code> feature gate</li>
+<li data-marpit-fragment="1"><strong>The Code Runtime:</strong> CPU scales naturally. Memory requires an elastic runtime (e.g., JVM configured with dynamic cgroup heap bounds).</li>
+<li data-marpit-fragment="2"><strong>The Node Headroom:</strong> The underlying physical host must have spare capacity immediately available to grant the increase.</li>
+<li data-marpit-fragment="3"><strong>The Downscale Trap:</strong> Shrinking memory too aggressively will trigger instant Linux kernel <strong>OOM kills</strong> on the container.</li>
+<li data-marpit-fragment="4"><strong>The Platform Engine:</strong> Orchestrated entirely by Aurora via the <code>InPlacePodVerticalScaling</code> feature gate (K8s 1.27+).</li>
 </ul>
-<br />
 <blockquote>
-Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
+<b>Safety Net:</b> <code>InPlaceOrRecreate</code> acts as a fallback policy. If a node is full or the runtime fails to flex, it safely drops back to a standard rolling eviction.
 </blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
