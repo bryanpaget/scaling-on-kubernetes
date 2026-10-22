@@ -203,48 +203,48 @@ Dynamic resizing works natively, but it requires four production layers to align
 
 Instead of a generic feature list, think of VPA modes as a spectrum balancing **Runtime Stability** against **Resource Efficiency**.
 
-<div class="flow" style="font-size: 0.8em; align-items: stretch; gap: 8px;">
+<div class="flow" style="font-size: 0.85em; gap: 12px;">
 
   <!-- Mode 1: Off -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #718096; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #718096; margin-bottom: 5px;">1. Off</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Analysis Only</div>
-    <div>• Evicts Pods: <b>No</b></div>
-    <div>• Live Updates: <b>No</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Generates target logs inside Status without altering your cluster.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">1. Off</div>
+    <div class="plate">Analysis Only</div>
+    <div class="plate">No Evictions</div>
+    <div class="plate">No Live Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Generates target logs inside Status without altering your cluster.</div>
   </div>
 
-  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+  <div class="flow-arrow">&rarr;</div>
 
   <!-- Mode 2: Initial -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #2b6cb0; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #2b6cb0; margin-bottom: 5px;">2. Initial</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Sized at Birth</div>
-    <div>• Evicts Pods: <b>No</b></div>
-    <div>• Live Updates: <b>No</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Recommended for Prod.</b> Inject targets only at pod creation; zero flight restarts.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">2. Initial</div>
+    <div class="plate">Sized at Birth</div>
+    <div class="plate">No Evictions</div>
+    <div class="plate">No Live Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;"><b>Recommended for Prod.</b> Inject targets only at pod creation.</div>
   </div>
 
-  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+  <div class="flow-arrow">&rarr;</div>
 
   <!-- Mode 3: InPlace -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #2f855a; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #2f855a; margin-bottom: 5px;">3. InPlace</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Live Flexing</div>
-    <div>• Evicts Pods: <b>No*</b></div>
-    <div>• Live Updates: <b>Yes</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Dynamically resizes containers inside cgroups without dropping the process.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">3. InPlace</div>
+    <div class="plate">Live Flexing</div>
+    <div class="plate">No Evictions*</div>
+    <div class="plate">Yes Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Dynamically resizes containers inside cgroups without dropping the process.</div>
   </div>
 
-  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+  <div class="flow-arrow">&rarr;</div>
 
   <!-- Mode 4: Recreate -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #c53030; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #c53030; margin-bottom: 5px;">4. Recreate</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Hard Eviction</div>
-    <div>• Evicts Pods: <b>Yes</b></div>
-    <div>• Live Updates: <b>Yes</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">4. Recreate</div>
+    <div class="plate">Hard Eviction</div>
+    <div class="plate">Yes Evictions</div>
+    <div class="plate">Yes Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
   </div>
 
 </div>
@@ -434,14 +434,57 @@ spec:
 
 ---
 
-<!-- Production Trigger Portfolio -->
+<!-- Production Trigger Portfolio on Aurora -->
 ## Production Trigger Portfolio on Aurora
 
 Don't limit KEDA to basic message queues. Leverage alternative scalers across the enterprise topology.
 
-- **Prometheus / Thanos Scaler:** Scale microservices based on HTTP Error Rates, Inbound Request Velocity (RPS), or query execution durations
-- **Cron / Calendar Scaler:** Pre-warm clusters before business hours. Combine with `desiredReplicas` to force scale-ups before morning shifts log in
-- **CPU/Memory Fallback:** KEDA can scale on standard system resource metrics if configured as a secondary trigger, providing a safe backup if your primary event stream becomes degraded
+<div class="flow" style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
+
+  <!-- Trigger Box 1 -->
+  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
+    <div class="plate plate-head" style="background: #2d7d9a;">Telemetry Trigger</div>
+    <div class="plate"><b>Prometheus / Thanos Scaler</b></div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Scale applications based on live traffic dynamics.</div>
+    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
+      • Inbound Request Velocity (RPS)<br>
+      • HTTP Error Rate Spike thresholds<br>
+      • Database query execution delays
+    </div>
+  </div>
+
+  <!-- Trigger Box 2 -->
+  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
+    <div class="plate plate-head" style="background: #2b6cb0;">Predictive Trigger</div>
+    <div class="plate"><b>Cron / Calendar Scaler</b></div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Pre-warm infrastructure based on known schedules.</div>
+    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
+      • Spin up capacity before shifts log in<br>
+      • Force scale-down during quiet windows<br>
+      • Overrides slow raw cold-starts
+    </div>
+  </div>
+
+  <!-- Trigger Box 3 -->
+  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
+    <div class="plate plate-head" style="background: #2f855a;">Safety Backup Trigger</div>
+    <div class="plate"><b>CPU / Memory Fallback</b></div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Protect capacity if event loops degrade.</div>
+    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
+      • Configured as a secondary layer<br>
+      • Triggers if message queue stalls<br>
+      • Prevents underlying app exhaustion
+    </div>
+  </div>
+
+</div>
+
+<br>
+
+<blockquote>
+<b>Design Rule:</b> Bind triggers to business logic targets using the platform's <code>TriggerAuthentication</code> CRDs to keep credentials out of code repositories.
+</blockquote>
+
 
 ---
 

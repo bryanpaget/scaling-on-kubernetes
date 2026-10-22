@@ -172,48 +172,48 @@ Dynamic resizing works natively, but it requires four production layers to align
 
 Instead of a generic feature list, think of VPA modes as a spectrum balancing **Runtime Stability** against **Resource Efficiency**.
 
-<div class="flow" style="font-size: 0.8em; align-items: stretch; gap: 8px;">
+<div class="flow" style="font-size: 0.85em; gap: 12px;">
 
   <!-- Mode 1: Off -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #718096; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #718096; margin-bottom: 5px;">Off</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Analysis Only</div>
-    <div>• Evicts Pods: <b>No</b></div>
-    <div>• Live Updates: <b>No</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Generates target logs inside Status without altering your cluster.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">1. Off</div>
+    <div class="plate">Analysis Only</div>
+    <div class="plate">No Evictions</div>
+    <div class="plate">No Live Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Generates target logs inside Status without altering your cluster.</div>
   </div>
 
-  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+  <div class="flow-arrow">&rarr;</div>
 
   <!-- Mode 2: Initial -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #2b6cb0; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #2b6cb0; margin-bottom: 5px;">Initial</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Sized at Birth</div>
-    <div>• Evicts Pods: <b>No</b></div>
-    <div>• Live Updates: <b>No</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Recommended for Prod.</b> Inject targets only at pod creation; zero flight restarts.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">2. Initial</div>
+    <div class="plate">Sized at Birth</div>
+    <div class="plate">No Evictions</div>
+    <div class="plate">No Live Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;"><b>Recommended for Prod.</b> Inject targets only at pod creation.</div>
   </div>
 
-  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+  <div class="flow-arrow">&rarr;</div>
 
   <!-- Mode 3: InPlace -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #2f855a; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #2f855a; margin-bottom: 5px;">InPlace</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Live Flexing</div>
-    <div>• Evicts Pods: <b>No*</b></div>
-    <div>• Live Updates: <b>Yes</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;">Dynamically resizes containers inside cgroups without dropping the process.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">3. InPlace</div>
+    <div class="plate">Live Flexing</div>
+    <div class="plate">No Evictions*</div>
+    <div class="plate">Yes Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Dynamically resizes containers inside cgroups without dropping the process.</div>
   </div>
 
-  <div class="flow-arrow" style="align-self: center;">&rarr;</div>
+  <div class="flow-arrow">&rarr;</div>
 
   <!-- Mode 4: Recreate -->
-  <div class="flow-box" style="width: 24%; border-top: 4px solid #c53030; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 4px;">
-    <div class="plate plate-head" style="background: #c53030; margin-bottom: 5px;">Recreate</div>
-    <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px;">Hard Eviction</div>
-    <div>• Evicts Pods: <b>Yes</b></div>
-    <div>• Live Updates: <b>Yes</b></div>
-    <div style="margin-top: 5px; font-size: 0.9em; color: #4A5568;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head">4. Recreate</div>
+    <div class="plate">Hard Eviction</div>
+    <div class="plate">Yes Evictions</div>
+    <div class="plate">Yes Updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
   </div>
 
 </div>
