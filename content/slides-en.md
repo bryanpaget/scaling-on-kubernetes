@@ -133,23 +133,18 @@ Profiles over predictions. Lock in optimal footprints at birth with zero runtime
 <!-- How the Recommender works -->
 ## How the Recommender Works
 
-The foundational "brain" of VPA. It only **proposes** metrics—it never modifies running pods.
+The **Recommender** calculates resource metrics but **never modifies running pods**.
 
-1. **Continuous Monitoring**
-   Pulls real-time resource utilization from Metrics Server/Prometheus.
-2. **Historical Analysis**
-   Applies a decaying moving average where peaks matter most to eliminate OOMs.
-3. **Target Generation**
-   Calculates and writes a **4-zone boundary profile** to the VPA Status field:
-   * **Target:** The optimal resource sweet spot injected into your pods.
-   * **Lower Bound:** The under-provisioned warning track; triggers an upscale if breached.
-   * **Upper Bound:** The over-provisioned waste ceiling; triggers a downscale if idling.
-   * **Uncapped Target:** True raw application demand ignoring your YAML safety caps.
-
-<br>
+1. **Monitor:** Pulls utilization data continuously from Prometheus / Metrics Server.
+2. **Analyze:** Applies a decaying moving average heavily weighted toward usage peaks.
+3. **Spit out 4 boundary targets to VPA Status:**
+   * **Target:** Optimal sweet spot injected into pods.
+   * **Lower Bound:** Under-provisioned floor; triggers an upscale if breached.
+   * **Upper Bound:** Over-provisioned ceiling; triggers a downscale if idling.
+   * **Uncapped Target:** True raw application demand, ignoring your YAML safety caps.
 
 <blockquote>
-The Recommender establishes the safety rails; the Updater and Admission Controller enforce them.
+<b>Target</b> is what the platform allows; <b>Uncapped Target</b> is what the code actually asked for. A massive gap means your safety rails are actively throttling performance.
 </blockquote>
 
 ---
