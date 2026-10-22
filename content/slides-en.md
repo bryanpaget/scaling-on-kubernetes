@@ -342,9 +342,9 @@ Scaling to zero requires deep coordination because a native Kubernetes HPA canno
 
 </div>
 
-<br>
+---
 
-<blockquote>
+<!-- Advanced Production ScaledObject Example -->
 The Operator wakes the workload up; the Metrics Server scales it up.
 </blockquote>
     <div class="plate plate-head">Hand-Off (1 → N)</div>
