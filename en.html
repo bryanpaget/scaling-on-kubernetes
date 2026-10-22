@@ -339,7 +339,7 @@ table { font-size: 22px; }
   </div>
 </div>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-marpit-fragments="4" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -353,7 +353,7 @@ h3 { font-size: 24px; }
 h4 { font-size: 22px; }
 blockquote { font-size: 24px; }
 table { font-size: 22px; }
-;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:25%;" data-marpit-pagination-total="35" data-size="16:9" data-marpit-advanced-background="background" data-marpit-advanced-background-split="left"><div data-marpit-advanced-background-container="true" data-marpit-advanced-background-direction="horizontal"><figure style="background-image:url(&quot;./img/aurora.png&quot;);"></figure></div></section></foreignObject><foreignObject width="75%" height="720" x="25%"><section id="8" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:25%;" data-marpit-pagination-total="35" data-size="16:9" data-marpit-advanced-background="background" data-marpit-advanced-background-split="left"><div data-marpit-advanced-background-container="true" data-marpit-advanced-background-direction="horizontal"><figure style="background-image:url(&quot;./img/aurora.png&quot;);"></figure></div></section></foreignObject><foreignObject width="75%" height="720" x="25%"><section id="8" data-marpit-fragments="4" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -374,12 +374,26 @@ table { font-size: 22px; }
 
 <p>The foundational &quot;brain&quot; of VPA. It only <strong>proposes</strong> metrics—it never modifies running pods.</p>
 <ol>
-<li><strong>Continuous Monitoring</strong> - Pulls utilization from Metrics Server/Prometheus</li>
-<li><strong>Historical Analysis</strong> - Decaying moving average, peaks matter most (no OOMs!)</li>
-<li><strong>Target Generation</strong> - Calculates and writes four target zones to VPA Status</li>
+<li><strong>Continuous Monitoring</strong><br />
+Pulls real-time resource utilization from Metrics Server/Prometheus.</li>
+<li><strong>Historical Analysis</strong><br />
+Applies a decaying moving average where peaks matter most to eliminate OOMs.</li>
+<li><strong>Target Generation</strong><br />
+Calculates and writes a <strong>4-zone boundary profile</strong> to the VPA Status field:
+<ul>
+<li data-marpit-fragment="1"><strong>Target:</strong> The optimal resource sweet spot injected into your pods.</li>
+<li data-marpit-fragment="2"><strong>Lower Bound:</strong> The under-provisioned warning track; triggers an upscale if breached.</li>
+<li data-marpit-fragment="3"><strong>Upper Bound:</strong> The over-provisioned waste ceiling; triggers a downscale if idling.</li>
+<li data-marpit-fragment="4"><strong>Uncapped Target:</strong> True raw application demand ignoring your YAML safety caps.</li>
+</ul>
+</li>
 </ol>
+<br />
+<blockquote>
+The Recommender establishes the safety rails; the Updater and Admission Controller enforce them.
+</blockquote>
 </section>
-</foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-marpit-fragments="4" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
