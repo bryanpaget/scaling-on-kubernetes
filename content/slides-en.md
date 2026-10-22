@@ -416,6 +416,8 @@ spec:
   </div>
 </div>
 
+<br>
+
 > **The Big Shift:** Karpenter bypasses Node Groups entirely. It talks directly to the cloud API with bin-packing intelligence.
 
 ---
