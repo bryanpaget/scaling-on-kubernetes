@@ -407,7 +407,7 @@ h3 { font-size: 24px; }
 h4 { font-size: 22px; }
 blockquote { font-size: 24px; }
 table { font-size: 22px; }
-" lang="C" data-marpit-pagination="8" style="" data-marpit-pagination-total="40" data-size="16:9" data-marpit-advanced-background="pseudo" data-marpit-advanced-background-split="left"></section></foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-marpit-fragments="5" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+" lang="C" data-marpit-pagination="8" style="" data-marpit-pagination-total="40" data-size="16:9" data-marpit-advanced-background="pseudo" data-marpit-advanced-background-split="left"></section></foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -421,7 +421,7 @@ h3 { font-size: 24px; }
 h4 { font-size: 22px; }
 blockquote { font-size: 24px; }
 table { font-size: 22px; }
-;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:25%;" data-marpit-pagination-total="40" data-size="16:9" data-marpit-advanced-background="background" data-marpit-advanced-background-split="left"><div data-marpit-advanced-background-container="true" data-marpit-advanced-background-direction="horizontal"><figure style="background-image:url(&quot;./img/aurora.png&quot;);"></figure></div></section></foreignObject><foreignObject width="75%" height="720" x="25%"><section id="9" data-marpit-fragments="5" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+;background-color:#ffffff;background-image:none;--marpit-advanced-background-split:25%;" data-marpit-pagination-total="40" data-size="16:9" data-marpit-advanced-background="background" data-marpit-advanced-background-split="left"><div data-marpit-advanced-background-container="true" data-marpit-advanced-background-direction="horizontal"><figure style="background-image:url(&quot;./img/aurora.png&quot;);"></figure></div></section></foreignObject><foreignObject width="75%" height="720" x="25%"><section id="9" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -440,20 +440,20 @@ table { font-size: 22px; }
 
 <h2 id="in-place-resizing-zero-interruption-right-sizing">In-Place Resizing: Zero-Interruption Right-Sizing</h2>
 
-<p>Modifies CPU and memory boundaries <strong>without evicting your pods</strong>.</p>
+<p>Modifies CPU and memory allocation on the fly without evicting or restarting running pods.</p>
+<p>To achieve true zero-interruption scaling, four layers must align:</p>
 <ul>
-<li data-marpit-fragment="1"><strong>Elastic CPU:</strong> Runtimes seamlessly absorb altered CPU allocations</li>
-<li data-marpit-fragment="2"><strong>Memory Limits:</strong> Runtimes (like JVM) must support dynamic cgroup tracking</li>
-<li data-marpit-fragment="3"><strong>Node Headroom:</strong> Physical node must possess spare capacity to scale up</li>
-<li data-marpit-fragment="4"><strong>Downscale Protection:</strong> Shrinking memory too aggressively can trigger OOM kills</li>
-<li data-marpit-fragment="5"><strong>K8s Requirement:</strong> Managed dynamically by Aurora via the <code>InPlacePodVerticalScaling</code> feature gate (v1.27+).</li>
+<li><strong>Application Runtime:</strong> Runtimes effortlessly absorb extra CPU, but memory scaling requires dynamic cgroup tracking (e.g., configuring JVM heap bounds)</li>
+<li><strong>Node Capacity:</strong> The underlying physical node must have immediate headroom (spare capacity) to accommodate a scale-up request</li>
+<li><strong>Risk Management:</strong> Downscaling requires guardrails; shrinking memory allocation too aggressively will trigger instant Out-Of-Memory (OOM) kills</li>
+<li><strong>Platform Engine:</strong> Managed automatically by Aurora on Kubernetes 1.27+ via the <code>InPlacePodVerticalScaling</code> feature gate</li>
 </ul>
 <br />
 <blockquote>
 Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
 </blockquote>
 </section>
-</foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-marpit-fragments="5" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject><foreignObject width="1280" height="720" data-marpit-advanced-background="pseudo"><section data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -805,6 +805,7 @@ table { font-size: 22px; }
     <div class="plate">for your deployment</div>
   </div>
 </div>
+<br />
 <blockquote>
 <p><strong>You only configure the ScaledObject.</strong> KEDA owns the HPA and ensures it stays in sync with your event-based scaling rules.</p>
 </blockquote>
