@@ -206,7 +206,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 1: Off - Blue -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #2979ff;">1. Off</div>
+    <div class="plate plate-head" style="background: #2979ff;">Off</div>
     <div class="plate">Analysis Only</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -217,7 +217,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 2: Initial - Teal -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #26a69a;">2. Initial</div>
+    <div class="plate plate-head" style="background: #26a69a;">Initial</div>
     <div class="plate">Sized at Birth</div>
     <div class="plate">No Evictions</div>
     <div class="plate">No Live Updates</div>
@@ -228,7 +228,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 3: InPlace - Orange -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #f57c00;">3. InPlace</div>
+    <div class="plate plate-head" style="background: #f57c00;">InPlace</div>
     <div class="plate">Live Flexing</div>
     <div class="plate">No Evictions*</div>
     <div class="plate">Yes Updates</div>
@@ -239,7 +239,7 @@ Instead of a generic feature list, think of VPA modes as a spectrum balancing **
 
   <!-- Mode 4: Recreate - Red -->
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: #e53935;">4. Recreate</div>
+    <div class="plate plate-head" style="background: #e53935;">Recreate</div>
     <div class="plate">Hard Eviction</div>
     <div class="plate">Yes Evictions</div>
     <div class="plate">Yes Updates</div>
