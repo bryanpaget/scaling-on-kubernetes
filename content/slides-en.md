@@ -148,22 +148,21 @@ The **Recommender** calculates resource metrics but **never modifies running pod
 </blockquote>
 
 ---
-
 <!-- In-Place Resizing -->
-## In-Place Resizing: Zero-Interruption Right-Sizing
+## In-Place Resizing: Live Right-Sizing
 
-Modifies CPU and memory allocation on the fly without evicting or restarting running pods.
+Modifies resource boundaries **on the fly with zero restarts or evictions**.
 
-To achieve true zero-interruption scaling, four layers must align:
-- **Application Runtime:** Runtimes effortlessly absorb extra CPU, but memory scaling requires dynamic cgroup tracking (e.g., configuring JVM heap bounds)
-- **Node Capacity:** The underlying physical node must have immediate headroom (spare capacity) to accommodate a scale-up request
-- **Risk Management:** Downscaling requires guardrails; shrinking memory allocation too aggressively will trigger instant Out-Of-Memory (OOM) kills
-- **Platform Engine:** Managed automatically by Aurora on Kubernetes 1.27+ via the `InPlacePodVerticalScaling` feature gate
+### The Alignment Challenge: True Zero-Interruption
+Dynamic resizing works natively, but it requires four production layers to align flawlessly:
 
-<br>
+* **The Code Runtime:** CPU scales naturally. Memory requires an elastic runtime (e.g., JVM configured with dynamic cgroup heap bounds).
+* **The Node Headroom:** The underlying physical host must have spare capacity immediately available to grant the increase.
+* **The Downscale Trap:** Shrinking memory too aggressively will trigger instant Linux kernel **OOM kills** on the container.
+* **The Platform Engine:** Orchestrated entirely by Aurora via the `InPlacePodVerticalScaling` feature gate (K8s 1.27+).
 
 <blockquote>
-Fallback: <b>InPlaceOrRecreate</b> drops back to eviction if node space or runtime compatibility is locked.
+<b>Safety Net:</b> <code>InPlaceOrRecreate</code> acts as a fallback policy. If a node is full or the runtime fails to flex, it safely drops back to a standard rolling eviction.
 </blockquote>
 
 ---
