@@ -542,7 +542,7 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 4. **Karpenter** watches for unschedulable pods and provisions nodes
 
 <blockquote>
-All three feed one pipeline. Keep them off each other's axes and they compound.
+All three feed one pipeline. Keep their axes decoupled to achieve optimal, right-sized scaling.
 </blockquote>
 
 ---

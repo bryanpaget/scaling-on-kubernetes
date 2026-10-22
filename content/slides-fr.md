@@ -549,7 +549,7 @@ Apprenez Karpenter. Utilisez NAP du CSP s'il fonctionne. Revenez à l'auto-hébe
 4. **Karpenter** surveille les pods non ordonnançables et provisionne les nœuds
 
 <blockquote>
-Les trois alimentent un seul pipeline. Gardez-les hors des axes des autres et ils se renforcent.
+Les trois alimentent un seul pipeline. Gardez leurs axes découplés pour une mise à l'échelle optimale et correctement dimensionnée.
 </blockquote>
 
 ---
