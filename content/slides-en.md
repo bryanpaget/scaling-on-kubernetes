@@ -24,36 +24,31 @@ Different tools, different axes. The value is in how they combine.
 
 ![bg left:20%](./img/aurora.png)
 
-| Axis | Tool | Scales | Level | Trigger |
-|------|------|--------|-------|---------|
-| **Pod replica count** | KEDA | Replicas | Pod | Events, queues, schedules |
-| **Pod resource size** | VPA | CPU/memory requests+limits | Pod | Usage history |
-| **Node capacity** | Karpenter | Nodes | Infra | Pending pods |
-
 <div class="flow">
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Decide replica count</div>
+    <div class="plate">Decides replica count</div>
+    <div class="plate">Events, queues, schedules</div>
     <div class="plate">*(How many pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sets resource bounds</div>
+    <div class="plate">CPU/memory requests+limits</div>
     <div class="plate">*(CPU / memory)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisions bare nodes</div>
+    <div class="plate">Pending pods → nodes</div>
     <div class="plate">*(Fits the pods)*</div>
   </div>
 </div>
 
-<br>
-
 <blockquote>
-Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
+Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
 
 ---
@@ -70,7 +65,7 @@ Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- What is VPA? -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler:** dynamically targets constraints
+**Vertical Pod Autoscaler:** automatically adjusts the CPU and memory resource requests and limits of running Kubernetes pods based on real-time usage and predefined boundaries
 
 * **Targets:** Workload CPU/memory requests & limits
 * **Workloads:** Deployments, StatefulSets, DaemonSets

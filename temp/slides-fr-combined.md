@@ -44,47 +44,36 @@ Mise à l'échelle sur Aurora : comprendre comment les autoscalers s'articulent
 
 > **Note :** Aurora développe activement ces outils en tant que fonctionnalités de plateforme. KEDA est le plus avancé mais n'est pas encore activé par défaut.
 
-<br>
-
-<blockquote>
-Des outils différents, des axes différents. La valeur est dans leur combinaison.
-</blockquote>
-
 ---
 
 <!-- Scaling axes map -->
 ## La carte de mise à l'échelle : trois axes
 
-| Axe | Outil | Échelle | Niveau | Déclencheur |
-|-----|-------|---------|--------|-------------|
-| **Nombre de réplicas** | KEDA | Réplicas | Pod | Événements, files, horaires |
-| **Taille des ressources** | VPA | Demandes+limites CPU/mémoire | Pod | Historique d'utilisation |
-| **Capacité des nœuds** | Karpenter | Nœuds | Infrastructure | Pods en attente |
-
 <div class="flow">
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Décident du nombre</div>
+    <div class="plate">Décide du nombre de réplicas</div>
+    <div class="plate">Événements, files, horaires</div>
     <div class="plate">*(Combien de pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Définit les bornes</div>
+    <div class="plate">Demandes+limites CPU/mémoire</div>
     <div class="plate">*(CPU / mémoire)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisionne les nœuds bruts</div>
+    <div class="plate">Pods en attente → nœuds</div>
     <div class="plate">*(S'adapte aux pods)*</div>
   </div>
 </div>
 
-<br>
-
 <blockquote>
-Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfait.
+Nombre de réplicas × taille par pod = la demande de pods que Karpenter satisfait.
 </blockquote>
 
 ---
@@ -101,7 +90,7 @@ Nombre de réplicas x taille par pod = la demande de pods que Karpenter satisfai
 <!-- What is VPA? -->
 ## Qu'est-ce que VPA ?
 
-**Vertical Pod Autoscaler :** cible dynamiquement les contraintes
+**Vertical Pod Autoscaler :** ajuste automatiquement les demandes et limites CPU/mémoire des pods Kubernetes en fonction de l'utilisation en temps réel et des bornes prédéfinies
 
 * **Cibles :** Demandes et limites CPU/mémoire des workloads
 * **Workloads :** Deployments, StatefulSets, DaemonSets

@@ -42,8 +42,6 @@ Scaling on Aurora: understanding how autoscalers fit together
 - **KEDA** - event- and schedule-driven replica scaling (including scale-to-zero)
 - **Karpenter** - just-in-time node provisioning and consolidation
 
-> **Note:** Aurora is actively developing these tools as platform features. KEDA is the most mature but not yet enabled by default.
-
 <br>
 
 <blockquote>
@@ -57,36 +55,31 @@ Different tools, different axes. The value is in how they combine.
 
 ![bg left:20%](./img/aurora.png)
 
-| Axis | Tool | Scales | Level | Trigger |
-|------|------|--------|-------|---------|
-| **Pod replica count** | KEDA | Replicas | Pod | Events, queues, schedules |
-| **Pod resource size** | VPA | CPU/memory requests+limits | Pod | Usage history |
-| **Node capacity** | Karpenter | Nodes | Infra | Pending pods |
-
 <div class="flow">
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA</div>
-    <div class="plate">Decide replica count</div>
+    <div class="plate">Decides replica count</div>
+    <div class="plate">Events, queues, schedules</div>
     <div class="plate">*(How many pods)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sets resource bounds</div>
+    <div class="plate">CPU/memory requests+limits</div>
     <div class="plate">*(CPU / memory)*</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
+  <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisions bare nodes</div>
+    <div class="plate">Pending pods → nodes</div>
     <div class="plate">*(Fits the pods)*</div>
   </div>
 </div>
 
-<br>
-
 <blockquote>
-Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
+Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
 
 ---
@@ -103,7 +96,7 @@ Replica count x per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- What is VPA? -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler:** dynamically targets constraints
+**Vertical Pod Autoscaler:** automatically adjusts the CPU and memory resource requests and limits of running Kubernetes pods based on real-time usage and predefined boundaries
 
 * **Targets:** Workload CPU/memory requests & limits
 * **Workloads:** Deployments, StatefulSets, DaemonSets
@@ -668,11 +661,9 @@ Right-size the pods, scale on real demand, provision only what fits.
 ---
 
 <!-- Afterword: FAQs -->
-## Appendix: Advanced Questions & Answers
+## Appendix: FAQs
 
 ![bg left:20%](./img/aurora.png)
-
-> **Note:** These are detailed answers you may not present live. Keep them as reference material for follow-up discussions or deeper technical discussions.
 
 ---
 
@@ -713,20 +704,6 @@ A: The blast radius is tightly constrained. We enforce safety rails using VPA `m
 **Q: Scale-to-zero cold starts — how bad, and how do I mitigate (keep-warm, min replicas)?**
 
 A: The cold start is real—typically 1-3 minutes if Karpenter must provision a raw node from scratch. We mitigate based on application tier: Tier-1 customer-facing apps are barred from scaling to zero (`minReplicas: 1`). For async workers, we accept the delay or use Karpenter headroom to keep small buffers of empty, pre-warmed capacity ready.
-
----
-
-### Group 3: Business & Timeline Questions
-
-**Q: Cost: the 20–40% is an AWS marketing number. What have we measured?**
-
-A: Marketing numbers assume a worst-case baseline. In our testing, savings depend heavily on workload profile. For highly variable dev/test environments and event workers, we're tracking close to that [X]% mark due to overnight scale-to-zero and Karpenter consolidation. For steady-state production apps, savings are lower but stability improves drastically.
-
----
-
-**Q: Timeline — when can I actually use these?**
-
-A: Phase 1 (VPA in Recommendation/Off mode + Karpenter for Non-Prod) is available [Target Date]. Phase 2 (Full automated scaling and In-Place upgrades for Prod) is slated for [Target Date] following our soak-testing period.
 
 ---
 
