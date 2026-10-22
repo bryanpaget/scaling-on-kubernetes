@@ -81,25 +81,23 @@ HPA scales how many, VPA scales how much.
 
 ---
 
-<!-- Why VPA Matters -->
-## Why VPA Matters
+<!-- Why VPA Matters: Initial Mode Focus -->
+## VPA in Production: Day-Zero Right-Sizing
 
-![bg left:20%](./img/aurora.png)
+The biggest barrier to resource efficiency is the **Static Baseline Trap**—engineers hardcode generic resource values during deployment and never modify them. 
 
-### The Resource Request Problem:
-- Over-provisioning: 500m CPU when 100m needed, wasted capacity
-- Under-provisioning: 100m CPU when 500m needed, throttling
-- Static requests never adjust after deployment
+### Enter `Initial` Mode: Sizing at Pod Creation
+Instead of dynamically altering live infrastructure, VPA can act as a **smart template injector** at the exact moment a pod is born.
 
-### VPA Solves This:
-- **Right-sizing at pod creation:** Initial mode applies recommendations only to new pods
-- **Continuous monitoring:** Recommender analyzes usage over time
-- **Controlled updates:** Updater can gradually roll out changes via InPlace updates (where available)
+* **Historical Ingestion:** The Recommender continuously tracks your application's true production footprint in the background.
+* **Mutating at Birth:** When a deployment triggers a rollout or a pod restarts, the Admission Controller intercepts the request *before* it schedules.
+* **Telemetry over Guesstimates:** VPA strips out the developer's hardcoded numbers and injects an exact, data-driven resource target.
+* **Zero Production Churn:** Once the pod is running, VPA locks the settings. It will **never evict or restart** a live container mid-flight.
 
 <br>
 
 <blockquote>
-Stop guessing, start sizing with data.
+Profiles over predictions. Lock in optimal footprint on day zero, with zero runtime risk.
 </blockquote>
 
 ---
