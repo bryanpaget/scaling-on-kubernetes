@@ -87,20 +87,17 @@ HPA scales how many, VPA scales how much.
 <!-- Why VPA Matters: Initial Mode Focus -->
 ## VPA in Production: Day-Zero Right-Sizing
 
-The biggest barrier to resource efficiency is the **Static Baseline Trap**—engineers hardcode generic resource values during deployment and never modify them. 
+The **Static Baseline Trap**—engineers hardcode generic resource values at deployment and never change them.
 
-### Enter `Initial` Mode: Sizing at Pod Creation
-Instead of dynamically altering live infrastructure, VPA can act as a **smart template injector** at the exact moment a pod is born.
+### `Initial` Mode: Sizing at Pod Creation
+VPA acts as a **smart template injector** at birth, completely removing production restart risks.
 
-* **Historical Ingestion:** The Recommender continuously tracks your application's true production footprint in the background.
-* **Mutating at Birth:** When a deployment triggers a rollout or a pod restarts, the Admission Controller intercepts the request *before* it schedules.
-* **Telemetry over Guesstimates:** VPA strips out the developer's hardcoded numbers and injects an exact, data-driven resource target.
-* **Zero Production Churn:** Once the pod is running, VPA locks the settings. It will **never evict or restart** a live container mid-flight.
-
-<br>
+* **Mutating at Birth:** The Admission Controller intercepts pod creation requests *before* scheduling.
+* **Telemetry over Guesses:** VPA strips hardcoded numbers and injects an exact, data-driven target based on background usage history.
+* **Zero Production Churn:** Once a pod is running, resource settings are locked. VPA will **never evict or restart** a live container mid-flight.
 
 <blockquote>
-Profiles over predictions. Lock in optimal footprint on day zero, with zero runtime risk.
+Profiles over predictions. Lock in optimal footprints at birth with zero runtime risk.
 </blockquote>
 
 ---
