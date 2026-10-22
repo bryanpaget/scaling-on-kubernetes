@@ -267,7 +267,7 @@ table { font-size: 22px; }
 HPA scales how many, VPA scales how much.
 </blockquote>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="6" data-marpit-fragments="4" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="6" data-marpit-fragments="3" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
 h2 { font-size: 30px; }
 h3 { font-size: 24px; }
@@ -285,18 +285,16 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="vpa-in-production-day-zero-right-sizing">VPA in Production: Day-Zero Right-Sizing</h2>
-<p>The biggest barrier to resource efficiency is the <strong>Static Baseline Trap</strong>—engineers hardcode generic resource values during deployment and never modify them.</p>
-<h3 id="enter-initial-mode-sizing-at-pod-creation">Enter <code>Initial</code> Mode: Sizing at Pod Creation</h3>
-<p>Instead of dynamically altering live infrastructure, VPA can act as a <strong>smart template injector</strong> at the exact moment a pod is born.</p>
+<p>The <strong>Static Baseline Trap</strong>—engineers hardcode generic resource values at deployment and never change them.</p>
+<h3 id="initial-mode-sizing-at-pod-creation"><code>Initial</code> Mode: Sizing at Pod Creation</h3>
+<p>VPA acts as a <strong>smart template injector</strong> at birth, completely removing production restart risks.</p>
 <ul>
-<li data-marpit-fragment="1"><strong>Historical Ingestion:</strong> The Recommender continuously tracks your application's true production footprint in the background.</li>
-<li data-marpit-fragment="2"><strong>Mutating at Birth:</strong> When a deployment triggers a rollout or a pod restarts, the Admission Controller intercepts the request <em>before</em> it schedules.</li>
-<li data-marpit-fragment="3"><strong>Telemetry over Guesstimates:</strong> VPA strips out the developer's hardcoded numbers and injects an exact, data-driven resource target.</li>
-<li data-marpit-fragment="4"><strong>Zero Production Churn:</strong> Once the pod is running, VPA locks the settings. It will <strong>never evict or restart</strong> a live container mid-flight.</li>
+<li data-marpit-fragment="1"><strong>Mutating at Birth:</strong> The Admission Controller intercepts pod creation requests <em>before</em> scheduling.</li>
+<li data-marpit-fragment="2"><strong>Telemetry over Guesses:</strong> VPA strips hardcoded numbers and injects an exact, data-driven target based on background usage history.</li>
+<li data-marpit-fragment="3"><strong>Zero Production Churn:</strong> Once a pod is running, resource settings are locked. VPA will <strong>never evict or restart</strong> a live container mid-flight.</li>
 </ul>
-<br />
 <blockquote>
-Profiles over predictions. Lock in optimal footprint on day zero, with zero runtime risk.
+Profiles over predictions. Lock in optimal footprints at birth with zero runtime risk.
 </blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
