@@ -269,7 +269,6 @@ Standard HPA watches the consequence of load (CPU). KEDA watches the origin of l
 
 KEDA splits its responsibilities into two sub-systems to maintain high performance without blocking your cluster control plane.
 
-<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Telemetry Sources</div>

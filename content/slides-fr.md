@@ -260,7 +260,6 @@ L'HPA standard surveille la conséquence de la charge (le CPU). KEDA surveille l
 
 KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des performances élevées sans bloquer le plan de contrôle de votre cluster.
 
-<div style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Sources de télémétrie</div>
@@ -290,14 +289,6 @@ KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des pe
 Ingestion de télémétrie → Metrics Server (montée) + Operator (descente à zéro).
 </blockquote>
 
-<blockquote>
-Metrics Server (pour la montée en charge) + Operator (pour la descente à zéro) = Mise à l'échelle zéro à N complète.
-</blockquote>
-
----
-
-<!-- Mécanismes du Scale-To-Zero KEDA -->
-<!-- Mécanismes du Scale-To-Zero KEDA -->
 ## Scale-To-Zero avec KEDA : Comment ça fonctionne réellement
 
 La mise à l'échelle à zéro nécessite une coordination approfondie car un HPA natif de Kubernetes ne peut pas évaluer un workload à `0` réplica.
