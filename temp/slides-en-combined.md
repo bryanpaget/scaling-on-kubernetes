@@ -36,11 +36,11 @@ style: |
 
 ![bg left:20%](./img/aurora.png)
 
-Scaling on Aurora: understanding how autoscalers fit together
+Scaling on Aurora: how three autoscalers fit together on different axes
 
-- **VPA** Vertical Pod Autoscaling: right-sizes pod CPU/memory requests
-- **KEDA** Kubernetes Event-Driven Autoscaling: event- and schedule-driven replica scaling (including scale-to-zero)
-- **Karpenter**: cloud agnostic, just-in-time node provisioning and consolidation
+- **VPA** Vertical Pod Autoscaler: right-sizes pod CPU/memory requests
+- **KEDA** Kubernetes Event-driven Autoscaling: including scale-to-zero
+- **Karpenter**: Cloud-agnostic, just-in-time node provisioning and consolidation
 
 <br>
 
@@ -60,7 +60,7 @@ Different tools, different axes. The value is in how they combine.
     <div class="plate plate-head">VPA</div>
     <div class="plate">Sizes pod resources</div>
     <div class="plate">Adjusts requests & limits</div>
-    <div class="plate"><i>(How big of a pod)</i></div>
+    <div class="plate"><i>(How big is each pod)</i></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
@@ -74,15 +74,17 @@ Different tools, different axes. The value is in how they combine.
     <div class="plate plate-head">Karpenter</div>
     <div class="plate">Provisions right-sized nodes</div>
     <div class="plate">Binds pending pods to compute</div>
-    <div class="plate"><i>(Where the pods fit)</i></div>
+    <div class="plate"><i>(Where pods fit)</i></div>
   </div>
 </div>
 
 <br>
 
 <blockquote>
-Replica count × per-pod size = pending-pod demand that Karpenter satisfies. <b>Remember:</b> Never configure HPA and VPA on the same resource (CPU/memory).
+Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 </blockquote>
+
+> **Rule of thumb:** never point HPA and VPA at the same resource (CPU or memory).
 
 ---
 
@@ -96,45 +98,45 @@ Replica count × per-pod size = pending-pod demand that Karpenter satisfies. <b>
 
 ---
 
-<!-- What is VPA? -->
+<!-- What is VPA -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler:** automatically adjusts the CPU and memory resource requests and limits of running Kubernetes pods based on usage history and predefined boundaries
+**Vertical Pod Autoscaler** adjusts the CPU and memory requests and limits of pods based on observed usage, within boundaries you define.
 
-* **Targets:** Workload CPU/memory requests & limits
-* **Workloads:** Deployments, StatefulSets, DaemonSets
-* **Architecture:** Recommender, Updater, Admission Controller
-* **Native:** Implemented via standard CRDs
-* **Config:** Use `controlledValues: RequestsOnly` to protect custom limits
+- **Targets:** workload CPU/memory requests & limits
+- **Workloads:** Deployments, StatefulSets, DaemonSets
+- **Architecture:** Recommender, Updater, Admission Controller
+- **Configuration:** use `controlledValues: RequestsOnly` to keep your own limits
 
 <br>
 
 <blockquote>
-HPA scales how many, VPA scales how much. <b>Tip:</b> Start VPA in "Off" mode to gather data before enabling recommendations.
+HPA scales how many; VPA scales how much. Tip: start VPA in `Off` mode to gather data before enabling recommendations.
 </blockquote>
 
 ---
 
-<!-- Why VPA Matters: Initial Mode Focus -->
-## VPA in Production: Day-Zero Right-Sizing
+<!-- Why VPA matters -->
+## Why VPA: Day-Zero Right-Sizing
 
-The **Static Baseline Trap**—engineers hardcode generic resource values at deployment and never change them.
+The static baseline trap: engineers hardcode generic resource values at deploy time and never revisit them.
 
-### `Initial` Mode: Sizing at Pod Creation
-VPA acts as a **smart template injector** at birth, completely removing production restart risks.
+**`Initial` mode sizes pods at creation.** VPA acts as a smart template injector at birth, with no production restart risk.
 
-* **Mutating at Birth:** The Admission Controller intercepts pod creation requests *before* scheduling.
-* **Telemetry over Guesses:** VPA strips hardcoded numbers and injects an exact, data-driven target based on background usage history.
-* **Zero Production Churn:** Once a pod is running, resource settings are locked. VPA will **never evict or restart** a live container mid-flight.
+- **Mutating at birth:** the Admission Controller intercepts pod creation before scheduling
+- **Profiles over guesses:** VPA replaces hardcoded values with data-driven targets based on usage history
+- **Zero churn:** once a pod is running, its resources are locked. VPA never evicts or restarts a live container
 
 <blockquote>
-Profiles over predictions. Lock in optimal footprints at birth with zero runtime risk.
+Lock in optimal footprints at birth, with zero runtime risk.
 </blockquote>
 
 ---
 
-<!-- How VPA Works -->
-## How VPA Works: Three Components
+<!-- How VPA works -->
+## How VPA Works
+
+Three components, one pipeline:
 
 <div class="flow">
   <div class="flow-box">
@@ -146,135 +148,112 @@ Profiles over predictions. Lock in optimal footprints at birth with zero runtime
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Updater</div>
-    <div class="plate">Checks recommendations</div>
-    <div class="plate">Decides when to update</div>
-    <div class="plate">Respects Pod Disruption Budgets/rollout</div>
+    <div class="plate">Compares recs to current requests</div>
+    <div class="plate">Decides when to act</div>
+    <div class="plate">Respects PDBs & rollout strategy</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Admission Controller</div>
-    <div class="plate">Intercepts pod requests</div>
+    <div class="plate">Intercepts pod creation</div>
     <div class="plate">Applies recommendations</div>
-    <div class="plate">Ensures right-sized resources</div>
+    <div class="plate">Mutates requests at birth</div>
   </div>
 </div>
 
----
+<br>
 
-<!-- How the Recommender works -->
-## How the Recommender Works
+The Recommender watches metrics continuously and emits four values into VPA status:
 
-The **Recommender** calculates resource metrics but **never modifies running pods**.
+| Value | Meaning |
+|-------|---------|
+| **Target** | The sweet spot injected into new pods |
+| **Lower bound** | Under-provisioned floor; breach triggers upscale |
+| **Upper bound** | Over-provisioned ceiling; idling triggers downscale |
+| **Uncapped target** | Raw demand, ignoring your YAML safety caps |
 
-1. **Monitor:** Pulls utilization data continuously from Prometheus / Metrics Server.
-2. **Analyze:** Applies a decaying moving average heavily weighted toward usage peaks.
-3. **Spit out 4 boundary targets to VPA Status:**
-   * **Target:** Optimal sweet spot injected into pods.
-   * **Lower Bound:** Under-provisioned floor; triggers an upscale if breached.
-   * **Upper Bound:** Over-provisioned ceiling; triggers a downscale if idling.
-   * **Uncapped Target:** True raw application demand, ignoring your YAML safety caps.
-
-<blockquote>
-<b>Target</b> is what the platform allows; <b>Uncapped Target</b> is what the code actually asked for. A massive gap means your safety rails are actively throttling performance.
-</blockquote>
+> A wide gap between Target and Uncapped Target means your safety rails are throttling performance.
 
 ---
-<!-- In-Place Resizing -->
-## In-Place Resizing: Live Right-Sizing
 
-Modifies resource boundaries **on the fly with zero restarts or evictions**.
+<!-- VPA modes -->
+## VPA Modes: A Risk Spectrum
 
-<div class="flow" style="font-size: 0.85em; gap: 12px; margin-top: 20px;">
+Each mode trades runtime stability against resource efficiency.
 
-  <!-- Layer 1 -->
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Code Runtime</div>
-    <div class="plate">Elastic Sizing</div>
-    <div class="plate">CPU Scales Freely</div>
-    <div class="plate" style="font-size:16px; padding:8px;">Memory requires dynamic cgroup tracking (e.g., configuring dynamic JVM heap bounds).</div>
+<div class="flow" style="font-size: 0.85em; gap: 12px;">
+
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);">Off</div>
+    <div class="plate">Analysis only</div>
+    <div class="plate">No updates</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Writes recommendations to status without touching the cluster.</div>
   </div>
 
-  <!-- Layer 2 -->
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Node Headroom</div>
-    <div class="plate">Physical Space</div>
-    <div class="plate">Immediate Resource</div>
-    <div class="plate" style="font-size:16px; padding:8px;">The underlying physical host must possess spare capacity to grant an upward resize request.</div>
+  <div class="flow-arrow">&rarr;</div>
+
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%);">Initial</div>
+    <div class="plate">Sized at birth</div>
+    <div class="plate">No evictions</div>
+    <div class="plate" style="font-size:17px; padding:8px;"><b>Our default on Aurora.</b> Injects targets only at pod creation.</div>
   </div>
 
-  <!-- Layer 3 -->
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Downscale Trap</div>
-    <div class="plate">Risk Management</div>
-    <div class="plate">OOM Killer Target</div>
-    <div class="plate" style="font-size:16px; padding:8px;">Shrinking memory footprints too aggressively will trigger instant Linux kernel OOM kills.</div>
+  <div class="flow-arrow">&rarr;</div>
+
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #f57c00 0%, #ffca28 100%);">InPlace</div>
+    <div class="plate">Live resizing</div>
+    <div class="plate">No evictions*</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Resizes containers inside cgroups without dropping the process.</div>
   </div>
 
-  <!-- Layer 4 -->
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Platform Engine</div>
-    <div class="plate">Core Provisioning</div>
-    <div class="plate">Feature Gate Active</div>
-    <div class="plate" style="font-size:16px; padding:8px;">Orchestrated natively by the Aurora control plane via Kubernetes v1.27+ configurations.</div>
+  <div class="flow-arrow">&rarr;</div>
+
+  <div class="flow-box" style="width: 23%;">
+    <div class="plate plate-head" style="background: linear-gradient(135deg, #e53935 0%, #ff7043 100%);">Recreate</div>
+    <div class="plate">Hard eviction</div>
+    <div class="plate">Yes evictions</div>
+    <div class="plate" style="font-size:17px; padding:8px;">Use rarely. Restarts containers to resize them on boot.</div>
   </div>
 
 </div>
 
 <br>
 
-<blockquote>
-<b>Safety Net:</b> <code>InPlaceOrRecreate</code> acts as a fallback policy. If a node is completely full or a runtime fails to flex, the platform safely drops back to a standard rolling eviction.
-</blockquote>
+> \* InPlace falls back to a standard rolling eviction if a node is full or the runtime cannot flex. If you want that fallback explicitly, use `InPlaceOrRecreate`.
 
 ---
 
-<!-- VPA Modes: Choose Your Risk Profile -->
-## VPA Modes: Choose Your Risk Profile
+<!-- In-place resizing -->
+## In-Place Resizing: Live Right-Sizing
 
-Instead of a generic feature list, think of VPA modes as a spectrum balancing **Runtime Stability** against **Resource Efficiency**.
+Changes resource boundaries on the fly, with zero restarts or evictions. Four things must hold:
 
-<div class="flow" style="font-size: 0.85em; gap: 12px;">
+<div class="flow" style="font-size: 0.85em; gap: 12px; margin-top: 20px;">
 
-  <!-- Mode 1: Off - Blue gradient -->
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);">Off</div>
-    <div class="plate">Analysis Only</div>
-    <div class="plate">No Evictions</div>
-    <div class="plate">No Live Updates</div>
-    <div class="plate" style="font-size:17px; padding:8px;">Generates target logs inside Status without altering your cluster.</div>
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Runtime Support</div>
+    <div class="plate">Elastic sizing</div>
+    <div class="plate" style="font-size:16px; padding:8px;">CPU scales freely. Memory needs dynamic cgroup tracking (e.g., JVM dynamic heap bounds).</div>
   </div>
 
-  <div class="flow-arrow">&rarr;</div>
-
-  <!-- Mode 2: Initial - Teal gradient -->
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%);">Initial</div>
-    <div class="plate">Sized at Birth</div>
-    <div class="plate">No Evictions</div>
-    <div class="plate">No Live Updates</div>
-    <div class="plate" style="font-size:17px; padding:8px;"><b>Recommended for Prod.</b> Inject targets only at pod creation.</div>
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Node Headroom</div>
+    <div class="plate">Physical space</div>
+    <div class="plate" style="font-size:16px; padding:8px;">The host must have spare capacity to grant an upward resize.</div>
   </div>
 
-  <div class="flow-arrow">&rarr;</div>
-
-  <!-- Mode 3: InPlace - Orange gradient -->
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #f57c00 0%, #ffca28 100%);">InPlace</div>
-    <div class="plate">Live Flexing</div>
-    <div class="plate">No Evictions*</div>
-    <div class="plate">Yes Updates</div>
-    <div class="plate" style="font-size:17px; padding:8px;">Dynamically resizes containers inside cgroups without dropping the process.</div>
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Downscale Caution</div>
+    <div class="plate">OOM risk</div>
+    <div class="plate" style="font-size:16px; padding:8px;">Shrinking memory too aggressively triggers instant kernel OOM kills.</div>
   </div>
 
-  <div class="flow-arrow">&rarr;</div>
-
-  <!-- Mode 4: Recreate - Red gradient -->
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #e53935 0%, #ff7043 100%);">Recreate</div>
-    <div class="plate">Hard Eviction</div>
-    <div class="plate">Yes Evictions</div>
-    <div class="plate">Yes Updates</div>
-    <div class="plate" style="font-size:17px; padding:8px;"><b>Use Rarely.</b> Aggressively terminates running containers to resize them on boot.</div>
+  <div class="flow-box" style="width: 24%;">
+    <div class="plate plate-head">Platform Support</div>
+    <div class="plate">Feature gate active</div>
+    <div class="plate" style="font-size:16px; padding:8px;">Requires Kubernetes v1.27+ in-place resize support in the control plane.</div>
   </div>
 
 </div>
@@ -308,19 +287,19 @@ spec:
 ---
 
 <!-- VPA limitations -->
-## VPA: When NOT to Use It
+## VPA: When Not to Use It
 
 ![bg left:20%](./img/aurora.png)
 
-- **Spiky workloads:** VPA reacts to history; sudden bursts can be under-provisioned until it catches up
-- **JVM / heap-tuned apps:** changing memory requests does not change `-Xmx`; size the runtime, not just the pod
-- **Eviction-sensitive workloads:** avoid `Recreate` where restarts are costly
-- **Same resource as KEDA:** never let two controllers fight over the same resource (see Part 4)
+- **Spiky workloads:** VPA reacts to history; sudden bursts stay under-provisioned until it catches up
+- **JVM / heap-tuned apps:** raising memory requests does not change `-Xmx`; size the runtime, not just the pod
+- **Eviction-sensitive workloads:** avoid `Recreate` mode where restarts are costly
+- **Same resource as another autoscaler:** never let two controllers fight over CPU/memory (see Part 4)
 - **Very short-lived processes:** VPA needs time to collect and analyze usage data
 
 <br>
 
-> **That's the 'how much' axis.** Next: KEDA decides *how many* replicas you need.
+> That's the "how much" axis. Next: KEDA decides how many replicas you need.
 
 ---
 
@@ -331,104 +310,96 @@ spec:
 
 ![bg left:30%](./img/aurora.png)
 
-### Scaling Replicas on Real-World Demand
+### Scaling replicas on real-world demand
 
 ---
 
-<!-- What is KEDA: Deep Architectural Definition -->
+<!-- What is KEDA -->
 ## What is KEDA?
 
-**Kubernetes Event-Driven Autoscaler:** An advanced metrics broker that unifies external event telemetry with native Kubernetes horizontal scaling.
+**Kubernetes Event-Driven Autoscaler:** a metrics broker that connects external event sources to native Kubernetes horizontal scaling.
 
-- **The Metric Broker:** Bridges cloud/on-prem event streams directly to your workloads without complex custom adapters
-- **Decoupled Metric Lifecycle:** Frees your autoscaling loops from standard infrastructure metrics (CPU/Memory)
-- **True Down-Scaling:** Provides the only reliable framework within Kubernetes to scale a standard workload all the way to absolute zero replicas
-- **CRD-Driven Orchestration:** Managed natively via `ScaledObject` (for Deployments/StatefulSets) and `ScaledJob` (for ephemeral batch loops)
+- **Metric broker:** bridges cloud and on-prem event streams without custom adapters
+- **Beyond CPU/memory:** scales on queue depth, schedules, and custom metrics
+- **Scale-to-zero:** the standard, reliable way in Kubernetes to scale a workload to zero replicas
+- **CRD-driven:** `ScaledObject` for Deployments/StatefulSets, `ScaledJob` for batch work
 
 <br>
 
 <blockquote>
-Standard HPA watches the consequence of load (CPU). KEDA watches the origin of load (Events). <b>Note:</b> Scale-to-zero has a cooldown period (~5 min default) - it trades cost for cold-start latency.
+HPA watches the consequence of load (CPU). KEDA watches the origin of load (events). Scale-to-zero trades cost for cold-start latency — KEDA's default cooldown is 5 minutes.
 </blockquote>
 
 ---
 
-<!-- KEDA Architecture Deep Dive -->
-## KEDA Architecture: The Dual-Controller Engine
+<!-- KEDA architecture -->
+## KEDA Architecture: Two Controllers
 
-KEDA splits its responsibilities into two sub-systems to maintain high performance without blocking your cluster control plane.
+KEDA splits responsibilities so scaling stays fast without burdening the cluster control plane.
 
 <div class="flow">
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">Telemetry Sources</div>
-    <div class="plate">Kafka Lag</div>
-    <div class="plate">RabbitMQ Depth</div>
-    <div class="plate">Prometheus Queries</div>
+    <div class="plate">Kafka lag</div>
+    <div class="plate">RabbitMQ depth</div>
+    <div class="plate">Prometheus queries</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA Metrics Server</div>
-    <div class="plate"><b>Handles 1 → N Scaling</b></div>
-    <div class="plate">HPA v2 provider</div>
-    <div class="plate">Polls every 15s</div>
+    <div class="plate"><b>Handles 1 → N scaling</b></div>
+    <div class="plate">Exposes metrics to HPA v2</div>
+    <div class="plate">Polls every 15s (default)</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate"><b>Handles 0 ↔ 1 Scaling</b></div>
+    <div class="plate"><b>Handles 0 ↔ 1 scaling</b></div>
     <div class="plate">Bypasses HPA</div>
-    <div class="plate">Patches spec.replicas</div>
+    <div class="plate">Patches spec.replicas directly</div>
   </div>
 </div>
 
 <br>
 
-<blockquote>
-Telemetry Ingestion → Metrics Server (scale-up) + Operator (scale-from-zero).
-</blockquote>
+> One pipeline, two engines: the Operator wakes a workload from zero; the Metrics Server scales it from one.
 
 ---
 
-<!-- KEDA Scale-To-Zero Mechanics -->
-## KEDA Scale-To-Zero: How It Actually Works
+<!-- KEDA scale-to-zero -->
+## KEDA Scale-to-Zero: How It Works
 
-Scaling to zero requires deep coordination because a native Kubernetes HPA cannot evaluate a workload sitting at `0` replicas.
+Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero boundary itself.
 
 <div class="flow">
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">The Idle Phase</div>
-    <div class="plate">Workload at <b>0 replicas</b></div>
+    <div class="plate plate-head">Idle Phase</div>
+    <div class="plate">Workload at 0 replicas</div>
     <div class="plate">Native HPA dormant</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 23%;">
     <div class="plate plate-head">Active Probing</div>
-    <div class="plate"><b>KEDA Operator</b> keeps watch</div>
+    <div class="plate">KEDA Operator watches</div>
     <div class="plate">Polls event stream every <code>pollingInterval</code></div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">The Kickstart</div>
-    <div class="plate">Events arrive!</div>
-    <div class="plate">Patches <code>spec.replicas</code> from <b>0 to 1</b></div>
+    <div class="plate plate-head">Kickstart</div>
+    <div class="plate">Events arrive</div>
+    <div class="plate">Patches <code>spec.replicas</code> 0 → 1</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Engine Hand-Off</div>
-    <div class="plate">HPA activates with 1 pod</div>
-    <div class="plate"><b>KEDA Metrics Server</b> handles 1 → N</div>
+    <div class="plate plate-head">Hand-Off</div>
+    <div class="plate">HPA activates at 1 pod</div>
+    <div class="plate">Metrics Server handles 1 → N</div>
   </div>
 </div>
 
-<br>
-
-<blockquote>
-The Operator wakes the workload up; the Metrics Server scales it up.
-</blockquote>
-
 ---
 
-<!-- Advanced Production ScaledObject Example -->
+<!-- KEDA example -->
 ## KEDA: ScaledObject Example
 
 ```yaml
@@ -439,10 +410,10 @@ metadata:
 spec:
   scaleTargetRef:
     name: billing-processor-deployment
-  pollingInterval: 15           # Frequency to poll the external event stream
-  cooldownPeriod:  600          # Wait 10m before executing scale-down to 0
-  minReplicaCount: 1            # Production baseline (Guarantees zero cold-starts)
-  maxReplicaCount: 50           # Hard boundary ceiling
+  pollingInterval: 15           # How often to poll the event stream
+  cooldownPeriod:  600          # Wait 10m before scaling down to 0
+  minReplicaCount: 1            # Production baseline: no cold-starts
+  maxReplicaCount: 50           # Hard ceiling
   advanced:
     restoreToOriginalReplicaCount: true
     horizontalPodAutoscalerConfig:
@@ -451,7 +422,7 @@ spec:
           stabilizationWindowSeconds: 300
           policies:
           - type: Percent
-            value: 10           # Smooth downscaling (max 10% reduction per step)
+            value: 10           # Smooth downscaling: max 10% per step
             periodSeconds: 60
   triggers:
     - type: kafka
@@ -464,46 +435,43 @@ spec:
 
 ---
 
-<!-- Production Trigger Portfolio on Aurora -->
+<!-- Trigger portfolio -->
 ## Production Trigger Portfolio on Aurora
 
-Don't limit KEDA to basic message queues. Leverage alternative scalers across the enterprise topology.
+KEDA is not just message queues. Mix scaler types across the topology.
 
 <div class="flow" style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
 
-  <!-- Trigger Box 1 -->
   <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
     <div class="plate plate-head" style="background: #2d7d9a;">Telemetry Trigger</div>
     <div class="plate"><b>Prometheus / Thanos Scaler</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Scale applications based on live traffic dynamics.</div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Scale on live traffic dynamics.</div>
     <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Inbound Request Velocity (RPS)<br>
-      • HTTP Error Rate Spike thresholds<br>
-      • Database query execution delays
+      • Inbound request velocity (RPS)<br>
+      • HTTP error-rate spikes<br>
+      • Database query delays
     </div>
   </div>
 
-  <!-- Trigger Box 2 -->
   <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
     <div class="plate plate-head" style="background: #2b6cb0;">Predictive Trigger</div>
     <div class="plate"><b>Cron / Calendar Scaler</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Pre-warm infrastructure based on known schedules.</div>
+    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Pre-warm for known schedules.</div>
     <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Spin up capacity before shifts log in<br>
-      • Force scale-down during quiet windows<br>
-      • Overrides slow raw cold-starts
+      • Spin up before shifts log in<br>
+      • Force scale-down in quiet windows<br>
+      • Avoids slow cold-starts
     </div>
   </div>
 
-  <!-- Trigger Box 3 -->
   <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
-    <div class="plate plate-head" style="background: #2f855a;">Safety Backup Trigger</div>
-    <div class="plate"><b>CPU / Memory Fallback</b></div>
+    <div class="plate plate-head" style="background: #2f855a;">Safety Fallback</div>
+    <div class="plate"><b>CPU / Memory Trigger</b></div>
     <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Protect capacity if event loops degrade.</div>
     <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Configured as a secondary layer<br>
-      • Triggers if message queue stalls<br>
-      • Prevents underlying app exhaustion
+      • Secondary layer on top of events<br>
+      • Fires if the queue stalls<br>
+      • Prevents app exhaustion
     </div>
   </div>
 
@@ -511,17 +479,14 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 
 <br>
 
-<blockquote>
-<b>Design Rule:</b> Bind triggers to business logic targets using the platform's <code>TriggerAuthentication</code> CRDs to keep credentials out of code repositories.
-</blockquote>
-
+> **Design rule:** bind triggers to credentials with `TriggerAuthentication` CRDs — never put secrets in ScaledObject manifests.
 
 ---
 
 <!-- ============================ PART 3: Karpenter ============================ -->
 <!-- Karpenter section divider -->
 # Part 3: Karpenter
-## Open source, cloud-agnostic node autoscaler
+## Open-source, cloud-agnostic node autoscaler
 ### Just-in-time node provisioning
 
 ![bg left:30%](./img/aurora.png)
@@ -531,73 +496,69 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 <!-- What is Karpenter -->
 ## What is Karpenter?
 
-**Cloud-agnostic node autoscaler:** provisions nodes just-in-time for pending pods, then consolidates
+**Cloud-agnostic node autoscaler:** provisions nodes just-in-time for pending pods, then consolidates underutilized capacity.
 
 ![bg left:20%](./img/aurora.png)
 
 <div class="flow">
   <div class="flow-box">
     <div class="plate plate-head">Watch</div>
-    <div class="plate">Pod the scheduler</div>
-    <div class="plate">cannot place</div>
+    <div class="plate">Unschedulable pods</div>
+    <div class="plate">Event-driven, no polling</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Provision</div>
-    <div class="plate">Bin-packs all pending pods</div>
+    <div class="plate">Bin-packs pending pods</div>
     <div class="plate">Cheapest exact-fit node</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box">
     <div class="plate plate-head">Consolidate</div>
-    <div class="plate">Repack & remove idle</div>
+    <div class="plate">Repack & remove idle nodes</div>
     <div class="plate">Respects Pod Disruption Budgets</div>
   </div>
 </div>
 
 <br>
 
-> **The Big Shift:** Karpenter bypasses Node Groups entirely. It talks directly to the cloud API with bin-packing intelligence.
+> **The big shift:** Karpenter bypasses node groups and talks directly to the cloud API, choosing capacity per demand instead of growing pre-defined pools.
 
 ---
 
-<!-- Karpenter deep dive -->
+<!-- How Karpenter works -->
 ## How Karpenter Works: Three Steps
 
-| Step | What Happens | Why It Matters |
+| Step | What happens | Why it matters |
 |------|-------------|----------------|
-| **1. Watch** | Event-driven: Watches unschedulable pods *millisecond-by-millisecond* | No polling delay → ~45s scale-up |
-| **2. Provision** | Bin-packs all pending pods onto the *cheapest exact-fit* node | 3-4 pods on one $15/mo node, not 3x $100/mo nodes |
-| **3. Consolidate** | Repacks workloads, terminates underutilized nodes | Saves 20-40% vs Cluster Autoscaler |
+| **1. Watch** | Watches unschedulable pods event-by-event | No polling delay; vendor-reported scale-up in ~45–60s |
+| **2. Provision** | Bin-packs pending pods onto the cheapest exact-fit node | Several pods share one cheap node instead of over-provisioning pools |
+| **3. Consolidate** | Repacks workloads, drains and terminates underutilized nodes | Continuous right-sizing instead of periodic cleanup |
 
 **Key capabilities:**
-- **Direct API access:** No Auto Scaling Groups - spins up one perfect node per demand
-- **Bin-packing:** Aggregates all pending pods, finds optimal layout
-- **Respects Pod Disruption Budgets:** Will wait to drain nodes until PDBs allow; never force-terminates pods during consolidation
-- **Node attributes:** Reads nodeSelector, affinity, tolerations, GPU requirements
+- Direct cloud API access — one purpose-built node per demand wave, no Auto Scaling Groups
+- Bin-packing across all pending pods at once
+- Reads `nodeSelector`, affinity, tolerations, and GPU requirements before choosing capacity
+- Drains respect PodDisruptionBudgets; never force-terminates pods during consolidation
 
-<br>
-
-<blockquote>
-Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node per pod demand and consolidates to remove underutilized nodes.
-</blockquote>
+> Cluster Autoscaler grows pre-defined pools. Karpenter builds the right node per demand wave, then reclaims what is no longer needed.
 
 ---
 
-<!-- Karpenter why -->
-## Why Karpenter over Cluster Autoscaler
+<!-- Karpenter vs CA -->
+## Karpenter vs Cluster Autoscaler
 
 ![bg left:20%](./img/aurora.png)
 
 | Aspect | Cluster Autoscaler | Karpenter |
 |--------|-------------------|-----------|
-| Node provisioning | Adds nodes one at a time to a node group | Provisions single node that fits each pending pod |
-| Instance selection | Uses expanders (least-waste, price, priority) | Chooses cheapest instance type that fits |
-| Consolidation | Removes underutilized nodes after draining | Continuous repacking and node removal |
-| Multi-family | Static pool per node group | Any family, spot + on-demand mixed |
-| Provisioning speed | Minutes | ~45-60s (vendor benchmark) |
+| Node provisioning | Adds nodes to a node group, one at a time | Provisions a purpose-built node for pending pods |
+| Instance selection | Expanders (least-waste, price, priority) | Cheapest instance type that fits, across families |
+| Consolidation | Removes underutilized nodes after drain | Continuous repacking and node removal |
+| Capacity mix | One pool per node group | Spot and on-demand mixed in one NodePool |
+| Provisioning speed | Minutes | ~45–60s (vendor benchmark) |
 
-> Estimated 20-40% cost reduction vs Cluster Autoscaler ([AWS case study](https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter)) - validate in a pilot.
+> Vendor case studies report 20–40% cost reduction vs Cluster Autoscaler ([AWS example](https://repost.aws/articles/AR5C03QTEyRgKoDI-XO5UC7w/optimizing-your-amazon-eks-compute-costs-with-karpenter)). Validate in your own pilot before quoting numbers internally.
 
 ---
 
@@ -606,7 +567,7 @@ Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node 
 
 ![bg left:20%](./img/aurora.png)
 
-Define compute intent once; tailor the provider-specific `nodeClassRef` per platform (EC2NodeClass, AKSNodeClass, GKENodeClass, etc).
+Define compute intent once; the provider-specific `nodeClassRef` adapts it per platform (EC2NodeClass, AKSNodeClass, GKENodeClass, ...).
 
 ```yaml
 apiVersion: karpenter.sh/v1
@@ -617,7 +578,7 @@ spec:
   template:
     spec:
       nodeClassRef:
-        name: default           # points to EC2NodeClass, AKSNodeClass, etc (provider-specific)
+        name: default           # EC2NodeClass, AKSNodeClass, etc. (provider-specific)
       requirements:
         - key: "karpenter.sh/capacity-type"
           operator: In
@@ -634,43 +595,37 @@ spec:
 
 ---
 
-<!-- Karpenter Aurora -->
+<!-- Karpenter on Aurora -->
 ## Karpenter on Aurora
 
 ![bg left:20%](./img/aurora.png)
 
-**Goal:** Build in-house Karpenter expertise to use across clouds, falling back to CSP-managed solutions when they're sufficient.
+**Goal:** build in-house Karpenter expertise that works across clouds, falling back to CSP-managed options when they are sufficient.
 
-- **AWS:** Self-hosted Karpenter (v1 GA provider, full control)
-- **Azure:** Try AKS NAP (managed Karpenter); switch to self-hosted if constraints appear
-- **GKE:** Self-hosted Karpenter (via [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp))
-- **On-premises:** Self-hosted Karpenter (you own the infrastructure)
+- **AWS:** self-hosted Karpenter (v1 provider, full control)
+- **Azure:** try AKS NAP (managed Karpenter); switch to self-hosted if constraints appear
+- **GKE:** self-hosted Karpenter via the [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp)
+- **On-premises:** self-hosted (you own the infrastructure)
 
 **Why self-hosted when possible:**
 - Same NodePool APIs across all platforms
 - Full version control and security scanning
-- Avoids vendor cost manipulation
-- Freedom to migrate if a CSP solution doesn't meet Aurora's goals
+- No vendor lock-in on provisioning behavior
 
-<br>
-
-<blockquote>
-Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constraints emerge.
-</blockquote>
+> Learn Karpenter first. Use the managed variant if it works; switch back to self-hosted if constraints emerge.
 
 ---
 
 <!-- Karpenter limitations -->
 ## Karpenter: Risks and Caveats
 
-- **GCP provider is community-maintained:** the [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) is pre-1.0; breaking changes happen. Pin versions, scan, and keep GKE Workload Autoscaler as fallback
-- **Node churn:** aggressive consolidation disrupts pods; tune `consolidateAfter` and use PodDisruptionBudgets
-- **Azure NAP (managed Karpenter):** simpler now, but [github.com/Azure/karpenter-provider-azure/issues/1351](https://github.com/Azure/karpenter-provider-azure/issues/1351) indicates current limitations; consider self-hosted for full control
-- **Model change:** autoscaler choice is set at cluster creation time on all platforms
-- **Set `limits`** on NodePool to prevent runaway provisioning
-- **Learn Karpenter first:** understand the open-source project before choosing a managed variant
+- **GCP provider is community-maintained:** the [CloudPilot AI shim](https://github.com/cloudpilot-ai/karpenter-provider-gcp) is pre-1.0 and breaking changes happen. Pin versions, scan images, and keep GKE's workload autoscaler as a fallback
+- **Node churn:** aggressive consolidation disrupts pods; tune `consolidateAfter` and protect critical workloads with PodDisruptionBudgets
+- **Azure NAP:** simpler to run, but [issue #1351](https://github.com/Azure/karpenter-provider-azure/issues/1351) tracks current limitations; prefer self-hosted if you need full control
+- **Cluster-creation decision:** the autoscaler model is chosen at cluster creation time on most platforms — decide before you build
+- **Always set NodePool `limits`** to prevent runaway provisioning
 
-> **That's the infrastructure axis.** You now have: VPA (how much) + KEDA (how many) + Karpenter (what capacity) = a complete pipeline.
+> **That's the infrastructure axis.** You now have: VPA (how much) + KEDA (how many) + Karpenter (what capacity) — one complete pipeline.
 
 ---
 
@@ -678,27 +633,25 @@ Learn Karpenter. Use CSP NAP if it works. Switch back to self-hosted if constrai
 <!-- Interactions divider -->
 # Part 4: Putting It Together
 ## Interactions and anti-patterns
-### Tips and Tricks
+### Tips and tricks
 
 ![bg left:30%](./img/aurora.png)
 
 ---
 
-<!-- The combined picture -->
-## How It Works: The Complete Picture
+<!-- Complete picture -->
+## The Complete Picture
 
 ![bg left:20%](./img/aurora.png)
 
 1. **KEDA** decides replica count (events, queues, schedules)
 2. **VPA** sizes each pod based on usage history
-3. **Combined:** Replica count × per-pod size = total pending-pod demand
+3. **Combined:** replica count × per-pod size = total pending-pod demand
 4. **Karpenter** watches for unschedulable pods and provisions nodes
 
 <br>
 
-<blockquote>
-All three feed one pipeline. Keep their axes decoupled to achieve optimal, right-sized scaling.
-</blockquote>
+> All three feed one pipeline. Keep their axes decoupled and their efficiency multiplies.
 
 ---
 
@@ -707,46 +660,45 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 
 | Pair | Rule |
 |------|------|
-| **VPA + HPA** | Never on the same resource. VPA = memory, HPA = CPU (`controlledResources`) |
-| **VPA + KEDA** | Conflict only with CPU/memory triggers. Safe with queue depth, cron, or custom metrics |
-| **KEDA + HPA** | Don't configure both KEDA's ScaledObject and your own HPA for the same deployment — KEDA creates and owns the underlying HPA automatically |
+| **VPA + HPA** | Never on the same resource. Give VPA memory, HPA CPU (`controlledResources`) |
+| **VPA + KEDA** | Conflict only with CPU/memory triggers. Safe with queue depth, cron, and custom metrics |
+| **KEDA + HPA** | Do not create your own HPA for a deployment that has a KEDA ScaledObject — KEDA creates and owns the HPA |
 | **VPA + Karpenter** | Complementary: VPA changes requests, Karpenter repacks. Set VPA `maxAllowed` and NodePool `limits` |
-| **KEDA 0 + Karpenter** | Scale-to-zero + consolidation empties and removes nodes. Watch cold-start latency |
+| **KEDA 0 + Karpenter** | Scale-to-zero plus consolidation empties and removes nodes. Watch cold-start latency |
 
-> **What "your own HPA" means:** Creating a Kubernetes HorizontalPodAutoscaler manifest that targets the same deployment as a KEDA ScaledObject. Both autoscalers will fight over replica count, causing flapping and API thrashing.
+> "Your own HPA" means a separate `HorizontalPodAutoscaler` manifest targeting the same deployment. Two controllers fighting over replica count causes flapping and API thrashing.
 
 ---
 
-<!-- Common Anti-Patterns -->
+<!-- Anti-patterns -->
 ## Common Anti-Patterns
 
-| Workload Scenario | The Anti-Pattern | The Result |
+| Workload scenario | The anti-pattern | The result |
 |-------------------|------------------|------------|
-| **High-Volume IoT / Events** | HPA and KEDA fight over CPU | Pod counts oscillate, data dropped during peak traffic |
-| **Heavy Compute Processing** | No budget limits on Karpenter | Massive cloud spending spike overnight |
-| **Latency-Critical APIs** | Scale-to-zero in prod | 2-minute cold-start delay on unexpected events |
-| **Standard Multi-Tier Apps** | VPA+HPA both on CPU | Rapid endless pod eviction (deployment flapping) |
+| **High-volume IoT / events** | HPA and KEDA both on CPU | Pod counts oscillate; data dropped at peak |
+| **Heavy compute processing** | No budget limits on Karpenter | Overnight cloud spend spike |
+| **Latency-critical APIs** | Scale-to-zero in production | Cold-start delay on unexpected events |
+| **Standard multi-tier apps** | VPA and HPA both on CPU | Rapid eviction loop; deployment flapping |
 
-> **Tip:** KEDA creates and owns the HPA. Don't create your own HPA for the same workload.
+> KEDA creates and owns the HPA. Don't add a second one for the same workload.
 
 ---
 
-<!-- What Could Go Wrong -->
+<!-- What could go wrong -->
 ## What Could Go Wrong
 
-**Autoscaling is like a high-performance jet engine.** If the control systems are out of sync, the wings start to vibrate violently—called *flapping*—until the sheer friction tears your availability apart.
+Autoscaling behaves like a feedback system: when the controllers fall out of sync, they oscillate ("flap") until availability breaks.
 
-| Failure Mode | What Happens | The Cost |
+| Failure mode | What happens | The cost |
 |--------------|--------------|----------|
-| **Death Spiral** | HPA and VPA fight over CPU. Pods spin up, shrink, spike CPU, spin up again. | API server overload. User latency waves. |
-| **Karpenter Whiplash** | Queue burst → 100 pods → $1000 node. Burst ends → 1 pod → node terminated. Repeat. | Massive cloud spend. Node instability. |
-| **OOM Cascade** | Memory leak → VPA raises memory → leak consumes more → node OOM → kernel kills all pods. | Single app takes down everything on the node. |
-| **Phantom Capacity** | KEDA scales to 200, Karpenter orders Spot nodes. Spot unavailable → KEDA jumps to 400. | 500 pods booted for 200 of demand. |
+| **Death spiral** | HPA and VPA fight over CPU: pods spin up, shrink, spike CPU, spin up again | API server overload; user-facing latency waves |
+| **Karpenter whiplash** | Queue burst → 100 pods → big node. Burst ends → 1 pod → node terminated. Repeat. | Cloud spend; node churn instability |
+| **OOM cascade** | Memory leak → VPA raises memory → leak consumes more → node OOM → kernel kills all pods on the node | One app takes down its neighbors |
+| **Phantom capacity** | KEDA wants 200 replicas; Karpenter orders Spot; Spot unavailable → KEDA jumps to 400 | 500 pods scheduled for 200 of demand |
 
-> **Remember:** Keep metrics decoupled. VPA (memory), KEDA (CPU/traffic), Karpenter (pending pods).
+> **Principle:** keep metrics decoupled — VPA on memory, KEDA on events/traffic, Karpenter on pending pods.
 
-
-> **Real-world example:** VPA raises requests → Karpenter buys a bigger node → cost spikes. Always check the combined impact before changing any knob.
+**Real-world example:** VPA raises requests → Karpenter buys a bigger node → cost spikes. Check the combined impact before changing any knob.
 
 ---
 
@@ -758,7 +710,7 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 - **VPA** right-sizes pods (how much)
 - **KEDA** scales replicas on real demand, including to zero (how many)
 - **Karpenter** provisions and consolidates nodes (what capacity)
-- **Together, they form a single scaling engine:** keep their metrics decoupled and their efficiency multiplies.
+- **Together** they form one scaling engine — keep their metrics decoupled and the efficiency multiplies
 
 <br>
 
