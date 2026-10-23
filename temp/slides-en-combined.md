@@ -161,7 +161,7 @@ Three components, one pipeline:
   </div>
 </div>
 
-<br>
+---
 
 The Recommender watches metrics continuously and emits four values into VPA status:
 
