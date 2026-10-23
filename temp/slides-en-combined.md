@@ -81,7 +81,7 @@ Different tools, different axes. The value is in how they combine.
 <br>
 
 <blockquote>
-Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
+Replica count × per-pod size = pending-pod demand that Karpenter satisfies. <b>Remember:</b> Never configure HPA and VPA on the same resource (CPU/memory).
 </blockquote>
 
 ---
@@ -99,7 +99,7 @@ Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- What is VPA? -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler:** automatically adjusts the CPU and memory resource requests and limits of running Kubernetes pods based on real-time usage and predefined boundaries
+**Vertical Pod Autoscaler:** automatically adjusts the CPU and memory resource requests and limits of running Kubernetes pods based on usage history and predefined boundaries
 
 * **Targets:** Workload CPU/memory requests & limits
 * **Workloads:** Deployments, StatefulSets, DaemonSets
@@ -110,7 +110,7 @@ Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 <br>
 
 <blockquote>
-HPA scales how many, VPA scales how much.
+HPA scales how many, VPA scales how much. <b>Tip:</b> Start VPA in "Off" mode to gather data before enabling recommendations.
 </blockquote>
 
 ---
@@ -348,7 +348,7 @@ spec:
 <br>
 
 <blockquote>
-Standard HPA watches the consequence of load (CPU). KEDA watches the origin of load (Events).
+Standard HPA watches the consequence of load (CPU). KEDA watches the origin of load (Events). <b>Note:</b> Scale-to-zero has a cooldown period (~5 min default) - it trades cost for cold-start latency.
 </blockquote>
 
 ---
@@ -568,7 +568,7 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 |------|-------------|----------------|
 | **1. Watch** | Event-driven: Watches unschedulable pods *millisecond-by-millisecond* | No polling delay → ~45s scale-up |
 | **2. Provision** | Bin-packs all pending pods onto the *cheapest exact-fit* node | 3-4 pods on one $15/mo node, not 3x $100/mo nodes |
-| **3. Consolidate** | Repacks workloads, removes idle nodes (empty, single-node swap, multi-node) | Saves 20-40% vs Cluster Autoscaler |
+| **3. Consolidate** | Repacks workloads, terminates underutilized nodes | Saves 20-40% vs Cluster Autoscaler |
 
 **Key capabilities:**
 - **Direct API access:** No Auto Scaling Groups - spins up one perfect node per demand
@@ -579,7 +579,7 @@ Don't limit KEDA to basic message queues. Leverage alternative scalers across th
 <br>
 
 <blockquote>
-Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node per pod demand.
+Cluster Autoscaler adds to pre-defined pools. Karpenter builds the perfect node per pod demand and consolidates to remove underutilized nodes.
 </blockquote>
 
 ---
@@ -745,6 +745,9 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 
 > **Remember:** Keep metrics decoupled. VPA (memory), KEDA (CPU/traffic), Karpenter (pending pods).
 
+
+> **Real-world example:** VPA raises requests → Karpenter buys a bigger node → cost spikes. Always check the combined impact before changing any knob.
+
 ---
 
 <!-- Conclusion -->
@@ -762,3 +765,5 @@ All three feed one pipeline. Keep their axes decoupled to achieve optimal, right
 <blockquote>
 Right-size the pods, scale on real demand, provision only what fits.
 </blockquote>
+
+---
