@@ -327,7 +327,7 @@ spec:
 <br>
 
 <blockquote>
-HPA watches the consequence of load (CPU). KEDA watches the origin of load (events). Scale-to-zero trades cost for cold-start latency — KEDA's default cooldown is 5 minutes.
+HPA watches the consequence of load (CPU). KEDA watches the origin of load (events). Scale-to-zero trades cost for cold-start latency — tuning cooldown and stabilization windows controls scale-down timing.
 </blockquote>
 
 ---
@@ -347,22 +347,22 @@ KEDA splits responsibilities so scaling stays fast without burdening the cluster
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA Metrics Server</div>
-    <div class="plate"><b>Handles 1 → N scaling</b></div>
-    <div class="plate">Exposes metrics to HPA v2</div>
-    <div class="plate">Polls every 15s (default)</div>
+    <div class="plate"><b>Supplies metrics for 1 → N scaling</b></div>
+    <div class="plate">Exposes external metrics to HPA v2</div>
+    <div class="plate">HPA calculates replica count</div>
   </div>
   <div class="flow-arrow">&rarr;</div>
   <div class="flow-box" style="width: 32%;">
     <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate"><b>Handles 0 ↔ 1 scaling</b></div>
-    <div class="plate">Bypasses HPA</div>
-    <div class="plate">Patches spec.replicas directly</div>
+    <div class="plate"><b>Handles the 0 ↔ 1 boundary</b></div>
+    <div class="plate">Polls and activates triggers</div>
+    <div class="plate">Patches <code>spec.replicas</code> at zero</div>
   </div>
 </div>
 
 <br>
 
-> One pipeline, two engines: the Operator wakes a workload from zero; the Metrics Server scales it from one.
+> One pipeline, two engines: the Operator wakes a workload from zero; the Metrics Server supplies metrics that HPA uses from one upward.
 
 ---
 
@@ -393,7 +393,7 @@ Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero
   <div class="flow-box" style="width: 23%;">
     <div class="plate plate-head">Hand-Off</div>
     <div class="plate">HPA activates at 1 pod</div>
-    <div class="plate">Metrics Server handles 1 → N</div>
+    <div class="plate">Metrics Server supplies 1 → N values</div>
   </div>
 </div>
 
@@ -406,32 +406,65 @@ Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: billing-processor-scaler
+  name: threat-analyzer-scaler
 spec:
   scaleTargetRef:
-    name: billing-processor-deployment
-  pollingInterval: 15           # How often to poll the event stream
-  cooldownPeriod:  600          # Wait 10m before scaling down to 0
-  minReplicaCount: 1            # Production baseline: no cold-starts
-  maxReplicaCount: 50           # Hard ceiling
-  advanced:
-    restoreToOriginalReplicaCount: true
-    horizontalPodAutoscalerConfig:
-      behavior:                 # Native HPA stabilization profiles
-        scaleDown:
-          stabilizationWindowSeconds: 300
-          policies:
-          - type: Percent
-            value: 10           # Smooth downscaling: max 10% per step
-            periodSeconds: 60
+    name: threat-analyzer
+  pollingInterval: 1            # Redis is polled every second
+  cooldownPeriod: 15            # Hold active state before scale-to-zero
+  minReplicaCount: 0            # True scale-to-zero
+  maxReplicaCount: 10           # Hard ceiling
   triggers:
-    - type: kafka
-      metadata:
-        bootstrapServers: kafka.aurora.svc:9092
-        topic: payment-events
-        consumerGroup: billing-group
-        lagThreshold: "10"      # Target: 1 replica per 10 unread messages
+  - type: redis
+    metadata:
+      address: redis-service:6379
+      listName: security-alerts
+      listLength: "5"           # Target: 5 queued items per replica
+      activationListLength: "1" # Wake from zero on the first item
 ```
+
+**What the HPA shows:** `14/5 (avg)` means 14 queued items divided by the target of 5.
+The HPA estimates 3 replicas, while its own `MINPODS` may read `1` at runtime; KEDA still owns the zero boundary.
+
+---
+
+<!-- Live Redis demo -->
+## Live Demo: Queue Burst → Scale Out → Scale Down
+
+<div class="flow" style="display: flex; align-items: stretch; gap: 12px;">
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">1. Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">2. Burst</div><div class="plate">Add 500 items</div><div class="plate">Queue spikes</div></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">3. Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">4. Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
+</div>
+
+<br>
+
+> Verify consumption, not just replica count. A growing queue alone does not prove that workers can reach Redis or process the data.
+
+```bash
+kubectl exec -n keda-system $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') -- redis-cli EVAL 'for i=1,500 do redis.call("RPUSH","security-alerts","demo-"..i) end return 500' 0
+```
+
+The 500-item burst separates the queue spike from the built-in wave generator's continuous traffic.
+
+---
+
+<!-- Networking lesson -->
+## Scale-to-Zero Demo: Network Path Is a Dependency
+
+The Redis demo deliberately uses Cilium network policies in a default-deny environment.
+Allowed paths are explicit:
+
+- Load generator → Redis on TCP `6379`
+- Threat analyzer workers → Redis on TCP `6379`
+- KEDA operator → Redis to activate and poll metrics
+- KEDA metrics/API components → Kubernetes API and metrics traffic
+
+**Lesson:** autoscaling can appear healthy while Redis traffic is blocked. Watch queue depth, worker logs, ScaledObject status, HPA replicas, and pod connectivity together.
 
 ---
 
