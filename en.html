@@ -792,8 +792,6 @@ table { font-size: 22px; }
       <span class="hljs-attr">listLength:</span> <span class="hljs-string">&quot;5&quot;</span>           <span class="hljs-comment"># Target: 5 queued items per replica</span>
       <span class="hljs-attr">activationListLength:</span> <span class="hljs-string">&quot;1&quot;</span> <span class="hljs-comment"># Wake from zero on the first item</span>
 </code></pre>
-<p><strong>What the HPA shows:</strong> <code>14/5 (avg)</code> means 14 queued items divided by the target of 5.<br />
-The HPA estimates 3 replicas, while its own <code>MINPODS</code> may read <code>1</code> at runtime; KEDA still owns the zero boundary.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="18" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
@@ -814,21 +812,17 @@ table { font-size: 22px; }
 
 <h2 id="live-demo-queue-burst-%E2%86%92-scale-out-%E2%86%92-scale-down">Live Demo: Queue Burst → Scale Out → Scale Down</h2>
 <div class="flow" style="display: flex; align-items: stretch; gap: 12px;">
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">1. Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">2. Burst</div><div class="plate">Add 500 items</div><div class="plate">Queue spikes</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Wave</div><div class="plate">Demand increases</div><div class="plate">Backlog grows</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">3. Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">4. Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
 </div>
-<br />
-<blockquote>
-<p>Verify consumption, not just replica count. A growing queue alone does not prove that workers can reach Redis or process the data.</p>
-</blockquote>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash">kubectl <span class="hljs-built_in">exec</span> -n keda-system $(kubectl get pod -n keda-system -l app=redis -o jsonpath=<span class="hljs-string">&#x27;{.items[0].metadata.name}&#x27;</span>) -- redis-cli EVAL <span class="hljs-string">&#x27;for i=1,500 do redis.call(&quot;RPUSH&quot;,&quot;security-alerts&quot;,&quot;demo-&quot;..i) end return 500&#x27;</span> 0
-</code></pre>
-<p>The 500-item burst separates the queue spike from the built-in wave generator's continuous traffic.</p>
+<div style="text-align: center; margin-top: 16px; font-size: 0.8em;">
+  The demo runs in waves, with an optional manual surge to demonstrate scale-out.
+</div>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="19" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
