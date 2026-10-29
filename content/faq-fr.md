@@ -8,7 +8,7 @@
 
 **Q: Pourquoi KEDA plutôt qu'un HPA classique avec métriques personnalisées ? HPA v2 les supporte déjà.**
 
-A: Bien qu'HPA v2 supporte les métriques personnalisées, cela nécessite de déployer et maintenir une infrastructure complexe Prometheus Adapter. KEDA est entièrement "plug-and-play" avec 60+ sources d'événements intégrées. Plus important encore, HPA natif ne peut pas descendre à zéro — il ne peut que descendre à 1. KEDA est le seul mécanisme qui permet une consommation de ressources véritablement nulle quand inactif.
+A: HPA v2 prend en charge les métriques personnalisées et externes, mais chaque source doit être reliée à une infrastructure de métriques externe. KEDA fournit plus de 60 sources d'événements intégrées et gère les deux côtés de la mise à l'échelle : il réveille un workload à zéro et crée/gère le HPA utilisé pour la montée de un à N réplicas. Le HPA natif ne peut pas gérer à lui seul la limite zéro vers un, donc KEDA est le mécanisme pratique pour ce scénario.
 
 ---
 

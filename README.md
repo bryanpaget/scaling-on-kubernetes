@@ -76,20 +76,21 @@ Together they form a four-layer scaling stack:
 **Part 2: KEDA** - Event- and schedule-driven scaling
 6. What KEDA is (event-driven HPA, scale-to-zero)
 7. Aurora's platform-native `offHoursScaling` feature
-8. Manual ScaledObject configuration for events and cron
-9. Production guardrails (scale-to-zero in non-prod only, avoid oscillation)
+8. Manual ScaledObject configuration for Redis queues, events, and cron
+9. A real 500-event Redis burst demo plus queue, HPA, and worker log views
+10. Production guardrails (scale-to-zero in non-prod only, avoid oscillation, allow network paths)
 
 **Part 3: Karpenter** - Just-in-time node provisioning
-10. What Karpenter is vs Cluster Autoscaler (per-demand vs fixed pools)
-11. The Watch → Provision → Consolidate loop
-12. NodePool as source of truth (multicloud: AWS/Azure/on-prem + GKE via CloudPilot)
-13. Aurora's adoption plan and provider maturity notes
-14. Risks and consolidation tradeoffs
+11. What Karpenter is vs Cluster Autoscaler (per-demand vs fixed pools)
+12. The Watch → Provision → Consolidate loop
+13. NodePool as source of truth (multicloud: AWS/Azure/on-prem + GKE via CloudPilot)
+14. Aurora's adoption plan and provider maturity notes
+15. Risks and consolidation tradeoffs
 
 **Part 4: Interactions & Anti-Patterns** - Putting them together
-15. How all four axes layer: replica decisions + size decisions → node demand
-16. Conflict rules: VPA + KEDA (never same resource), KEDA + your own HPA (don't), VPA + Karpenter (complementary)
-17. Anti-patterns: oscillation, aggressive consolidation without PDBs, no resource bounds  
+16. How all three axes layer: replica decisions + size decisions → node demand
+17. Conflict rules: VPA + KEDA (never the same resource), KEDA + your own HPA (don't), VPA + Karpenter (complementary)
+18. Anti-patterns: oscillation, aggressive consolidation without PDBs, no resource bounds
 
 ---
 

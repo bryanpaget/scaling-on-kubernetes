@@ -8,7 +8,7 @@
 
 **Q: Why KEDA instead of plain HPA with custom/external metrics? HPA v2 already supports those.**
 
-A: While HPA v2 supports custom metrics, it requires deploying and maintaining complex Prometheus Adapter infrastructure. KEDA is entirely plug-and-play with 60+ built-in event sources. More importantly, native HPA cannot scale to zero—it can only scale down to 1. KEDA is the only mechanism that allows true zero resource consumption when idle.
+A: HPA v2 supports custom and external metrics, but connecting every source requires an external metrics pipeline. KEDA provides 60+ built-in event sources and manages both sides of the scaling boundary: it activates a workload from zero and creates/owns the HPA used for one-to-N scaling. Native HPA cannot reliably evaluate or activate scale-to-zero by itself, so KEDA is the practical managed mechanism for this pattern.
 
 ---
 
