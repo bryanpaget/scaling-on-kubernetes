@@ -4,8 +4,25 @@ on:
   push:
     branches: [main]
     paths:
-      - 'content/*.md'
-      - 'config/*'
+      - 'content/**'
+      - 'config/**'
+      - 'img/**'
+      - 'Makefile'
+      - 'postprocess.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/marp-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'content/**'
+      - 'config/**'
+      - 'img/**'
+      - 'Makefile'
+      - 'postprocess.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/marp-build.yml'
   workflow_dispatch:
 
 jobs:
@@ -22,9 +39,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
 
-      - name: Install Marp CLI
-        run: npm install -g @marp-team/marp-cli
+      - name: Install dependencies
+        run: npm ci
 
       - name: Install Chromium
         run: |
@@ -34,7 +52,25 @@ jobs:
       - name: Build HTML presentation
         run: make html
 
+      - name: Upload built site
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages-site
+          path: docs/
+
+      - name: Commit generated site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: rebuild GitHub Pages site [skip ci]" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            git push origin HEAD:main
+          fi
+
       - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
