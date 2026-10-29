@@ -392,33 +392,24 @@ spec:
       activationListLength: "1" # Wake from zero on the first item
 ```
 
-**What the HPA shows:** `14/5 (avg)` means 14 queued items divided by the target of 5.
-The HPA estimates 3 replicas, while its own `MINPODS` may read `1` at runtime; KEDA still owns the zero boundary.
-
 ---
 
 <!-- Live Redis demo -->
 ## Live Demo: Queue Burst → Scale Out → Scale Down
 
 <div class="flow" style="display: flex; align-items: stretch; gap: 12px;">
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">1. Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">2. Burst</div><div class="plate">Add 500 items</div><div class="plate">Queue spikes</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Wave</div><div class="plate">Demand increases</div><div class="plate">Backlog grows</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">3. Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">4. Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
 </div>
 
-<br>
-
-> Verify consumption, not just replica count. A growing queue alone does not prove that workers can reach Redis or process the data.
-
-```bash
-kubectl exec -n keda-system $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') -- redis-cli EVAL 'for i=1,500 do redis.call("RPUSH","security-alerts","demo-"..i) end return 500' 0
-```
-
-The 500-item burst separates the queue spike from the built-in wave generator's continuous traffic.
+<div style="text-align: center; margin-top: 16px; font-size: 0.8em;">
+  The demo runs in waves, with an optional manual surge to demonstrate scale-out.
+</div>
 
 ---
 
