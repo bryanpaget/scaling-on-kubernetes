@@ -286,17 +286,17 @@ spec:
 <!-- What is KEDA -->
 ## What is KEDA?
 
-**Kubernetes Event-Driven Autoscaler:** a metrics broker that connects external event sources to native Kubernetes horizontal scaling.
+Scale replicas on events, not just CPU/memory.
 
-- **Metric broker:** bridges cloud and on-prem event streams without custom adapters
-- **Beyond CPU/memory:** scales on queue depth, schedules, and custom metrics
-- **Scale-to-zero:** the standard, reliable way in Kubernetes to scale a workload to zero replicas
-- **CRD-driven:** `ScaledObject` for Deployments/StatefulSets, `ScaledJob` for batch work
+- **Bridges** external systems (Kafka, Redis, queues) to native HPA
+- **Scales to zero** — standard way in Kubernetes to scale to zero replicas
+- **CRD-driven** — `ScaledObject` for deployments, `ScaledJob` for batches
+- **Two controllers** — Operator handles 0↔1, Metrics Server handles 1→N
 
 <br>
 
 <blockquote>
-HPA watches the consequence of load (CPU). KEDA watches the origin of load (events). Scale-to-zero trades cost for cold-start latency — tuning cooldown and stabilization windows controls scale-down timing.
+HPA watches the consequence of load (CPU). KEDA watches the origin of load (events).
 </blockquote>
 
 ---
@@ -329,14 +329,10 @@ KEDA splits responsibilities so scaling stays fast without burdening the cluster
   </div>
 </div>
 
-<br>
-
-> One pipeline, two engines: the Operator wakes a workload from zero; the Metrics Server supplies metrics that HPA uses from one upward.
-
 ---
 
 <!-- KEDA scale-to-zero -->
-## KEDA Scale-to-Zero: How It Works
+## Scale-to-Zero: How It Works
 
 Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero boundary itself.
 

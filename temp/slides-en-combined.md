@@ -317,17 +317,17 @@ spec:
 <!-- What is KEDA -->
 ## What is KEDA?
 
-**Kubernetes Event-Driven Autoscaler:** a metrics broker that connects external event sources to native Kubernetes horizontal scaling.
+Scale replicas on events, not just CPU/memory.
 
-- **Metric broker:** bridges cloud and on-prem event streams without custom adapters
-- **Beyond CPU/memory:** scales on queue depth, schedules, and custom metrics
-- **Scale-to-zero:** the standard, reliable way in Kubernetes to scale a workload to zero replicas
-- **CRD-driven:** `ScaledObject` for Deployments/StatefulSets, `ScaledJob` for batch work
+- **Bridges** external systems (Kafka, Redis, queues) to native HPA
+- **Scales to zero** — standard way in Kubernetes to scale to zero replicas
+- **CRD-driven** — `ScaledObject` for deployments, `ScaledJob` for batches
+- **Two controllers** — Operator handles 0↔1, Metrics Server handles 1→N
 
 <br>
 
 <blockquote>
-HPA watches the consequence of load (CPU). KEDA watches the origin of load (events). Scale-to-zero trades cost for cold-start latency — tuning cooldown and stabilization windows controls scale-down timing.
+HPA watches the consequence of load (CPU). KEDA watches the origin of load (events).
 </blockquote>
 
 ---
@@ -360,14 +360,10 @@ KEDA splits responsibilities so scaling stays fast without burdening the cluster
   </div>
 </div>
 
-<br>
-
-> One pipeline, two engines: the Operator wakes a workload from zero; the Metrics Server supplies metrics that HPA uses from one upward.
-
 ---
 
 <!-- KEDA scale-to-zero -->
-## KEDA Scale-to-Zero: How It Works
+## Scale-to-Zero: How It Works
 
 Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero boundary itself.
 
@@ -423,33 +419,24 @@ spec:
       activationListLength: "1" # Wake from zero on the first item
 ```
 
-**What the HPA shows:** `14/5 (avg)` means 14 queued items divided by the target of 5.
-The HPA estimates 3 replicas, while its own `MINPODS` may read `1` at runtime; KEDA still owns the zero boundary.
-
 ---
 
 <!-- Live Redis demo -->
 ## Live Demo: Queue Burst → Scale Out → Scale Down
 
 <div class="flow" style="display: flex; align-items: stretch; gap: 12px;">
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">1. Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">2. Burst</div><div class="plate">Add 500 items</div><div class="plate">Queue spikes</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Wave</div><div class="plate">Demand increases</div><div class="plate">Backlog grows</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">3. Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
   <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">4. Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
+  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
 </div>
 
-<br>
-
-> Verify consumption, not just replica count. A growing queue alone does not prove that workers can reach Redis or process the data.
-
-```bash
-kubectl exec -n keda-system $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') -- redis-cli EVAL 'for i=1,500 do redis.call("RPUSH","security-alerts","demo-"..i) end return 500' 0
-```
-
-The 500-item burst separates the queue spike from the built-in wave generator's continuous traffic.
+<div style="text-align: center; margin-top: 16px; font-size: 0.8em;">
+  The demo runs in waves, with an optional manual surge to demonstrate scale-out.
+</div>
 
 ---
 

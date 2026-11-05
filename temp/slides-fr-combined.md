@@ -266,22 +266,27 @@ spec:
 
 ### Mise à l'échelle des réplicas selon la demande réelle
 
-**KEDA (Kubernetes Event-Driven Autoscaler)** : un courtier de métriques qui relie les sources d'événements externes au scaling horizontal natif de Kubernetes.
+---
 
-- **Courtier de métriques :** relie les flux d'événements cloud et on-premises sans adaptateurs personnalisés
-- **Au-delà du CPU/mémoire :** mise à l'échelle selon la profondeur de file, les horaires et les métriques personnalisées
-- **Scale-to-zero :** méthode standard et fiable pour amener un workload à zéro réplicas
-- **Piloté par les CRD :** `ScaledObject` pour les Deployments/StatefulSets, `ScaledJob` pour les travaux par lots
+<!-- What is KEDA -->
+## Qu'est-ce que KEDA ?
+
+Mettre à l'échelle sur événements, pas seulement sur CPU/mémoire.
+
+- **Relie** les systèmes externes (Kafka, Redis, files) à l'HPA natif
+- **Descente à zéro** — méthode standard pour amener un workload à zéro
+- **Piloté par les CRD** — `ScaledObject` pour deployments, `ScaledJob` pour batches
+- **Deux contrôleurs** — Opérateur gère 0↔1, Metrics Server gère 1→N
 
 <br>
 
 <blockquote>
-L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origine (les événements). La descente à zéro économise des ressources, mais ajoute une latence de démarrage — le timing dépend du cooldown et des fenêtres de stabilisation configurées.
+L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origine (les événements).
 </blockquote>
 
 ---
 
-<!-- Architecture KEDA en profondeur -->
+<!-- Architecture KEDA -->
 ## Architecture de KEDA : Le moteur à double contrôleur
 
 KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des performances élevées sans bloquer le plan de contrôle de votre cluster.
@@ -311,13 +316,14 @@ KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des pe
 
 <br>
 
-<br>
-
 > Une même chaîne, deux moteurs : l'Operator réveille un workload à partir de zéro; le Metrics Server fournit les métriques que HPA utilise à partir d'une réplique.
 
-## KEDA Scale-to-Zero : Comment ça fonctionne
+---
 
-La mise à l'échelle à zéro nécessite une coordination approfondie car un HPA natif de Kubernetes ne peut pas évaluer un workload à `0` réplica.
+<!-- KEDA Scale-to-Zero -->
+## Mise à l'échelle à zéro : Comment ça fonctionne
+
+La mise à l'échelle à zéro nécessite une coordination car un HPA natif ne peut pas évaluer un workload à `0` réplica.
 
 <div class="flow">
   <div class="flow-box" style="width: 23%;">
