@@ -257,22 +257,50 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 ## Démo Redis KEDA : Mise à l'échelle événementielle
 
 **Configuration:**
-- File Redis → Générateur de trafic (vagues) → Analyseur de menaces (workers avec KEDA)
-- Polices réseau Cilium pour que l'opérateur KEDA interroge Redis
+- File Redis → Générateur de trafic (vagues: 10-50 tous les 5s, pause 60s tous les 10 vagues)
+- Analyseur de menaces workers consomme les messages
+- Polices réseau Cilium pour opérateur + workers
 
 **À surveiller:**
-- Profondeur de file (retard)
+- Profondeur de file (retard) — `redis-cli LLEN security-alerts`
 - Nombre de workers (0 → 10)
-- Statut ScaledObject KEDA
+- Statut ScaledObject
 
 **Points clés:**
 - `pollingInterval: 1` — Redis interrogé chaque seconde
 - `cooldownPeriod: 15` — Maintien avant descente à zéro
 - `activationListLength: 1` — Réveil à zéro dès le premier élément
+- `listLength: 5` — Cible 5 éléments par réplica
+
+**Commandes de démo:**
+1. Appliquer: `kubectl apply -f redis-demo.yaml`
+2. Scaling: `kubectl get pods,hpa,scaledobject -n keda-system -w`
+3. File: `watch -n 1 "kubectl exec ... redis-cli LLEN security-alerts"`
+4. Logs workers: `stern -n keda-system -l app=threat-analyzer`
 
 <br>
 
-> **Démo:** Regardez la file se vider et les workers redescendre à zéro.
+> **Démo:** Regardez pic file → montée → vidage → descente à zéro.
+
+---
+
+<!-- Live Redis demo -->
+## Démo: Rafale 500 éléments → Montée → Descente
+
+```bash
+kubectl exec -n keda-system \
+  $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') \
+  -- sh -c 'i=1; while [ $i -le 500 ]; do redis-cli RPUSH security-alerts demo-$i; i=$((i+1)); done'
+```
+
+Cycle attendu:
+```
+file=37  replicas=1
+file=0   replicas=4
+file=0   replicas=0   <- vidé et descends à zéro
+```
+
+**Leçon réseau:** Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites pour interroger Redis. L'autoscaling peut paraître sain alors que le trafic Redis est bloqué.
 
 ---
 
