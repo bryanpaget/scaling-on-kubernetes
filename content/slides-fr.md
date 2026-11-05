@@ -262,22 +262,6 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 - Workers de l'analyseur de menaces consomment les messages
 - KEDA met à l'échelle les workers selon la profondeur de file
 
-**Setup de la démo:**
-- `kubectl apply -f redis-demo.yaml`
-- Les workers commencent à 0 réplicas (descente à zéro)
-- La profondeur de file reste près de zéro pendant les vagues normales
-
-**Point clé:**
-- `listLength: 5` — Chaque réplica gère ~5 signaux en file
-- `activationListLength: 1` — Le premier signal réveille les workers depuis zéro
-- `cooldownPeriod: 15` — Maintien avant de remettre à l'échelle vers le bas
-
-**Pour la rafale de démo:**
-- Envoyer 500 items instantanément
-- La file monte en flèche → les workers montent en charge
-- Les workers vidagent le backlog
-- La file atteint zéro → cooldown → remise à l'échelle vers zéro
-
 ---
 
 <!-- Live Demo: Rafale 500 éléments -->
@@ -289,25 +273,10 @@ kubectl exec -n keda-system \
   -- sh -c 'i=1; while [ $i -le 500 ]; do redis-cli RPUSH security-alerts demo-$i; i=$((i+1)); done'
 ```
 
-Cycle attendu:
-```
-file=37  replicas=1
-file=0   replicas=4
-file=0   replicas=0   <- vidé et remise à l'échelle vers zéro
-```
-
-**Leçon réseau:** Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites pour interroger Redis. L'autoscaling peut paraître sain alors que le trafic Redis est bloqué.
-
----
-
-<!-- À surveiller -->
-## À surveiller
-
-| Pane | Commande |
-|------|----------|
-| **État du scaling** | `kubectl get pods,hpa,scaledobject -n keda-system -w` |
-| **Profondeur de file** | `kubectl exec ... redis-cli LLEN security-alerts` |
-| **Logs workers** | `stern -n keda-system -l app=threat-analyzer` |
+- Envoyer 500 items instantanément
+- La file monte en flèche → les workers montent en charge
+- Les workers vidagent le backlog
+- La file atteint zéro → cooldown → remise à l'échelle vers zéro
 
 ---
 
@@ -340,19 +309,24 @@ spec:
 <!-- Leçon réseau -->
 ## Polices réseau : Critique pour KEDA
 
-**Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites:**
+**Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites pour interroger les sources de déclenchement:**
 
 ```yaml
-# Autoriser l'opérateur KEDA à interroger Redis
+# Autoriser l'opérateur KEDA à atteindre les sources de déclenchement
 - fromEndpoints:
     - matchLabels: app: keda-operator
   toEndpoints:
-    - matchLabels: app: redis
+    - matchLabels: <source-declenchement>
   toPorts:
-    - port: "6379"
+    - port: "<port-source>"
 ```
 
-**Pourquoi c'est important:** L'autoscaling peut paraître en bonne santé alors que le trafic Redis est bloqué. Vérifiez la connectivité.
+**Pourquoi c'est important:** L'autoscaling peut paraître sain alors que le trafic de déclenchement est bloqué. Vérifiez la connectivité de bout en bout — l'opérateur interroge les déclencheurs, pas l'HPA.
+
+**Pattern dans différents environnements:**
+- **Aurora:** Polices globales au niveau du cluster + politiques Cilium par application
+- **Autres environnements:** Pattern similaire, configuration réseau adaptée à la plateforme
+- **Clé:** Assurez-vous que l'opérateur KEDA peut atteindre toutes les sources de déclenchement (Redis, Kafka, Prometheus, etc.)
 
 ---
 

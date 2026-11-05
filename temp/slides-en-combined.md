@@ -388,19 +388,24 @@ spec:
 <!-- Networking lesson -->
 ## Network Policies: Critical for KEDA
 
-**In Cilium clusters, KEDA operator needs explicit egress policies:**
+**In Cilium clusters, KEDA operator needs explicit egress policies to poll triggers:**
 
 ```yaml
-# Allow KEDA operator to poll Redis
+# Allow KEDA operator to reach trigger sources
 - fromEndpoints:
     - matchLabels: app: keda-operator
   toEndpoints:
-    - matchLabels: app: redis
+    - matchLabels: <trigger-source>
   toPorts:
-    - port: "6379"
+    - port: "<trigger-port>"
 ```
 
-**Why this matters:** Autoscaling can appear healthy while Redis traffic is blocked. Verify connectivity.
+**Why this matters:** Autoscaling can appear healthy while trigger traffic is blocked. Verify connectivity end to end — the operator polls triggers, not the HPA.
+
+**Pattern across environments:**
+- **Aurora:** Global cluster-wide policies + per-app Cilium policies
+- **Other environments:** Similar pattern, network config adapts to platform
+- **Key:** Ensure KEDA operator can reach all trigger sources (Redis, Kafka, Prometheus, etc.)
 
 ---
 
