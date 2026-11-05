@@ -288,34 +288,35 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 ## Démo Redis KEDA : Mise à l'échelle événementielle
 
 **Configuration:**
-- File Redis → Générateur de trafic (vagues: 10-50 tous les 5s, pause 60s tous les 10 vagues)
-- Analyseur de menaces workers consomme les messages
-- Polices réseau Cilium pour opérateur + workers
+- File Redis stocke les messages de travail
+- Générateur pousse des messages en vagues (10-50 tous les 5s, puis pause de 60s tous les 10 vagues)
+- Workers de l'analyseur de menaces consomment les messages
+- KEDA met à l'échelle les workers selon la profondeur de file
+
+**Setup de la démo:**
+- `kubectl apply -f redis-demo.yaml`
+- Les workers commencent à 0 réplicas (descente à zéro)
+- La profondeur de file reste près de zéro pendant les vagues normales
 
 **À surveiller:**
-- Profondeur de file (retard) — `redis-cli LLEN security-alerts`
-- Nombre de workers (0 → 10)
-- Statut ScaledObject
+- Profondeur de file — `kubectl exec ... redis-cli LLEN security-alerts`
+- Nombre de workers — `kubectl get pods -n keda-system -w`
+- Statut ScaledObject — `kubectl get scaledobject -n keda-system`
 
-**Points clés:**
-- `pollingInterval: 1` — Redis interrogé chaque seconde
-- `cooldownPeriod: 15` — Maintien avant descente à zéro
-- `activationListLength: 1` — Réveil à zéro dès le premier élément
-- `listLength: 5` — Cible 5 éléments par réplica
+**Point clé:**
+- `listLength: 5` — Chaque réplica gère ~5 éléments en file
+- `activationListLength: 1` — Le premier élément réveille les workers depuis zéro
+- `cooldownPeriod: 15` — Maintien avant de remettre à l'échelle vers le bas
 
-**Commandes de démo:**
-1. Appliquer: `kubectl apply -f redis-demo.yaml`
-2. Scaling: `kubectl get pods,hpa,scaledobject -n keda-system -w`
-3. File: `watch -n 1 "kubectl exec ... redis-cli LLEN security-alerts"`
-4. Logs workers: `stern -n keda-system -l app=threat-analyzer`
-
-<br>
-
-> **Démo:** Regardez pic file → montée → vidage → descente à zéro.
+**Pour la rafale de démo:**
+- Envoyer 500 items instantanément
+- La file monte en flèche → les workers montent en charge
+- Les workers vidagent le backlog
+- La file atteint zéro → cooldown → remise à l'échelle vers zéro
 
 ---
 
-<!-- Live Redis demo -->
+<!-- Live Demo: Rafale 500 éléments -->
 ## Démo: Rafale 500 éléments → Montée → Descente
 
 ```bash
@@ -328,7 +329,7 @@ Cycle attendu:
 ```
 file=37  replicas=1
 file=0   replicas=4
-file=0   replicas=0   <- vidé et descends à zéro
+file=0   replicas=0   <- vidé et remise à l'échelle vers zéro
 ```
 
 **Leçon réseau:** Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites pour interroger Redis. L'autoscaling peut paraître sain alors que le trafic Redis est bloqué.

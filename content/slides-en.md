@@ -305,34 +305,35 @@ HPA watches the consequence of load (CPU). KEDA watches the origin of load (even
 ## KEDA Redis Demo: Event-Driven Scaling
 
 **Setup:**
-- Redis queue → Load generator (waves: 10-50 every 5s, pause 60s every 10 waves)
+- Redis queue stores work items
+- Load generator pushes messages in waves (10-50 every 5s, then 60s pause every 10 waves)
 - Threat analyzer workers consume messages
-- Cilium network policies for operator + workers to talk to Redis
+- KEDA scales workers based on queue depth
+
+**Demo setup:**
+- `kubectl apply -f redis-demo.yaml`
+- Workers start at 0 replicas (scale-to-zero)
+- Queue depth stays near zero during normal waves
 
 **What to watch:**
-- Queue depth (backlog) — `redis-cli LLEN security-alerts`
-- Worker pod count (0 → 10)
-- ScaledObject status
+- Queue depth — `kubectl exec ... redis-cli LLEN security-alerts`
+- Worker pod count — `kubectl get pods -n keda-system -w`
+- ScaledObject status — `kubectl get scaledobject -n keda-system`
 
-**Key takeaways:**
-- `pollingInterval: 1` — Redis checked every second
-- `cooldownPeriod: 15` — Hold before scale-to-zero
-- `activationListLength: 1` — Wake from zero on first item
-- `listLength: 5` — Target 5 items per replica
+**The key insight:**
+- `listLength: 5` — Each replica handles ~5 queued items
+- `activationListLength: 1` — First item wakes workers from zero
+- `cooldownPeriod: 15` — Hold before scaling back down
 
-**Demo flow:**
-1. Apply the manifest: `kubectl apply -f redis-demo.yaml`
-2. Watch scaling: `kubectl get pods,hpa,scaledobject -n keda-system -w`
-3. Queue depth: `watch -n 1 "kubectl exec ... redis-cli LLEN security-alerts"`
-4. Worker logs: `stern -n keda-system -l app=threat-analyzer`
-
-<br>
-
-> **Demo:** Watch queue spike → scale out → drain → scale to zero.
+**For the demo burst:**
+- Send 500 items instantly
+- Queue spikes → workers scale out
+- Workers drain the backlog
+- Queue hits zero → cooldown → scale back to zero
 
 ---
 
-<!-- Live Redis demo -->
+<!-- Live Demo: 500-Item Burst -->
 ## Live Demo: 500-Item Burst → Scale Out → Scale Down
 
 ```bash
