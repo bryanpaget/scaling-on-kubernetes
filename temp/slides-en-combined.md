@@ -400,12 +400,7 @@ spec:
     - port: "<trigger-port>"
 ```
 
-**Why this matters:** Autoscaling can appear healthy while trigger traffic is blocked. Verify connectivity end to end — the operator polls triggers, not the HPA.
-
-**Pattern across environments:**
-- **Aurora:** Global cluster-wide policies + per-app Cilium policies
-- **Other environments:** Similar pattern, network config adapts to platform
-- **Key:** Ensure KEDA operator can reach all trigger sources (Redis, Kafka, Prometheus, etc.)
+**Why this matters:** Autoscaling can appear healthy while trigger traffic is blocked. Verify connectivity end to end — the operator polls triggers, not the HPA. Ensure KEDA operator can reach all trigger sources (Redis, Kafka, Prometheus, etc.)
 
 ---
 
@@ -421,10 +416,6 @@ KEDA supports many scaler types beyond Redis queues:
 | **Kafka** | Event streaming workloads |
 | **Azure Service Bus** | Enterprise message queues |
 | **AWS SQS** | Cloud-native queues |
-
-<br>
-
-> **Design rule:** Use `TriggerAuthentication` CRDs — never put secrets in ScaledObject manifests.
 
 ---
 

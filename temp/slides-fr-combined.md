@@ -374,10 +374,6 @@ KEDA supporte plusieurs types de scalers au-delà des files Redis:
 | **Azure Service Bus** | Files d'attente d'entreprise |
 | **AWS SQS** | Files d'attente natives cloud |
 
-<br>
-
-> **Règle de conception:** Utilisez les CRD `TriggerAuthentication` — ne placez jamais de secrets dans les ScaledObjects.
-
 ---
 
 <!-- ============================ PARTIE 3 : Karpenter ============================ -->
