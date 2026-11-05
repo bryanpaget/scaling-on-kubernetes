@@ -123,33 +123,6 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 
 ---
 
-<!-- KEDA Redis Demo -->
-## Démo Redis KEDA : Mise à l'échelle événementielle
-
-**Configuration:**
-- File Redis stocke les signaux de sécurité des capteurs
-- Générateur pousse des messages en vagues (10-50 tous les 5s, puis pause de 60s tous les 10 vagues)
-- Workers de l'analyseur de menaces consomment les messages
-- KEDA met à l'échelle les workers selon la profondeur de file
-
----
-
-<!-- Live Demo: Rafale 500 éléments -->
-## Démo: Rafale 500 éléments → Montée → Descente
-
-```bash
-kubectl exec -n keda-system \
-  $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') \
-  -- sh -c 'i=1; while [ $i -le 500 ]; do redis-cli RPUSH security-alerts demo-$i; i=$((i+1)); done'
-```
-
-- Envoyer 500 items instantanément
-- La file monte en flèche → les workers montent en charge
-- Les workers vidagent le backlog
-- La file atteint zéro → cooldown → remise à l'échelle vers zéro
-
----
-
 <!-- ScaledObject Example -->
 ## ScaledObject : La configuration
 
@@ -197,6 +170,33 @@ spec:
 - **Aurora:** Polices globales au niveau du cluster + politiques Cilium par application
 - **Autres environnements:** Pattern similaire, configuration réseau adaptée à la plateforme
 - **Clé:** Assurez-vous que l'opérateur KEDA peut atteindre toutes les sources de déclenchement (Redis, Kafka, Prometheus, etc.)
+
+---
+
+<!-- Démo Redis KEDA -->
+## Démo Redis KEDA : Mise à l'échelle événementielle
+
+**Configuration:**
+- File Redis stocke les signaux de sécurité des capteurs
+- Générateur pousse des messages en vagues (10-50 tous les 5s, puis pause de 60s tous les 10 vagues)
+- Workers de l'analyseur de menaces consomment les messages
+- KEDA met à l'échelle les workers selon la profondeur de file
+
+---
+
+<!-- Live Demo: Rafale 500 éléments -->
+## Démo: Rafale 500 éléments → Montée → Descente
+
+```bash
+kubectl exec -n keda-system \
+  $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') \
+  -- sh -c 'i=1; while [ $i -le 500 ]; do redis-cli RPUSH security-alerts demo-$i; i=$((i+1)); done'
+```
+
+- Envoyer 500 items instantanément
+- La file monte en flèche → les workers montent en charge
+- Les workers vidagent le backlog
+- La file atteint zéro → cooldown → remise à l'échelle vers zéro
 
 ---
 

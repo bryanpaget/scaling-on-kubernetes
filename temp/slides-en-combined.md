@@ -232,6 +232,33 @@ spec:
 
 ---
 
+<!-- KEDA Redis Demo -->
+## KEDA Redis Demo: Event-Driven Scaling
+
+**Setup:**
+- Redis queue stores security signals from sensors
+- Load generator pushes messages in waves (10-50 every 5s, then 60s pause every 10 waves)
+- Threat analyzer workers consume messages
+- KEDA scales workers based on queue depth
+
+---
+
+<!-- Live Demo: 500-Item Burst -->
+## Live Demo: 500-Item Burst → Scale Out → Scale Down
+
+```bash
+kubectl exec -n keda-system \
+  $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') \
+  -- sh -c 'i=1; while [ $i -le 500 ]; do redis-cli RPUSH security-alerts demo-$i; i=$((i+1)); done'
+```
+
+- Send 500 items instantly
+- Queue spikes → workers scale out
+- Workers drain the backlog
+- Queue hits zero → cooldown → scale back to zero
+
+---
+
 <!-- Trigger portfolio -->
 ## Production Trigger Types
 
