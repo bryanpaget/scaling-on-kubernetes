@@ -652,16 +652,16 @@ table { font-size: 22px; }
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
 <h2 id="what-is-keda">What is KEDA?</h2>
-<p><strong>Kubernetes Event-Driven Autoscaler:</strong> a metrics broker that connects external event sources to native Kubernetes horizontal scaling.</p>
+<p>Scale replicas on events, not just CPU/memory.</p>
 <ul>
-<li><strong>Metric broker:</strong> bridges cloud and on-prem event streams without custom adapters</li>
-<li><strong>Beyond CPU/memory:</strong> scales on queue depth, schedules, and custom metrics</li>
-<li><strong>Scale-to-zero:</strong> the standard, reliable way in Kubernetes to scale a workload to zero replicas</li>
-<li><strong>CRD-driven:</strong> <code>ScaledObject</code> for Deployments/StatefulSets, <code>ScaledJob</code> for batch work</li>
+<li><strong>Bridges</strong> external systems (Kafka, Redis, queues) to native HPA</li>
+<li><strong>Scales to zero</strong> — standard way in Kubernetes to scale to zero replicas</li>
+<li><strong>CRD-driven</strong> — <code>ScaledObject</code> for deployments, <code>ScaledJob</code> for batches</li>
+<li><strong>Two controllers</strong> — Operator handles 0↔1, Metrics Server handles 1→N</li>
 </ul>
 <br />
 <blockquote>
-HPA watches the consequence of load (CPU). KEDA watches the origin of load (events). Scale-to-zero trades cost for cold-start latency — tuning cooldown and stabilization windows controls scale-down timing.
+HPA watches the consequence of load (CPU). KEDA watches the origin of load (events).
 </blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="15" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
@@ -705,10 +705,6 @@ table { font-size: 22px; }
     <div class="plate">Patches <code>spec.replicas</code> at zero</div>
   </div>
 </div>
-<br />
-<blockquote>
-<p>One pipeline, two engines: the Operator wakes a workload from zero; the Metrics Server supplies metrics that HPA uses from one upward.</p>
-</blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="16" data-paginate="true" data-background-color="#ffffff" data-header="Scaling on Kubernetes - SSC Aurora Platform" data-theme="default" data-style="section { font-size: 26px; }
 h1 { font-size: 36px; }
@@ -727,7 +723,7 @@ table { font-size: 22px; }
 ;background-color:#ffffff;background-image:none;" data-marpit-pagination-total="34" data-size="16:9">
 <header>Scaling on Kubernetes - SSC Aurora Platform</header>
 
-<h2 id="keda-scale-to-zero-how-it-works">KEDA Scale-to-Zero: How It Works</h2>
+<h2 id="scale-to-zero-how-it-works">Scale-to-Zero: How It Works</h2>
 <p>Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero boundary itself.</p>
 <div class="flow">
   <div class="flow-box" style="width: 23%;">
