@@ -36,11 +36,11 @@ style: |
 
 ![bg left:20%](./img/aurora.png)
 
-Scaling on Aurora: how three autoscalers fit together on different axes
+Scaling on Aurora: three autoscalers, three axes
 
-- **VPA** Vertical Pod Autoscaler: right-sizes pod CPU/memory requests
-- **KEDA** Kubernetes Event-driven Autoscaling: including scale-to-zero
-- **Karpenter**: Cloud-agnostic, just-in-time node provisioning and consolidation
+- **VPA** — right-sizes pod CPU/memory requests
+- **KEDA** — scales replicas on events: queue depth, schedules, metrics
+- **Karpenter** — provisions right-sized nodes just-in-time
 
 <br>
 
@@ -92,214 +92,42 @@ Replica count × per-pod size = pending-pod demand that Karpenter satisfies.
 <!-- VPA section divider -->
 # Part 1: VPA
 ## Vertical Pod Autoscaling
-### Right-sizing pod resources
-
-![bg left:30%](./img/aurora.png)
 
 ---
 
 <!-- What is VPA -->
 ## What is VPA?
 
-**Vertical Pod Autoscaler** adjusts the CPU and memory requests and limits of pods based on observed usage, within boundaries you define.
+**Vertical Pod Autoscaler** adjusts pod CPU/memory requests/limits based on observed usage.
 
-- **Targets:** workload CPU/memory requests & limits
+- **Targets:** workload requests & limits
 - **Workloads:** Deployments, StatefulSets, DaemonSets
-- **Architecture:** Recommender, Updater, Admission Controller
-- **Configuration:** use `controlledValues: RequestsOnly` to keep your own limits
+- **How:** Recommender analyzes usage → Updater applies → Admission Controller mutates at birth
 
 <br>
 
 <blockquote>
-HPA scales how many; VPA scales how much. Tip: start VPA in `Off` mode to gather data before enabling recommendations.
+HPA scales how many; VPA scales how much.
 </blockquote>
 
 ---
 
-<!-- Why VPA matters -->
-## Why VPA: Day-Zero Right-Sizing
+<!-- Why VPA -->
+## Why VPA
 
-The static baseline trap: engineers hardcode generic resource values at deploy time and never revisit them.
+The static baseline trap: hardcoded generic values at deploy time.
 
-**`Initial` mode sizes pods at creation.** VPA acts as a smart template injector at birth, with no production restart risk.
+**`Initial` mode:** Smart template injector at birth, zero runtime risk.
 
-- **Mutating at birth:** the Admission Controller intercepts pod creation before scheduling
-- **Profiles over guesses:** VPA replaces hardcoded values with data-driven targets based on usage history
-- **Zero churn:** once a pod is running, its resources are locked. VPA never evicts or restarts a live container
+- Mutating at birth: Admission Controller intercepts pod creation before scheduling
+- Profiles over guesses: Replaces hardcoded values with data-driven targets
+- Zero churn: Once running, resources locked. No evictions or restarts.
+
+<br>
 
 <blockquote>
 Lock in optimal footprints at birth, with zero runtime risk.
 </blockquote>
-
----
-
-<!-- How VPA works -->
-## How VPA Works
-
-Three components, one pipeline:
-
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">Recommender</div>
-    <div class="plate">Analyzes usage patterns</div>
-    <div class="plate">Calculates recommendations</div>
-    <div class="plate">Runs continuously</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Updater</div>
-    <div class="plate">Compares recs to current requests</div>
-    <div class="plate">Decides when to act</div>
-    <div class="plate">Respects PDBs & rollout strategy</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Admission Controller</div>
-    <div class="plate">Intercepts pod creation</div>
-    <div class="plate">Applies recommendations</div>
-    <div class="plate">Mutates requests at birth</div>
-  </div>
-</div>
-
----
-
-The Recommender watches metrics continuously and emits four values into VPA status:
-
-| Value | Meaning |
-|-------|---------|
-| **Target** | The sweet spot injected into new pods |
-| **Lower bound** | Under-provisioned floor; breach triggers upscale |
-| **Upper bound** | Over-provisioned ceiling; idling triggers downscale |
-| **Uncapped target** | Raw demand, ignoring your YAML safety caps |
-
-> A wide gap between Target and Uncapped Target means your safety rails are throttling performance.
-
----
-
-<!-- VPA modes -->
-## VPA Modes: A Risk Spectrum
-
-Each mode trades runtime stability against resource efficiency.
-
-<div class="flow" style="font-size: 0.85em; gap: 12px;">
-
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);">Off</div>
-    <div class="plate">Analysis only</div>
-    <div class="plate">No updates</div>
-    <div class="plate" style="font-size:17px; padding:8px;">Writes recommendations to status without touching the cluster.</div>
-  </div>
-
-  <div class="flow-arrow">&rarr;</div>
-
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%);">Initial</div>
-    <div class="plate">Sized at birth</div>
-    <div class="plate">No evictions</div>
-    <div class="plate" style="font-size:17px; padding:8px;"><b>Our default on Aurora.</b> Injects targets only at pod creation.</div>
-  </div>
-
-  <div class="flow-arrow">&rarr;</div>
-
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #f57c00 0%, #ffca28 100%);">InPlace</div>
-    <div class="plate">Live resizing</div>
-    <div class="plate">No evictions*</div>
-    <div class="plate" style="font-size:17px; padding:8px;">Resizes containers inside cgroups without dropping the process.</div>
-  </div>
-
-  <div class="flow-arrow">&rarr;</div>
-
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head" style="background: linear-gradient(135deg, #e53935 0%, #ff7043 100%);">Recreate</div>
-    <div class="plate">Hard eviction</div>
-    <div class="plate">Yes evictions</div>
-    <div class="plate" style="font-size:17px; padding:8px;">Use rarely. Restarts containers to resize them on boot.</div>
-  </div>
-
-</div>
-
-<br>
-
-> \* InPlace falls back to a standard rolling eviction if a node is full or the runtime cannot flex. If you want that fallback explicitly, use `InPlaceOrRecreate`.
-
----
-
-<!-- In-place resizing -->
-## In-Place Resizing: Live Right-Sizing
-
-Changes resource boundaries on the fly, with zero restarts or evictions. Four things must hold:
-
-<div class="flow" style="font-size: 0.85em; gap: 12px; margin-top: 20px;">
-
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Runtime Support</div>
-    <div class="plate">Elastic sizing</div>
-    <div class="plate" style="font-size:16px; padding:8px;">CPU scales freely. Memory needs dynamic cgroup tracking (e.g., JVM dynamic heap bounds).</div>
-  </div>
-
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Node Headroom</div>
-    <div class="plate">Physical space</div>
-    <div class="plate" style="font-size:16px; padding:8px;">The host must have spare capacity to grant an upward resize.</div>
-  </div>
-
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Downscale Caution</div>
-    <div class="plate">OOM risk</div>
-    <div class="plate" style="font-size:16px; padding:8px;">Shrinking memory too aggressively triggers instant kernel OOM kills.</div>
-  </div>
-
-  <div class="flow-box" style="width: 24%;">
-    <div class="plate plate-head">Platform Support</div>
-    <div class="plate">Feature gate active</div>
-    <div class="plate" style="font-size:16px; padding:8px;">Requires Kubernetes v1.27+ in-place resize support in the control plane.</div>
-  </div>
-
-</div>
-
----
-
-<!-- VPA example -->
-## VPA Example
-
-![bg left:20%](./img/aurora.png)
-
-```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: my-app
-  updatePolicy:
-    updateMode: "Initial"   # or "InPlace"
-  resourcePolicy:
-    containerPolicies:
-      - containerName: "*"
-        minAllowed: { cpu: 50m, memory: 64Mi }
-        maxAllowed: { cpu: 500m, memory: 512Mi }
-        controlledValues: "RequestsAndLimits"  # or "RequestsOnly"
-        controlledResources: ["cpu", "memory"]
-```
-
----
-
-<!-- VPA limitations -->
-## VPA: When Not to Use It
-
-![bg left:20%](./img/aurora.png)
-
-- **Spiky workloads:** VPA reacts to history; sudden bursts stay under-provisioned until it catches up
-- **JVM / heap-tuned apps:** raising memory requests does not change `-Xmx`; size the runtime, not just the pod
-- **Eviction-sensitive workloads:** avoid `Recreate` mode where restarts are costly
-- **Same resource as another autoscaler:** never let two controllers fight over CPU/memory (see Part 4)
-- **Very short-lived processes:** VPA needs time to collect and analyze usage data
-
-<br>
-
-> That's the "how much" axis. Next: KEDA decides how many replicas you need.
 
 ---
 

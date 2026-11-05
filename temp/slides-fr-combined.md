@@ -87,173 +87,43 @@ Nombre de réplicas × taille par pod = la demande de pods que Karpenter satisfa
 <!-- ============================ PARTIE 1: VPA ============================ -->
 <!-- VPA section divider -->
 # Partie 1 : VPA
-## Dimensionnement des ressources des pods
-
-![bg left:30%](./img/aurora.png)
+## Vertical Pod Autoscaling
 
 ---
 
-<!-- What is VPA? -->
+<!-- What is VPA -->
 ## Qu'est-ce que VPA ?
 
-**Vertical Pod Autoscaler :** ajuste automatiquement les demandes et limites CPU/mémoire des pods Kubernetes en fonction de l'utilisation en temps réel et des bornes prédéfinies
+**Vertical Pod Autoscaler** ajuste les demandes et limites CPU/mémoire des pods selon l'utilisation observée.
 
-* **Cibles :** Demandes et limites CPU/mémoire des workloads
-* **Workloads :** Deployments, StatefulSets, DaemonSets
-* **Architecture :** Recommandeur, Updateur, Contrôleur d'admission
-* **Natifs :** Mis en œuvre via les CRDs standards
-* **Configuration :** Utilisez `controlledValues: RequestsOnly` pour protéger les limites personnalisées
+- **Cibles :** demandes et limites CPU/mémoire
+- **Workloads :** Deployments, StatefulSets, DaemonSets
+- **Fonctionnement :** Recommandeur analyse → Updateur applique → Contrôleur d'admission mutate à la naissance
 
 <br>
 
 <blockquote>
-HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
+L'HPA met à l'échelle combien, VPA met à l'échelle quelle taille.
 </blockquote>
 
 ---
 
-<!-- Why VPA Matters: Initial Mode Focus -->
-## VPA en production : Dimensionnement à Day-Zero
+<!-- Pourquoi VPA -->
+## Pourquoi VPA
 
-La plus grande barrière à l'efficacité des ressources est le **piège de la base statique**—les ingénieurs codent en dur des valeurs génériques de ressources lors du déploiement et ne les modifient jamais.
+Le piège de la base statique : valeurs génériques codées en dur au déploiement.
 
-### Entrée en jeu du mode `Initial` : Le dimensionnement à la naissance du pod
-Au lieu de modifier dynamiquement l'infrastructure en cours d'exécution, VPA peut agir comme un **injecteur intelligent de template** au moment exact où un pod naît.
+**Mode `Initial` :** Injecteur intelligent à la naissance, risque zéro à l'exécution.
 
-* **Ingestion historique :** Le Recommandeur suit en continu l'empreinte réelle de votre application en production en arrière-plan.
-* **Mutation à la naissance :** Lorsqu'un déploiement déclenche un rollout ou qu'un pod redémarre, le Contrôleur d'admission intercepte la requête *avant* son planification.
-* **Télémétrie plutôt que devinettes :** VPA supprime les chiffres codés en dur par le développeur et injecte une cible de ressources exacte et pilotée par les données.
-* **Zéro churn en production :** Une fois le pod en cours d'exécution, VPA verrouille les paramètres. Il n'**éjectera ni ne redémarrera jamais** un conteneur en vol.
+- Mutation à la naissance : Contrôleur d'admission intercepte avant planification
+- Profils plutôt que devinettes : Valeurs basées sur l'historique d'utilisation
+- Zéro churn : Ressources verrouillées une fois en cours d'exécution
 
 <br>
 
 <blockquote>
-Profils plutôt que prédictions. Verrouillez l'empreinte optimale dès le jour zéro, sans risque runtime.
+Verrouillez l'empreinte optimale dès le jour zéro, sans risque runtime.
 </blockquote>
-
----
-
-<!-- How VPA Works -->
-## Comment VPA fonctionne : trois composants
-
-<div class="flow">
-  <div class="flow-box">
-    <div class="plate plate-head">Recommandeur</div>
-    <div class="plate">Analyse les modèles d'utilisation</div>
-    <div class="plate">Calcule les recommandations</div>
-    <div class="plate">S'exécute en continu</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Updateur</div>
-    <div class="plate">Vérifie les recommandations</div>
-    <div class="plate">Décide quand mettre à jour</div>
-    <div class="plate">Respecte les budgets de disruption de pod/rollout</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box">
-    <div class="plate plate-head">Contrôleur d'admission</div>
-    <div class="plate">Intercepte les requêtes</div>
-    <div class="plate">Applique les recommandations</div>
-    <div class="plate">Garantit des ressources adaptées</div>
-  </div>
-</div>
-
----
-
-<!-- How the Recommender works -->
-## Comment le Recommandeur fonctionne
-
-Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il ne modifie jamais les pods en cours d'exécution.
-<!-- Comment le Recommandeur fonctionne -->
-## Comment le Recommandeur fonctionne
-
-Le "cerveau" fondamental de VPA. Il ne fait que **proposer** des métriques - il ne modifie jamais les pods en cours d'exécution.
-
-1. **Surveillance continue** - Extrait la consommation réelle des ressources du Metrics Server/Prometheus
-2. **Analyse historique** - Moyenne mobile décroissante où les pics comptent le plus pour éliminer les OOM
-3. **Génération des cibles** - Calcule et écrit un **profil de zone 4** dans le champ Status VPA :
-   * **Cible :** L'optimum ressource parfait injecté dans vos pods
-   * **Limite inférieure :** La piste d'alerte sous-provisionnée ; déclenche une montée en charge si dépassée
-   * **Limite supérieure :** Le plafond gaspillage ; déclenche une descente si idle
-   * **Cible uncapped :** La vraie demande brute de l'application sans vos bornes YAML de sécurité
-
-<br>
-
-## Redimensionnement en place : right-sizing sans interruption
-
-Modifie l'allocation CPU et mémoire à la volée sans éviction ni redémarrage des pods en cours d'exécution.
-
-Pour obtenir une mise à l'échelle à interruption nulle, quatre couches doivent s'aligner :
-- **Runtime de l'application :** Les runtimes absorbent sans heurts la CPU supplémentaire, mais la mise à l'échelle mémoire exige le suivi dynamique des cgroups (ex: configurer les bornes du tas JVM)
-- **Capacité nœud :** Le nœud physique sous-jacent doit avoir immédiatement de la marge (capacité de rechange) pour accueillir une demande de montée en charge
-- **Gestion des risques :** Le downscaling exige des garde-fous ; réduire trop agressivement l'allocation mémoire déclenchera instantanément des tués OOM (Out-Of-Memory)
-- **Moteur plateforme :** Géré automatiquement par Aurora sur Kubernetes 1.27+ via le feature gate `InPlacePodVerticalScaling`
-
-<br>
-
-<blockquote>
-Fallback : <b>InPlaceOrRecreate</b> retourne à l'éviction si l'espace nœud ou la compatibilité runtime est verrouillée.
-</blockquote>
-
----
-
-<!-- VPA Modes -->
-## Modes VPA : choisissez votre profil de risque
-
-![bg left:20%](./img/aurora.png)
-
-| Mode | Met à jour pods existants | Éjecte | Usage en production |
-|------|---------------------------|--------|---------------------|
-| **Off** | Non | Non | Analyse seulement |
-| **Initial** | Non | Non | Recommandé pour prod |
-| **InPlace** | Oui (en place, sans eviction) | No* | Recommandé pour prod |
-| **InPlaceOrRecreate** | Oui (en place d'abord, puis recréation) | Oui (si InPlace échoue) | Équilibré, dev/test |
-| **Recreate** | Oui (seulement via eviction) | Oui | À utiliser rarement |
-| **Auto** | Déconseillé | Déconseillé | Ne pas utiliser |
-
----
-
-<!-- VPA example -->
-## Exemple VPA
-
-![bg left:20%](./img/aurora.png)
-
-```yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: my-app
-  updatePolicy:
-    updateMode: "Initial"   # ou "InPlace"
-  resourcePolicy:
-    containerPolicies:
-      - containerName: "*"
-        minAllowed: { cpu: 50m, memory: 64Mi }
-        maxAllowed: { cpu: 500m, memory: 512Mi }
-        controlledValues: "RequestsAndLimits"  # ou "RequestsOnly"
-        controlledResources: ["cpu", "memory"]
-```
-
----
-
-<!-- VPA limitations -->
-## VPA : quand NE PAS l'utiliser
-
-![bg left:20%](./img/aurora.png)
-
-- **Charges en pics :** VPA réagit à l'historique ; les pics soudains peuvent être sous-provisionnés
-- **Applications JVM / réglées sur le tas :** changer la mémoire ne change pas `-Xmx` ; dimensionnez le runtime
-- **Charges sensibles aux évictions :** évitez `Recreate` quand les redémarrages coûtent cher
-- **Même ressource que KEDA :** ne laissez jamais deux contrôleurs se disputer la même ressource (voir Partie 4)
-- **Processus très éphémères :** VPA a besoin de temps pour collecter et analyser les données d'utilisation
-
-<br>
-
-> **C'est l'axe 'quelle taille'.** Ensuite : KEDA décide *combien* de réplicas vous avez besoin.
 
 ---
 
