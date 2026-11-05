@@ -233,8 +233,6 @@ spec:
 
 ![bg left:30%](./img/aurora.png)
 
-### Mise à l'échelle des réplicas selon la demande réelle
-
 ---
 
 <!-- What is KEDA -->
@@ -255,81 +253,31 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 
 ---
 
-<!-- Architecture KEDA -->
-## Architecture de KEDA : Le moteur à double contrôleur
+<!-- KEDA Redis Demo -->
+## Démo Redis KEDA : Mise à l'échelle événementielle
 
-KEDA divise ses responsabilités en deux sous-systèmes afin de maintenir des performances élevées sans bloquer le plan de contrôle de votre cluster.
+**Configuration:**
+- File Redis → Générateur de trafic (vagues) → Analyseur de menaces (workers avec KEDA)
+- Polices réseau Cilium pour que l'opérateur KEDA interroge Redis
 
-<div class="flow">
-  <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">Sources de télémétrie</div>
-    <div class="plate">Lag Kafka</div>
-    <div class="plate">Profondeur de file Redis/RabbitMQ</div>
-    <div class="plate">Requêtes Prometheus</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">KEDA Metrics Server</div>
-    <div class="plate"><b>Fournit les valeurs pour 1 → N</b></div>
-    <div class="plate">Fournisseur de métriques externes HPA v2</div>
-    <div class="plate">HPA calcule le nombre de réplicas</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate"><b>Gère la limite 0 ↔ 1</b></div>
-    <div class="plate">Interroge et active les déclencheurs</div>
-    <div class="plate">Modifie <code>spec.replicas</code> à zéro</div>
-  </div>
-</div>
+**À surveiller:**
+- Profondeur de file (retard)
+- Nombre de workers (0 → 10)
+- Statut ScaledObject KEDA
+
+**Points clés:**
+- `pollingInterval: 1` — Redis interrogé chaque seconde
+- `cooldownPeriod: 15` — Maintien avant descente à zéro
+- `activationListLength: 1` — Réveil à zéro dès le premier élément
 
 <br>
 
-> Une même chaîne, deux moteurs : l'Operator réveille un workload à partir de zéro; le Metrics Server fournit les métriques que HPA utilise à partir d'une réplique.
+> **Démo:** Regardez la file se vider et les workers redescendre à zéro.
 
 ---
 
-<!-- KEDA Scale-to-Zero -->
-## Mise à l'échelle à zéro : Comment ça fonctionne
-
-La mise à l'échelle à zéro nécessite une coordination car un HPA natif ne peut pas évaluer un workload à `0` réplica.
-
-<div class="flow">
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Phase d'inactivité</div>
-    <div class="plate">Workload à <b>0 réplicas</b></div>
-    <div class="plate">HPA natif inactif</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Surveillance active</div>
-    <div class="plate"><b>Opérateur KEDA</b> surveille</div>
-    <div class="plate">Interroge flux événements toutes les <code>pollingInterval</code></div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Démarrage (kickstart)</div>
-    <div class="plate">Événements arrivent !</div>
-    <div class="plate">Patche <code>spec.replicas</code> de <b>0 à 1</b></div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Passage de relais</div>
-    <div class="plate">HPA s'active avec 1 pod</div>
-    <div class="plate"><b>Metrics Server KEDA</b> fournit les valeurs 1 → N</div>
-  </div>
-</div>
-
-<br>
-
-<blockquote>
-L'opérateur réveille le workload; le Metrics Server fournit les métriques que HPA utilise pour le mettre à l'échelle.
-</blockquote>
-
----
-
-<!-- Exemple de ScaledObject -->
-## KEDA : Exemple de ScaledObject
+<!-- ScaledObject Example -->
+## ScaledObject : La configuration
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -339,8 +287,8 @@ metadata:
 spec:
   scaleTargetRef:
     name: threat-analyzer
-  pollingInterval: 1            # Redis est interrogé chaque seconde
-  cooldownPeriod: 15            # Maintient l'état actif avant descente à zéro
+  pollingInterval: 1            # Redis interrogé chaque seconde
+  cooldownPeriod: 15            # Maintien avant descente à zéro
   minReplicaCount: 0            # Descente réelle à zéro
   maxReplicaCount: 10           # Plafond maximal
   triggers:
@@ -349,106 +297,50 @@ spec:
       address: redis-service:6379
       listName: security-alerts
       listLength: "5"           # Cible : 5 éléments par réplica
-      activationListLength: "1" # Réveille à zéro dès le premier élément
+      activationListLength: "1" # Réveil à zéro dès le premier élément
 ```
-
-**Valeur HPA observée:** `14/5 (avg)` signifie 14 éléments en attente pour une cible de 5.
-HPA estime environ 3 réplicas; même si son `MINPODS` affiche `1`, KEDA conserve la responsabilité du passage à zéro.
-
----
-
-<!-- Démonstration Redis en direct -->
-## Démo live : rafale → montée en charge → descente
-
-<div class="flow" style="display: flex; align-items: stretch; gap: 12px;">
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">1. Inactif</div><div class="plate">0 worker</div><div class="plate">File : 0</div></div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">2. Rafale</div><div class="plate">Ajouter 500 éléments</div><div class="plate">Pic de file</div></div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">3. Montée</div><div class="plate">HPA lit l'arriéré</div><div class="plate">Les workers drainent</div></div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">4. Descente</div><div class="plate">File à 0</div><div class="plate">Cooldown → 0 worker</div></div>
-</div>
-
-<br>
-
-> Vérifiez le traitement, pas seulement le nombre de réplicas. Une file croissante ne prouve pas que les workers peuvent joindre Redis ou traiter les données.
-
-```bash
-kubectl exec -n keda-system $(kubectl get pod -n keda-system -l app=redis -o jsonpath='{.items[0].metadata.name}') -- redis-cli EVAL 'for i=1,500 do redis.call("RPUSH","security-alerts","demo-"..i) end return 500' 0
-```
-
-La rafale de 500 éléments distingue clairement le pic de charge du trafic continu du générateur intégré.
 
 ---
 
 <!-- Leçon réseau -->
-## Démo Scale-to-Zero : le réseau est une dépendance
+## Polices réseau : Critique pour KEDA
 
-La démo Redis utilise des politiques réseau Cilium dans un environnement qui refuse le trafic par défaut.
-Les chemins autorisés sont explicites :
+**Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites:**
 
-- Générateur de charge → Redis sur TCP `6379`
-- Workers `threat-analyzer` → Redis sur TCP `6379`
-- Opérateur KEDA → Redis pour activer et interroger les métriques
-- KEDA Metrics/API → API Kubernetes et trafic de métriques
+```yaml
+# Autoriser l'opérateur KEDA à interroger Redis
+- fromEndpoints:
+    - matchLabels: app: keda-operator
+  toEndpoints:
+    - matchLabels: app: redis
+  toPorts:
+    - port: "6379"
+```
 
-**Leçon :** l'autoscaling peut sembler sain alors que le trafic Redis est bloqué. Surveillez ensemble la file, les logs workers, le ScaledObject, les réplicas HPA et la connectivité réseau.
+**Pourquoi c'est important:** L'autoscaling peut paraître en bonne santé alors que le trafic Redis est bloqué. Vérifiez la connectivité.
 
 ---
 
 <!-- Portfolio de déclencheurs de production -->
-## Portfolio de déclencheurs de production sur Aurora
+## Types de déclencheurs en production
 
-KEDA ne se limite pas aux files de messages. Combinez les types de déclencheurs selon la topologie.
+KEDA supporte plusieurs types de scalers au-delà des files Redis:
 
-<div class="flow" style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
-
-  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
-    <div class="plate plate-head" style="background: #2d7d9a;">Déclencheur de télémétrie</div>
-    <div class="plate"><b>Scaler Prometheus / Thanos</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Scalez selon la dynamique du trafic.</div>
-    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Débit entrant (RPS)<br>
-      • Taux d'erreurs HTTP<br>
-      • Latence des requêtes
-    </div>
-  </div>
-
-  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
-    <div class="plate plate-head" style="background: #2b6cb0;">Déclencheur prédictif</div>
-    <div class="plate"><b>Scaler Cron / calendrier</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Préchauffez selon des horaires connus.</div>
-    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Démarrage avant les périodes actives<br>
-      • Descente en fenêtres calmes<br>
-      • Réduit les démarrages à froid
-    </div>
-  </div>
-
-  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
-    <div class="plate plate-head" style="background: #2f855a;">Solution de repli</div>
-    <div class="plate"><b>Scaler CPU / mémoire</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Protégez la capacité si les événements ralentissent.</div>
-    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Couche secondaire<br>
-      • Déclenchement si la file bloque<br>
-      • Prévient la saturation
-    </div>
-  </div>
-
-</div>
+| Type | Cas d'usage |
+|------|-------------|
+| **Prometheus** | Mettre à l'échelle sur le débit, les taux d'erreurs, la latence |
+| **Cron** | Préchauffe avant des plages horaires connues |
+| **Kafka** | Workloads de streaming d'événements |
+| **Azure Service Bus** | Files d'attente d'entreprise |
+| **AWS SQS** | Files d'attente natives cloud |
 
 <br>
 
-> **Règle de conception :** liez les déclencheurs à des identifiants avec les CRD `TriggerAuthentication` — ne placez jamais de secrets dans les manifests ScaledObject.
+> **Règle de conception:** Utilisez les CRD `TriggerAuthentication` — ne placez jamais de secrets dans les ScaledObjects.
 
 ---
 
-# Partie 3 : Karpenter
-## Provisionnement de nœuds juste-à-temps
-
-![bg left:30%](./img/aurora.png)
+<!-- ============================ PARTIE 3 : Karpenter ============================ -->
 
 ---
 

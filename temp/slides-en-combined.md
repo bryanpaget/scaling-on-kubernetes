@@ -332,71 +332,31 @@ HPA watches the consequence of load (CPU). KEDA watches the origin of load (even
 
 ---
 
-<!-- KEDA architecture -->
-## KEDA Architecture: Two Controllers
+<!-- KEDA Redis Demo -->
+## KEDA Redis Demo: Event-Driven Scaling
 
-KEDA splits responsibilities so scaling stays fast without burdening the cluster control plane.
+**Setup:**
+- Redis queue → Load generator (waves) → Threat analyzer (KEDA-scaled workers)
+- Cilium network policies for KEDA operator to poll Redis
 
-<div class="flow">
-  <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">Telemetry Sources</div>
-    <div class="plate">Kafka lag</div>
-    <div class="plate">RabbitMQ depth</div>
-    <div class="plate">Prometheus queries</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">KEDA Metrics Server</div>
-    <div class="plate"><b>Supplies metrics for 1 → N scaling</b></div>
-    <div class="plate">Exposes external metrics to HPA v2</div>
-    <div class="plate">HPA calculates replica count</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 32%;">
-    <div class="plate plate-head">KEDA Operator</div>
-    <div class="plate"><b>Handles the 0 ↔ 1 boundary</b></div>
-    <div class="plate">Polls and activates triggers</div>
-    <div class="plate">Patches <code>spec.replicas</code> at zero</div>
-  </div>
-</div>
+**What to watch:**
+- Queue depth (backlog)
+- Worker pod count (0 → 10)
+- KEDA ScaledObject status
+
+**Key takeaways:**
+- `pollingInterval: 1` — Redis checked every second
+- `cooldownPeriod: 15` — Hold before scale-to-zero
+- `activationListLength: 1` — Wake from zero on first item
+
+<br>
+
+> **Demo:** Watch the queue drain and workers scale down to zero.
 
 ---
 
-<!-- KEDA scale-to-zero -->
-## Scale-to-Zero: How It Works
-
-Native HPA cannot evaluate a workload at zero replicas, so KEDA handles the zero boundary itself.
-
-<div class="flow">
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Idle Phase</div>
-    <div class="plate">Workload at 0 replicas</div>
-    <div class="plate">Native HPA dormant</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Active Probing</div>
-    <div class="plate">KEDA Operator watches</div>
-    <div class="plate">Polls event stream every <code>pollingInterval</code></div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Kickstart</div>
-    <div class="plate">Events arrive</div>
-    <div class="plate">Patches <code>spec.replicas</code> 0 → 1</div>
-  </div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;">
-    <div class="plate plate-head">Hand-Off</div>
-    <div class="plate">HPA activates at 1 pod</div>
-    <div class="plate">Metrics Server supplies 1 → N values</div>
-  </div>
-</div>
-
----
-
-<!-- KEDA example -->
-## KEDA: ScaledObject Example
+<!-- ScaledObject Example -->
+## ScaledObject: The Configuration
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -406,8 +366,8 @@ metadata:
 spec:
   scaleTargetRef:
     name: threat-analyzer
-  pollingInterval: 1            # Redis is polled every second
-  cooldownPeriod: 15            # Hold active state before scale-to-zero
+  pollingInterval: 1            # Redis polled every second
+  cooldownPeriod: 15            # Hold before scale-to-zero
   minReplicaCount: 0            # True scale-to-zero
   maxReplicaCount: 10           # Hard ceiling
   triggers:
@@ -415,91 +375,47 @@ spec:
     metadata:
       address: redis-service:6379
       listName: security-alerts
-      listLength: "5"           # Target: 5 queued items per replica
-      activationListLength: "1" # Wake from zero on the first item
+      listLength: "5"           # Target: 5 items per replica
+      activationListLength: "1" # Wake from zero on first item
 ```
 
 ---
 
-<!-- Live Redis demo -->
-## Live Demo: Queue Burst → Scale Out → Scale Down
-
-<div class="flow" style="display: flex; align-items: stretch; gap: 12px;">
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Idle</div><div class="plate">0 workers</div><div class="plate">Queue length: 0</div></div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Wave</div><div class="plate">Demand increases</div><div class="plate">Backlog grows</div></div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale out</div><div class="plate">HPA reads backlog</div><div class="plate">Workers drain items</div></div>
-  <div class="flow-arrow">&rarr;</div>
-  <div class="flow-box" style="width: 23%;"><div class="plate plate-head">Scale down</div><div class="plate">Queue reaches 0</div><div class="plate">Cooldown → 0 workers</div></div>
-</div>
-
-<div style="text-align: center; margin-top: 16px; font-size: 0.8em;">
-  The demo runs in waves, with an optional manual surge to demonstrate scale-out.
-</div>
-
----
-
 <!-- Networking lesson -->
-## Scale-to-Zero Demo: Network Path Is a Dependency
+## Network Policies: Critical for KEDA
 
-The Redis demo deliberately uses Cilium network policies in a default-deny environment.
-Allowed paths are explicit:
+**In Cilium clusters, KEDA operator needs explicit egress policies:**
 
-- Load generator → Redis on TCP `6379`
-- Threat analyzer workers → Redis on TCP `6379`
-- KEDA operator → Redis to activate and poll metrics
-- KEDA metrics/API components → Kubernetes API and metrics traffic
+```yaml
+# Allow KEDA operator to poll Redis
+- fromEndpoints:
+    - matchLabels: app: keda-operator
+  toEndpoints:
+    - matchLabels: app: redis
+  toPorts:
+    - port: "6379"
+```
 
-**Lesson:** autoscaling can appear healthy while Redis traffic is blocked. Watch queue depth, worker logs, ScaledObject status, HPA replicas, and pod connectivity together.
+**Why this matters:** Autoscaling can appear healthy while Redis traffic is blocked. Verify connectivity.
 
 ---
 
 <!-- Trigger portfolio -->
-## Production Trigger Portfolio on Aurora
+## Production Trigger Types
 
-KEDA is not just message queues. Mix scaler types across the topology.
+KEDA supports many scaler types beyond Redis queues:
 
-<div class="flow" style="display: flex; justify-content: space-between; align-items: stretch; gap: 15px;">
-
-  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2d7d9a;">
-    <div class="plate plate-head" style="background: #2d7d9a;">Telemetry Trigger</div>
-    <div class="plate"><b>Prometheus / Thanos Scaler</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Scale on live traffic dynamics.</div>
-    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Inbound request velocity (RPS)<br>
-      • HTTP error-rate spikes<br>
-      • Database query delays
-    </div>
-  </div>
-
-  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2b6cb0;">
-    <div class="plate plate-head" style="background: #2b6cb0;">Predictive Trigger</div>
-    <div class="plate"><b>Cron / Calendar Scaler</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Pre-warm for known schedules.</div>
-    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Spin up before shifts log in<br>
-      • Force scale-down in quiet windows<br>
-      • Avoids slow cold-starts
-    </div>
-  </div>
-
-  <div class="flow-box" style="width: 32%; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 6px; border-top: 4px solid #2f855a;">
-    <div class="plate plate-head" style="background: #2f855a;">Safety Fallback</div>
-    <div class="plate"><b>CPU / Memory Trigger</b></div>
-    <div class="plate" style="font-size: 0.9em; text-align: left; padding: 5px 0;">Protect capacity if event loops degrade.</div>
-    <div class="plate" style="font-size: 0.85em; color: #4A5568; text-align: left;">
-      • Secondary layer on top of events<br>
-      • Fires if the queue stalls<br>
-      • Prevents app exhaustion
-    </div>
-  </div>
-
-</div>
+| Type | Use case |
+|------|----------|
+| **Prometheus** | Scale on request rate, error rates, latency |
+| **Cron** | Pre-warm before known schedules |
+| **Kafka** | Event streaming workloads |
+| **Azure Service Bus** | Enterprise message queues |
+| **AWS SQS** | Cloud-native queues |
 
 <br>
 
-> **Design rule:** bind triggers to credentials with `TriggerAuthentication` CRDs — never put secrets in ScaledObject manifests.
+> **Design rule:** Use `TriggerAuthentication` CRDs — never put secrets in ScaledObject manifests.
 
 ---
 
