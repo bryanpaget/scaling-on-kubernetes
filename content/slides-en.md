@@ -305,7 +305,7 @@ HPA watches the consequence of load (CPU). KEDA watches the origin of load (even
 ## KEDA Redis Demo: Event-Driven Scaling
 
 **Setup:**
-- Redis queue stores work items
+- Redis queue stores security signals from sensors
 - Load generator pushes messages in waves (10-50 every 5s, then 60s pause every 10 waves)
 - Threat analyzer workers consume messages
 - KEDA scales workers based on queue depth
@@ -315,14 +315,9 @@ HPA watches the consequence of load (CPU). KEDA watches the origin of load (even
 - Workers start at 0 replicas (scale-to-zero)
 - Queue depth stays near zero during normal waves
 
-**What to watch:**
-- Queue depth — `kubectl exec ... redis-cli LLEN security-alerts`
-- Worker pod count — `kubectl get pods -n keda-system -w`
-- ScaledObject status — `kubectl get scaledobject -n keda-system`
-
-**The key insight:**
-- `listLength: 5` — Each replica handles ~5 queued items
-- `activationListLength: 1` — First item wakes workers from zero
+**Key insight:**
+- `listLength: 5` — Each replica handles ~5 queued signals
+- `activationListLength: 1` — First signal wakes workers from zero
 - `cooldownPeriod: 15` — Hold before scaling back down
 
 **For the demo burst:**
@@ -350,6 +345,17 @@ queue=0   replicas=0   <- drained and scaled to zero
 ```
 
 **Network lesson:** In Cilium clusters, KEDA operator needs explicit egress policies to poll Redis. Scaling can appear healthy while Redis traffic is blocked.
+
+---
+
+<!-- What to Watch -->
+## What to Watch
+
+| Pane | Command |
+|------|---------|
+| **Scaling state** | `kubectl get pods,hpa,scaledobject -n keda-system -w` |
+| **Queue depth** | `kubectl exec ... redis-cli LLEN security-alerts` |
+| **Worker logs** | `stern -n keda-system -l app=threat-analyzer` |
 
 ---
 

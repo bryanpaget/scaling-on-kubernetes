@@ -257,7 +257,7 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 ## Démo Redis KEDA : Mise à l'échelle événementielle
 
 **Configuration:**
-- File Redis stocke les messages de travail
+- File Redis stocke les signaux de sécurité des capteurs
 - Générateur pousse des messages en vagues (10-50 tous les 5s, puis pause de 60s tous les 10 vagues)
 - Workers de l'analyseur de menaces consomment les messages
 - KEDA met à l'échelle les workers selon la profondeur de file
@@ -267,14 +267,9 @@ L'HPA surveille la conséquence de la charge (le CPU). KEDA surveille son origin
 - Les workers commencent à 0 réplicas (descente à zéro)
 - La profondeur de file reste près de zéro pendant les vagues normales
 
-**À surveiller:**
-- Profondeur de file — `kubectl exec ... redis-cli LLEN security-alerts`
-- Nombre de workers — `kubectl get pods -n keda-system -w`
-- Statut ScaledObject — `kubectl get scaledobject -n keda-system`
-
 **Point clé:**
-- `listLength: 5` — Chaque réplica gère ~5 éléments en file
-- `activationListLength: 1` — Le premier élément réveille les workers depuis zéro
+- `listLength: 5` — Chaque réplica gère ~5 signaux en file
+- `activationListLength: 1` — Le premier signal réveille les workers depuis zéro
 - `cooldownPeriod: 15` — Maintien avant de remettre à l'échelle vers le bas
 
 **Pour la rafale de démo:**
@@ -302,6 +297,17 @@ file=0   replicas=0   <- vidé et remise à l'échelle vers zéro
 ```
 
 **Leçon réseau:** Dans les clusters Cilium, l'opérateur KEDA a besoin de politiques d'égress explicites pour interroger Redis. L'autoscaling peut paraître sain alors que le trafic Redis est bloqué.
+
+---
+
+<!-- À surveiller -->
+## À surveiller
+
+| Pane | Commande |
+|------|----------|
+| **État du scaling** | `kubectl get pods,hpa,scaledobject -n keda-system -w` |
+| **Profondeur de file** | `kubectl exec ... redis-cli LLEN security-alerts` |
+| **Logs workers** | `stern -n keda-system -l app=threat-analyzer` |
 
 ---
 
