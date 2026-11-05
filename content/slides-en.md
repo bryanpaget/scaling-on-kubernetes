@@ -310,22 +310,6 @@ HPA watches the consequence of load (CPU). KEDA watches the origin of load (even
 - Threat analyzer workers consume messages
 - KEDA scales workers based on queue depth
 
-**Demo setup:**
-- `kubectl apply -f redis-demo.yaml`
-- Workers start at 0 replicas (scale-to-zero)
-- Queue depth stays near zero during normal waves
-
-**Key insight:**
-- `listLength: 5` — Each replica handles ~5 queued signals
-- `activationListLength: 1` — First signal wakes workers from zero
-- `cooldownPeriod: 15` — Hold before scaling back down
-
-**For the demo burst:**
-- Send 500 items instantly
-- Queue spikes → workers scale out
-- Workers drain the backlog
-- Queue hits zero → cooldown → scale back to zero
-
 ---
 
 <!-- Live Demo: 500-Item Burst -->
@@ -337,25 +321,10 @@ kubectl exec -n keda-system \
   -- sh -c 'i=1; while [ $i -le 500 ]; do redis-cli RPUSH security-alerts demo-$i; i=$((i+1)); done'
 ```
 
-Expected cycle:
-```
-queue=37  replicas=1
-queue=0   replicas=4
-queue=0   replicas=0   <- drained and scaled to zero
-```
-
-**Network lesson:** In Cilium clusters, KEDA operator needs explicit egress policies to poll Redis. Scaling can appear healthy while Redis traffic is blocked.
-
----
-
-<!-- What to Watch -->
-## What to Watch
-
-| Pane | Command |
-|------|---------|
-| **Scaling state** | `kubectl get pods,hpa,scaledobject -n keda-system -w` |
-| **Queue depth** | `kubectl exec ... redis-cli LLEN security-alerts` |
-| **Worker logs** | `stern -n keda-system -l app=threat-analyzer` |
+- Send 500 items instantly
+- Queue spikes → workers scale out
+- Workers drain the backlog
+- Queue hits zero → cooldown → scale back to zero
 
 ---
 
