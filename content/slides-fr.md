@@ -173,6 +173,21 @@ spec:
 
 ---
 
+<!-- Portfolio de déclencheurs de production -->
+## Types de déclencheurs en production
+
+KEDA supporte plusieurs types de scalers au-delà des files Redis:
+
+| Type | Cas d'usage |
+|------|-------------|
+| **Prometheus** | Mettre à l'échelle sur le débit, les taux d'erreurs, la latence |
+| **Cron** | Préchauffe avant des plages horaires connues |
+| **Kafka** | Workloads de streaming d'événements |
+| **Azure Service Bus** | Files d'attente d'entreprise |
+| **AWS SQS** | Files d'attente natives cloud |
+
+---
+
 <!-- Démo Redis KEDA -->
 ## Démo Redis KEDA : Mise à l'échelle événementielle
 
@@ -197,21 +212,6 @@ kubectl exec -n keda-system \
 - La file monte en flèche → les workers montent en charge
 - Les workers vidagent le backlog
 - La file atteint zéro → cooldown → remise à l'échelle vers zéro
-
----
-
-<!-- Portfolio de déclencheurs de production -->
-## Types de déclencheurs en production
-
-KEDA supporte plusieurs types de scalers au-delà des files Redis:
-
-| Type | Cas d'usage |
-|------|-------------|
-| **Prometheus** | Mettre à l'échelle sur le débit, les taux d'erreurs, la latence |
-| **Cron** | Préchauffe avant des plages horaires connues |
-| **Kafka** | Workloads de streaming d'événements |
-| **Azure Service Bus** | Files d'attente d'entreprise |
-| **AWS SQS** | Files d'attente natives cloud |
 
 ---
 
